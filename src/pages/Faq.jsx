@@ -14,8 +14,8 @@ const faqGroups = [
     title: "Getting started",
     items: [
       {
-        q: "What is Corephia, exactly?",
-        a: "Corephia is a physician-built weight loss program based in Tampa, Florida. It combines three things: dietitian services, an exercise prescription matched to your fitness level, and — when a licensed provider determines it is clinically appropriate — weight loss medication. You are enrolling in a program, not buying a prescription.",
+        q: "What is CorePhia, exactly?",
+        a: "CorePhia is a physician-built weight loss program based in Tampa, Florida. It combines three things: dietitian services built around what you actually eat, an exercise prescription matched to your fitness level, and — when a licensed provider determines it is clinically appropriate — weight loss medication. You are enrolling in a program, not buying a medication.",
       },
       {
         q: "How do I get started?",
@@ -40,11 +40,11 @@ const faqGroups = [
       },
       {
         q: "What do the nutrition and exercise parts actually involve?",
-        a: "A registered dietitian documents what they are recommending for you and builds your plan around what you actually eat, rather than handing you a template. Your exercise plan is prescribed the way medication is — matched to your current fitness level, your goals and what you can realistically sustain — and it progresses as you do.",
+        a: "A licensed provider documents what they're recommending for you and builds your plan around what you actually eat, rather than handing you a template. Your exercise plan is prescribed the way medication is — matched to your current fitness level, your goals, and what you can realistically sustain — and it progresses as you do.",
       },
       {
         q: "How quickly will I see results?",
-        a: "That varies genuinely from person to person, and it depends on your starting point, your health history and which parts of the plan fit your life. Corephia is built for sustainable change rather than a fast number, so your provider tracks your progress at regular follow-ups and adjusts the plan instead of promising a timeline up front.",
+        a: "That varies genuinely from person to person, and it depends on your starting point, your health history and which parts of the plan fit your life. CorePhia is built for sustainable change rather than a fast number, so your provider tracks your progress at regular follow-ups and adjusts the plan instead of promising a timeline up front.",
       },
     ],
   },
@@ -57,7 +57,7 @@ const faqGroups = [
       },
       {
         q: "Who will I be working with?",
-        a: "A licensed provider oversees your medical care and a registered dietitian handles the nutrition side. Corephia was founded by Dr. Daniel Antonious, MD, who is double board certified in internal medicine and nephrology and is currently pursuing an additional fellowship in critical care.",
+        a: "A licensed provider oversees your medical care and a registered dietitian handles the nutrition side. CorePhia was founded by Dr. Daniel Antonious, MD, who is double board certified in internal medicine.",
       },
       {
         q: "What happens to the health information I submit?",
@@ -81,7 +81,7 @@ const faqGroups = [
       {
         // TODO: replace with the actual list of licensed states once the client confirms it.
         q: "Where do you operate?",
-        a: "Corephia is based in Tampa, Florida, and your care is provided by licensed providers. Because licensure determines where a provider is able to treat you, contact us to confirm that we can care for you where you live.",
+        a: "CorePhia is based in Tampa, Florida, and your care is provided by a licensed provider. Because licensure determines where a provider is able to treat you, contact us to confirm that we can care for you where you live.",
       },
     ],
   },

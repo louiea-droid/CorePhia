@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import ConfirmDialog from "./ConfirmDialog"
 import { PAGE_SIZE_OPTIONS } from "./constants"
 import { AUDIT_ACTIONS, MESSAGES_COLLECTION, recordAuditEvent } from "./firebase"
@@ -32,8 +32,19 @@ function readStoredPageSize() {
   }
 }
 
-export default function Messages({ role }) {
+export default function Messages({ role, messagesViewedAt = 0, onMessagesViewed }) {
   const { messages, error, removeMessage } = useContactMessages()
+  // Frozen to whatever messagesViewedAt was when this page mounted — useState's
+  // initializer only runs once, so a later prop change (from the mark-viewed
+  // call right below) doesn't retroactively un-highlight rows mid-visit. The
+  // sidebar badge, by contrast, reads the live prop and clears immediately.
+  const [viewedAt] = useState(messagesViewedAt)
+  useEffect(() => {
+    onMessagesViewed?.()
+    // Only ever needs to fire once, on the visit that opened this page —
+    // not e.g. every time `onMessagesViewed` itself is redefined.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const [selectedMessage, setSelectedMessage] = useState(null)
   const [pendingDelete, setPendingDelete] = useState(null)
   const [deleting, setDeleting] = useState(false)
@@ -158,6 +169,7 @@ export default function Messages({ role }) {
                 onSelect={setSelectedMessage}
                 minRows={pageSize === 10 ? 10 : 0}
                 rankOffset={(currentPage - 1) * pageSize}
+                viewedAt={viewedAt}
               />
             </div>
           )}

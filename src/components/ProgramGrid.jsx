@@ -5,10 +5,10 @@ import { BadgeCheckIcon, ClipboardCheckIcon } from "./icons"
 function FdaSeal() {
   return (
     <span
-      className="absolute top-4 right-4 flex size-14 items-center justify-center rounded-full border border-dashed border-paper-50/70 text-center text-[6px] leading-tight font-semibold tracking-wide text-paper-50 uppercase"
+      className="absolute top-3 right-3 flex size-11 items-center justify-center rounded-full border border-dashed border-paper-50/70 text-center text-[5px] leading-tight font-semibold tracking-wide text-paper-50 uppercase sm:top-4 sm:right-4 sm:size-14 sm:text-[6px]"
       aria-label="FDA approved medication, when prescribed"
     >
-      <BadgeCheckIcon className="absolute size-6 opacity-25" />
+      <BadgeCheckIcon className="absolute size-5 opacity-25 sm:size-6" />
       <span className="relative px-1.5">FDA approved</span>
     </span>
   )
@@ -25,19 +25,21 @@ function PillarCard({ pillar, index }) {
         visible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
       }`}
     >
-      <article className="group relative flex h-full min-h-80 flex-col justify-between overflow-hidden rounded-3xl bg-gradient-to-b from-brand to-brand-dark p-6 shadow-lg transition-[transform,box-shadow] duration-300 ease-out-smooth hover:-translate-y-1.5 hover:shadow-2xl">
+      <article className="group relative flex h-full min-h-48 flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-b from-brand to-brand-dark p-4 shadow-lg transition-[transform,box-shadow] duration-300 ease-out-smooth hover:-translate-y-1.5 hover:shadow-2xl sm:min-h-80 sm:rounded-3xl sm:p-6">
         {pillar.fda && <FdaSeal />}
 
         <div
-          className="flex flex-1 items-center justify-center py-6 transition-transform duration-300 ease-out-smooth group-hover:scale-110"
+          className="flex flex-1 items-center justify-center py-2 transition-transform duration-300 ease-out-smooth group-hover:scale-110 sm:py-6"
           aria-hidden="true"
         >
           {pillar.art}
         </div>
 
-        <div className="min-h-24">
-          <p className="text-lg font-semibold text-paper-50">{pillar.name}</p>
-          <p className="mt-1.5 text-sm leading-relaxed text-paper-100">{pillar.description}</p>
+        <div className="sm:min-h-24">
+          <p className="text-sm font-semibold text-paper-50 sm:text-lg">{pillar.name}</p>
+          <p className="mt-1 text-xs leading-snug text-paper-100 sm:mt-1.5 sm:text-sm sm:leading-relaxed">
+            {pillar.description}
+          </p>
         </div>
       </article>
     </li>
@@ -45,30 +47,32 @@ function PillarCard({ pillar, index }) {
 }
 
 const pillars = [
+    {
+    name: "Physician-guided medical support",
+    description: "Prescription medication, guided by a licensed provider.",
+    art: <CareShieldArt className="h-20 sm:h-40" />,
+    fda: true,
+  },
   {
     name: "Personalized nutrition coaching",
     description: "A meal plan built around your goals, preferences, and lifestyle.",
-    art: <MealPlateArt className="size-28" />,
+    art: <MealPlateArt className="size-16 sm:size-28" />,
+    fda: false,
+  },
+    {
+    name: "Ongoing health checks",
+    description: "Regular check-ins and progress tracking to keep your plan on target.",
+    art: <HealthCheckArt className="size-16 sm:size-28" />,
     fda: false,
   },
   {
     name: "Structured exercise plans",
     description: "Workouts tailored to your fitness level, with a plan that grows with you.",
-    art: <ActivityArt className="h-24 w-56" />,
+    art: <ActivityArt className="h-14 w-32 sm:h-24 sm:w-56" />,
     fda: false,
   },
-  {
-    name: "Physician-guided medical support",
-    description: "Prescription medication, if appropriate, guided by a licensed provider.",
-    art: <CareShieldArt className="h-40" />,
-    fda: true,
-  },
-  {
-    name: "Ongoing health checks",
-    description: "Regular check-ins and progress tracking to keep your plan on target.",
-    art: <HealthCheckArt className="size-28" />,
-    fda: false,
-  },
+
+
 ]
 
 export default function ProgramGrid() {
@@ -79,7 +83,7 @@ export default function ProgramGrid() {
       id="programs"
       aria-labelledby="programs-heading"
       data-header-theme="dark"
-      className="relative overflow-hidden rounded-3xl bg-ink-950 py-16 sm:py-24"
+      className="relative overflow-hidden rounded-3xl bg-ink-950 py-12 sm:py-16 lg:py-24"
     >
       <div className="absolute inset-0 bg-gradient-to-tr from-ink-950 via-ink-800 to-brand" />
       <div
@@ -101,7 +105,7 @@ export default function ProgramGrid() {
         </h2>
        
 
-        <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <ul className="mt-8 grid grid-cols-2 gap-3 sm:mt-10 sm:gap-4 lg:grid-cols-4">
           {pillars.map((pillar, index) => (
             <PillarCard key={pillar.name} pillar={pillar} index={index} />
           ))}
@@ -109,7 +113,7 @@ export default function ProgramGrid() {
 
         <p className="mt-8 max-w-3xl text-center text-xs text-paper-100/50 sm:mx-auto">
           <ClipboardCheckIcon className="mr-1 inline size-3.5 align-[-2px]" />
-          Medication, when appropriate, is prescribed by a licensed provider as part of your plan. An active Corephia
+          Medication is prescribed by a licensed provider as part of your plan. An active CorePhia
           Weight Loss Membership is required. Membership does not include or guarantee a prescription.
         </p>
       </div>

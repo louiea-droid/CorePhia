@@ -11,9 +11,10 @@ import {
 } from "./icons"
 
 const included = [
+   { label: "Medical support", detail: "Medication when a provider says it's appropriate", icon: PillBottleIcon },
   { label: "Dietitian services", detail: "A meal plan built around how you actually eat", icon: LeafIcon },
   { label: "Exercise prescriptions", detail: "Training matched to your level and your goal", icon: ClipboardCheckIcon },
-  { label: "Medical support", detail: "Medication when a provider says it's appropriate", icon: PillBottleIcon },
+ 
 ]
 
 const quickLinks = [

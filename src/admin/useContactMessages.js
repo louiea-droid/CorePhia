@@ -1,22 +1,18 @@
 import { useEffect, useState } from "react"
-import { deleteContactMessage, loadContactMessages } from "./firebase"
+import { deleteContactMessage, watchContactMessages } from "./firebase"
 
 export function useContactMessages() {
   const [messages, setMessages] = useState(null)
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    let active = true
-    loadContactMessages()
-      .then((result) => active && setMessages(result))
-      .catch((cause) => active && setError(cause.message))
-    return () => {
-      active = false
-    }
+    return watchContactMessages(setMessages, (cause) => setError(cause.message))
   }, [])
 
   async function removeMessage(id) {
     await deleteContactMessage(id)
+    // The listener's own next snapshot reflects the delete too, but updating
+    // here avoids a flash of the deleted row while that round trip is in flight.
     setMessages((current) => current?.filter((message) => message.id !== id) ?? current)
   }
 

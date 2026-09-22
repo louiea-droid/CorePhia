@@ -114,7 +114,7 @@ export default function ScienceSection() {
       id="science"
       aria-labelledby="science-heading"
       data-header-theme="dark"
-      className="bg-ink-950 py-16 sm:py-24"
+      className="bg-ink-950 py-12 sm:py-16 lg:py-24"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <h2 id="science-heading" className="sr-only">
@@ -136,7 +136,7 @@ export default function ScienceSection() {
 
             <div className="flex flex-1 flex-col items-center justify-center gap-6 sm:flex-row sm:justify-between sm:gap-8">
               <p
-                className={`max-w-32 text-sm text-paper-100/70 transition-all delay-150 duration-700 ease-out-smooth sm:text-right ${
+                className={`max-w-64 text-center text-sm text-paper-100/70 transition-all delay-150 duration-700 ease-out-smooth sm:max-w-32 sm:text-right ${
                   absorptionVisible ? "translate-x-0 opacity-100" : "-translate-x-4 opacity-0"
                 }`}
               >
@@ -155,7 +155,7 @@ export default function ScienceSection() {
                 />
               </div>
               <p
-                className={`max-w-32 text-sm text-paper-100/70 transition-all delay-450 duration-700 ease-out-smooth ${
+                className={`max-w-64 text-center text-sm text-paper-100/70 transition-all delay-450 duration-700 ease-out-smooth sm:max-w-32 sm:text-left ${
                   absorptionVisible ? "translate-x-0 opacity-100" : "translate-x-4 opacity-0"
                 }`}
               >

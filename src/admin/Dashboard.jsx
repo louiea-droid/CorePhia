@@ -39,7 +39,6 @@ export default function Dashboard() {
     <div>
       <PageHeader
         title="Dashboard"
-        description="What patients reported on the intake form, across every submission."
       />
 
       {error ? (

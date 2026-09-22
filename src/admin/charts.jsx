@@ -172,7 +172,7 @@ export function RankedList({ data, total, emptyLabel = "No data yet", onSelect }
           >
             <span
               className={`flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
-                index === 0 ? "bg-accent-dark text-paper-50" : "bg-paper-100 text-ink-950/60"
+                index === 0 ? "bg-accent-dark text-oncolor" : "bg-paper-100 text-ink-950/60"
               }`}
             >
               {index + 1}
@@ -275,7 +275,7 @@ export function TagCloud({ data, emptyLabel = "No data yet", onSelect }) {
         const share = item.value / max
         const tone =
           share >= 0.7
-            ? "bg-accent-dark text-paper-50 font-semibold"
+            ? "bg-accent-dark text-oncolor font-semibold"
             : share >= 0.35
               ? "bg-accent-dark/15 text-ink-950 font-medium"
               : "bg-paper-100 text-ink-950/70"

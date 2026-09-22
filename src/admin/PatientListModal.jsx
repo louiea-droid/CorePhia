@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
 import { CloseIcon } from "./icons"
+import { getAdminPortalRoot } from "./portalRoot"
 
 function formatDate(iso) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
@@ -38,7 +39,7 @@ export default function PatientListModal({ title, subtitle, records, onSelectPat
       <div
         aria-hidden="true"
         onClick={onClose}
-        className="absolute inset-0 bg-ink-950/50 transition-opacity duration-200"
+        className="absolute inset-0 bg-scrim/50 transition-opacity duration-200"
       />
 
       <div className="flex min-h-full items-center justify-center p-4">
@@ -89,6 +90,6 @@ export default function PatientListModal({ title, subtitle, records, onSelectPat
         </div>
       </div>
     </div>,
-    document.body,
+    getAdminPortalRoot(),
   )
 }

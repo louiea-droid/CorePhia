@@ -59,7 +59,7 @@ export default function Pagination({ page, totalPages, onPageChange, pageSize, o
               aria-current={item === page ? "page" : undefined}
               className={`min-w-8 cursor-pointer rounded-lg px-2.5 py-1.5 text-center font-medium transition-colors duration-200 ${
                 item === page
-                  ? "bg-accent-dark text-paper-50"
+                  ? "bg-accent-dark text-oncolor"
                   : "text-ink-950/70 hover:bg-ink-950/5 hover:text-ink-950"
               }`}
             >

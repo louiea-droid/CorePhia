@@ -76,7 +76,7 @@ export default function Contact() {
         <link rel="canonical" href="https://www.corephia.com/contact" />
       </Helmet>
 
-      <section aria-labelledby="contact-heading" className="mx-auto max-w-5xl px-4 pt-16 pb-12 sm:px-6">
+      <section aria-labelledby="contact-heading" className="mx-auto max-w-5xl px-4 pt-12 pb-8 sm:px-6 sm:pt-16 sm:pb-12">
         <p className="text-xs font-semibold tracking-widest text-accent-dark uppercase">Contact us</p>
         <h1 id="contact-heading" className="mt-3 font-serif text-4xl leading-tight text-ink-950 sm:text-5xl">
           Let's get you started.
@@ -86,7 +86,7 @@ export default function Contact() {
           ready to begin, you can go straight to the full patient intake form instead.
         </p>
 
-        <div className="mt-12 grid gap-10 lg:grid-cols-[1.4fr_1fr]">
+        <div className="mt-8 grid gap-10 sm:mt-12 lg:grid-cols-[1.4fr_1fr]">
           <div ref={ref} className={`transition-all duration-700 ease-out-smooth ${visible ? "opacity-100" : "opacity-0"}`}>
             {status === "sent" ? (
               <div className="flex flex-col items-start rounded-3xl bg-paper-100 p-8">
@@ -96,12 +96,13 @@ export default function Contact() {
                   A member of our care team will reach out shortly. If you'd like to save time, you can complete
                   your full patient intake form now.
                 </p>
-                <Link
-                  to="/intake"
+                <button
+                  type="button"
+                  onClick={() => setStatus("idle")}
                   className="mt-6 rounded-full bg-ink-950 px-6 py-3 text-sm font-semibold text-paper-50 transition-colors duration-200 ease-out-smooth hover:bg-ink-900"
                 >
-                  Start your journey
-                </Link>
+                  Send another message
+                </button>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="grid gap-5 rounded-3xl bg-paper-100/70 p-6 sm:grid-cols-2 sm:p-8">

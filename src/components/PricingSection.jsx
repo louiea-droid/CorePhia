@@ -6,12 +6,12 @@ import { BadgeCheckIcon, LockIcon, PillBottleIcon, ShieldCheckIcon, TrendingUpIc
 const trustBadges = [
   { label: "Doctor Led Care", detail: "Expert care from licensed providers.", icon: ShieldCheckIcon },
   {
-    label: "Medication When Appropriate",
-    detail: "FDA-approved medication, prescribed only when clinically appropriate.",
+    label: "Medication Available",
+    detail: "FDA-approved medication, prescribed.",
     icon: PillBottleIcon,
   },
-  { label: "Proven Results", detail: "Real people. Real transformations.", icon: TrendingUpIcon },
-  { label: "Safe & Confidential", detail: "Your health. Your privacy. Always.", icon: LockIcon },
+  { label: "Proven Results", detail: "Real people, tracked over time.", icon: TrendingUpIcon },
+  { label: "Safe & Confidential", detail: "Your health information stays private", icon: LockIcon },
 ]
 
 function PricingCard({ tier, index }) {
@@ -32,7 +32,7 @@ function PricingCard({ tier, index }) {
       )}
 
       <article
-        className={`flex h-full flex-col rounded-3xl border p-8 shadow-md transition-[transform,box-shadow] duration-300 ease-out-smooth hover:-translate-y-1 hover:shadow-xl ${
+        className={`flex h-full flex-col rounded-3xl border p-6 shadow-md transition-[transform,box-shadow] duration-300 ease-out-smooth hover:-translate-y-1 hover:shadow-xl sm:p-8 ${
           tier.popular
             ? "border-accent-dark bg-gradient-to-b from-paper-100 to-accent/15"
             : "border-ink-950/10 bg-paper-100/60"
@@ -70,7 +70,7 @@ function PricingCard({ tier, index }) {
 
         <Link
           to={`/intake?plan=${encodeURIComponent(tier.name)}`}
-          className={`mt-8 block rounded-full px-6 py-3.5 text-center text-sm font-semibold transition-[transform,background-color] duration-200 ease-out-smooth hover:scale-[1.02] ${
+          className={`mt-6 block rounded-full px-6 py-3.5 text-center text-sm font-semibold transition-[transform,background-color] duration-200 ease-out-smooth hover:scale-[1.02] sm:mt-8 ${
             tier.popular
               ? "bg-ink-950 text-paper-50 hover:bg-ink-900"
               : "border border-ink-950/20 text-ink-950 hover:border-ink-950/40 hover:bg-ink-950/5"
@@ -91,7 +91,7 @@ export default function PricingSection() {
     <section
       id="pricing"
       aria-labelledby="pricing-heading"
-      className="bg-gradient-to-br from-paper-50 via-paper-100 to-accent/15 py-16 sm:py-24"
+      className="bg-gradient-to-br from-paper-50 via-paper-100 to-accent/15 py-12 sm:py-16 lg:py-24"
     >
       <div className="mx-auto max-w-7xl px-4 text-center sm:px-6">
         <div
@@ -116,7 +116,7 @@ export default function PricingSection() {
 
         <ul
           ref={badgesRef}
-          className={`mt-12 grid gap-6 rounded-3xl bg-paper-100 p-8 transition-all duration-700 ease-out-smooth sm:grid-cols-2 lg:grid-cols-4 ${
+          className={`mt-10 grid gap-6 rounded-3xl bg-paper-100 p-6 transition-all duration-700 ease-out-smooth sm:mt-12 sm:grid-cols-2 sm:p-8 lg:grid-cols-4 ${
             badgesVisible ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
           }`}
         >

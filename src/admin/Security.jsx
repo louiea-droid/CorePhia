@@ -6,6 +6,7 @@ import {
   reloadAdminUser,
   removeEnrolledFactor,
   startTotpEnrollment,
+  updateAdminDisplayName,
 } from "./firebase"
 import PageHeader from "./PageHeader"
 
@@ -32,7 +33,7 @@ function describeError(cause) {
   }
 }
 
-export default function Security({ user }) {
+export default function Security({ user, displayName, onDisplayNameChange }) {
   const [factors, setFactors] = useState(() => listEnrolledFactors(user))
   const [secret, setSecret] = useState(null)
   const [code, setCode] = useState("")
@@ -40,6 +41,28 @@ export default function Security({ user }) {
   const [error, setError] = useState(null)
   const [justEnrolled, setJustEnrolled] = useState(false)
   const [pendingRemoval, setPendingRemoval] = useState(null)
+  const [nameInput, setNameInput] = useState(displayName ?? "")
+  const [nameBusy, setNameBusy] = useState(false)
+  const [nameError, setNameError] = useState(null)
+  const [nameSaved, setNameSaved] = useState(false)
+
+  const saveDisplayName = async (event) => {
+    event.preventDefault()
+    setNameBusy(true)
+    setNameError(null)
+    setNameSaved(false)
+    try {
+      const saved = await updateAdminDisplayName(nameInput)
+      setNameInput(saved ?? "")
+      onDisplayNameChange?.(saved)
+      setNameSaved(true)
+    } catch (cause) {
+      console.error("Could not save display name:", cause.code ?? cause.message)
+      setNameError(describeError(cause))
+    } finally {
+      setNameBusy(false)
+    }
+  }
 
   const refreshFactors = async () => {
     const refreshed = await reloadAdminUser()
@@ -100,6 +123,45 @@ export default function Security({ user }) {
 
       <div className="mx-auto w-full max-w-2xl space-y-4">
         <section className="rounded-2xl border border-ink-950/10 bg-white p-6">
+          <h2 className="font-serif text-xl text-ink-950">Display name</h2>
+          <p className="mt-1 max-w-md text-sm text-ink-950/60">
+            Shown in the sidebar instead of your email. 
+          </p>
+
+          <form onSubmit={saveDisplayName} className="mt-4 flex flex-wrap items-start gap-3">
+            <input
+              type="text"
+              value={nameInput}
+              onChange={(event) => {
+                setNameInput(event.target.value)
+                setNameSaved(false)
+              }}
+              placeholder={user?.email ?? "Your name"}
+              maxLength={80}
+              className={`${fieldClass} max-w-xs`}
+            />
+            <button
+              type="submit"
+              disabled={nameBusy}
+              className="rounded-full bg-ink-950 px-6 py-3 text-sm font-semibold text-paper-50 transition-colors duration-200 ease-out-smooth hover:bg-ink-900 disabled:opacity-60"
+            >
+              {nameBusy ? "Saving…" : "Save"}
+            </button>
+          </form>
+
+          {nameSaved && !nameError && (
+            <p role="status" className="mt-3 text-sm text-ink-950/60">
+              Saved.
+            </p>
+          )}
+          {nameError && (
+            <p role="alert" className="mt-3 rounded-2xl border border-brand-dark/30 bg-paper-50 px-4 py-3 text-sm text-ink-950">
+              {nameError}
+            </p>
+          )}
+        </section>
+
+        <section className="rounded-2xl border border-ink-950/10 bg-white p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h2 className="font-serif text-xl text-ink-950">Two-step sign-in</h2>
@@ -110,7 +172,7 @@ export default function Security({ user }) {
             </div>
             <span
               className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
-                factors.length ? "bg-accent-dark text-paper-50" : "bg-paper-100 text-ink-950/60"
+                factors.length ? "bg-accent-dark text-oncolor" : "bg-paper-100 text-ink-950/60"
               }`}
             >
               {factors.length ? "On" : "Off"}

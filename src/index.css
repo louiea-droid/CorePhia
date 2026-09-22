@@ -19,7 +19,40 @@
   --color-brand: #3b5bdb;
   --color-brand-dark: #1e3a8a;
 
+  /* Label/icon color for text sitting on a solid colored surface (a badge,
+     an active pill) that must stay light whether the page is in light or
+     dark mode — unlike paper-50, this one is never redefined under .dark. */
+  --color-oncolor: #eef2f9;
+
+  /* Modal/drawer backdrops. Same value as ink-950, but as its own token so
+     it is NOT flipped under .dark — a scrim built from ink-950 turns into a
+     50% white wash in dark mode and lightens the page instead of dimming
+     it. A backdrop darkens in both themes. */
+  --color-scrim: #0d1a3d;
+
   --ease-out-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Scoped to the admin app root (AdminApp.jsx), never to :root — the public
+   marketing site has no dark mode and must not inherit these. Every admin
+   surface is built from ink-950 (text) and white/paper-50/100/200
+   (backgrounds), so redefining just those five variables re-themes the
+   whole admin without touching each component's classes. accent/brand stay
+   fixed in both themes — they already read fine on light and dark alike. */
+.dark {
+  --color-white: #131c38;
+  --color-ink-950: #eef2f9;
+  --color-ink-900: #c9d3e8;
+  --color-paper-50: #0a0f22;
+  --color-paper-100: #182446;
+  --color-paper-200: #22304f;
+  /* brand-dark is this palette's "something went wrong / destructive" tone —
+     sign-in errors, delete hovers, the "No role assigned" label. At its light
+     value (#1e3a8a) it is a near-black blue that vanishes against these dark
+     surfaces, so it lightens here. Safe to flip because the admin only ever
+     uses it as text, a translucent border or a hover tint, never as a solid
+     fill behind light text. */
+  --color-brand-dark: #8fb4ff;
 }
 
 html {
@@ -206,5 +239,236 @@ body {
   .animate-loading-bar {
     animation: none;
     width: 100%;
+  }
+}
+
+/* Sidebar theme switch — adapted from a community styled-components demo
+   into plain CSS, since nothing else in this project uses CSS-in-JS. Sized
+   in em off a small fixed base so the whole control scales as one unit to
+   fit the sidebar row. The original's full-page mix-blend-mode "wipe" is
+   left out: the real theme switch is the .dark variable scope above, and a
+   fixed full-viewport blend layer on top of that would fight it rather
+   than help. Light mode swaps the demo's solid yellow for white with a
+   faint yellow glow, per request. */
+.theme-toggle {
+  display: inline-flex;
+  /* Whole control is sized in em, so this one value scales it. 9px gives a
+     54x27px switch — small enough to sit in a sidebar row without towering
+     over the 20px text beside it. */
+  font-size: 9px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.theme-toggle__wrap {
+  position: relative;
+  display: block;
+}
+
+.theme-toggle__input {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 6em;
+  height: 3em;
+  padding: 0.25em;
+  border-radius: 25% / 50%;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 0.125em rgba(13, 26, 61, 0.12);
+  cursor: pointer;
+  transition:
+    background-color 0.3s ease-in-out,
+    box-shadow 0.15s ease-in-out;
+}
+
+.theme-toggle__input:before {
+  content: "";
+  display: block;
+  width: 2.5em;
+  height: 2.5em;
+  border-radius: 50%;
+  background-color: #ffffff;
+  box-shadow: 0 0 0.9em 0.2em rgba(250, 204, 21, 0.45);
+  transition: 0.3s;
+}
+
+.theme-toggle__input:focus {
+  outline: transparent;
+  box-shadow: 0 0 0 0.125em rgba(37, 99, 235, 0.35);
+}
+
+@supports selector(:focus-visible) {
+  .theme-toggle__input:focus {
+    box-shadow: 0 0 0 0.125em rgba(13, 26, 61, 0.12);
+  }
+
+  .theme-toggle__input:focus-visible {
+    box-shadow: 0 0 0 0.125em rgba(37, 99, 235, 0.35);
+  }
+}
+
+.theme-toggle__input:checked {
+  background-color: #0d1a3d;
+}
+
+.theme-toggle__input:checked:before {
+  background-color: #2563eb;
+  box-shadow: none;
+  transform: translateX(3em);
+}
+
+.theme-toggle__input:checked ~ .theme-toggle__icon {
+  transform: translateX(3em);
+}
+
+/* 0.75em, not the source snippet's 0.5em. The knob is 2.5em inside 0.25em
+   of padding, so its centre sits at 1.25em+0.25em = 1.5em; this box is
+   1.5em, so it has to start at 0.75em for the two centres to coincide. At
+   0.5em the sun and moon sat a visible 0.25em up and to the left of the
+   knob. (The snippet was written against content-box; Tailwind's preflight
+   makes everything border-box, which moves the knob.) */
+.theme-toggle__icon {
+  position: absolute;
+  top: 0.75em;
+  left: 0.75em;
+  width: 1.5em;
+  height: 1.5em;
+  pointer-events: none;
+  transition: transform 0.3s;
+}
+
+.theme-toggle__icon-part {
+  position: absolute;
+  top: calc(50% - 0.5em);
+  left: calc(50% - 0.5em);
+  width: 1em;
+  height: 1em;
+  border-radius: 50%;
+  box-shadow: 0.4em -0.4em 0 0.5em #f5c451 inset;
+  transform: scale(0.5);
+  transition:
+    box-shadow 0.3s ease-in-out,
+    opacity 0.3s ease-in-out,
+    transform 0.3s ease-in-out;
+}
+
+.theme-toggle__icon-part ~ .theme-toggle__icon-part {
+  background-color: #f5c451;
+  border-radius: 0.05em;
+  top: 50%;
+  left: calc(50% - 0.05em);
+  width: 0.1em;
+  height: 0.2em;
+  transform-origin: 50% 0;
+}
+
+.theme-toggle__icon-part:nth-child(2) {
+  transform: rotate(0deg) translateY(0.5em);
+}
+.theme-toggle__icon-part:nth-child(3) {
+  transform: rotate(45deg) translateY(0.45em);
+}
+.theme-toggle__icon-part:nth-child(4) {
+  transform: rotate(90deg) translateY(0.45em);
+}
+.theme-toggle__icon-part:nth-child(5) {
+  transform: rotate(135deg) translateY(0.45em);
+}
+.theme-toggle__icon-part:nth-child(6) {
+  transform: rotate(180deg) translateY(0.45em);
+}
+.theme-toggle__icon-part:nth-child(7) {
+  transform: rotate(225deg) translateY(0.45em);
+}
+.theme-toggle__icon-part:nth-child(8) {
+  transform: rotate(270deg) translateY(0.5em);
+}
+.theme-toggle__icon-part:nth-child(9) {
+  transform: rotate(315deg) translateY(0.5em);
+}
+
+/* The sun→moon morph keys off [data-mode="dark"] on the root rather than
+   the checkbox's :checked, so the knob-only variant below (which has no
+   checkbox) gets the identical icon for free. Only the knob/icon slide
+   along the track stays tied to :checked, since that is switch-only.
+
+   The crescent keeps the centred top/left from the base rule rather than
+   the source snippet's top:0.2em/left:-0.2em, which pushed it out of the
+   knob; the shape comes from the offset inset shadow alone, and 1.3 scales
+   it up to fill the knob the way the sun's rays do. */
+[data-mode="dark"] .theme-toggle__icon-part:first-child {
+  box-shadow: 0.2em -0.2em 0 0.2em #eef2f9 inset;
+  transform: scale(1.3);
+}
+
+[data-mode="dark"] .theme-toggle__icon-part ~ .theme-toggle__icon-part {
+  background-color: #eef2f9;
+  opacity: 0;
+}
+
+[data-mode="dark"] .theme-toggle__icon-part:nth-child(2) {
+  transform: rotate(45deg) translateY(0.8em);
+}
+[data-mode="dark"] .theme-toggle__icon-part:nth-child(3) {
+  transform: rotate(90deg) translateY(0.8em);
+}
+[data-mode="dark"] .theme-toggle__icon-part:nth-child(4) {
+  transform: rotate(135deg) translateY(0.8em);
+}
+[data-mode="dark"] .theme-toggle__icon-part:nth-child(5) {
+  transform: rotate(180deg) translateY(0.8em);
+}
+[data-mode="dark"] .theme-toggle__icon-part:nth-child(6) {
+  transform: rotate(225deg) translateY(0.8em);
+}
+[data-mode="dark"] .theme-toggle__icon-part:nth-child(7) {
+  transform: rotate(270deg) translateY(0.8em);
+}
+[data-mode="dark"] .theme-toggle__icon-part:nth-child(8) {
+  transform: rotate(315deg) translateY(0.8em);
+}
+[data-mode="dark"] .theme-toggle__icon-part:nth-child(9) {
+  transform: rotate(360deg) translateY(0.8em);
+}
+
+/* Knob-only variant for the collapsed sidebar rail, where the full pill
+   has nowhere near enough room: the switch's knob and icon without the
+   track. Same 2.5em knob and same icon markup, so it reads as the same
+   control rather than a different one. */
+.theme-knob {
+  position: relative;
+  display: inline-block;
+  font-size: 8px;
+  width: 2.5em;
+  height: 2.5em;
+  border-radius: 50%;
+  background-color: #ffffff;
+  /* Hairline ring as well as the glow: without the track behind it, a white
+     knob on the light sidebar's white panel has no edge at all. */
+  box-shadow:
+    0 0 0 1px rgba(13, 26, 61, 0.12),
+    0 0 0.9em 0.2em rgba(250, 204, 21, 0.45);
+  transition:
+    background-color 0.3s ease-in-out,
+    box-shadow 0.3s ease-in-out;
+}
+
+.theme-knob[data-mode="dark"] {
+  background-color: #2563eb;
+  box-shadow: none;
+}
+
+/* Centred on the knob itself here, rather than offset for the track's
+   0.25em padding the way the switch's icon is. */
+.theme-knob .theme-toggle__icon {
+  top: 0.5em;
+  left: 0.5em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-toggle__input,
+  .theme-toggle__input:before,
+  .theme-toggle__icon,
+  .theme-toggle__icon-part {
+    transition: none;
   }
 }

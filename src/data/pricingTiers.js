@@ -14,7 +14,7 @@ export const tiers = [
     features: [
       "Physician consultation & medical evaluation",
       "Personalized weight loss plan",
-      "Prescription medication (if needed)",
+      "Prescription medication",
       "Regular progress check-ins",
       "24/7 patient support",
     ],

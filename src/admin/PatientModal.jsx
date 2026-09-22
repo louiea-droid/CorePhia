@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
 import { AUDIT_ACTIONS, INTAKE_COLLECTION, recordAuditEvent } from "./firebase"
 import { CloseIcon, TrashIcon } from "./icons"
+import { getAdminPortalRoot } from "./portalRoot"
 
 function formatDate(value, options) {
   if (!value) return null
@@ -24,7 +25,7 @@ function Consent({ label, granted }) {
     <div className="flex items-center gap-2 text-sm">
       <span
         className={`flex size-4 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
-          granted ? "bg-accent-dark text-paper-50" : "bg-paper-100 text-ink-950/40"
+          granted ? "bg-accent-dark text-oncolor" : "bg-paper-100 text-ink-950/40"
         }`}
       >
         {granted ? "✓" : "–"}
@@ -99,7 +100,7 @@ export default function PatientModal({ record, onClose, canDelete, onRequestDele
       <div
         aria-hidden="true"
         onClick={onClose}
-        className="absolute inset-0 bg-ink-950/50 transition-opacity duration-200"
+        className="absolute inset-0 bg-scrim/50 transition-opacity duration-200"
       />
 
       <div className="flex min-h-full items-center justify-center p-4">
@@ -222,6 +223,6 @@ export default function PatientModal({ record, onClose, canDelete, onRequestDele
         </div>
       </div>
     </div>,
-    document.body,
+    getAdminPortalRoot(),
   )
 }

@@ -142,7 +142,7 @@ export default function Footer() {
             </p> */}
            
             <p className="mt-2">
-              &copy; {new Date().getFullYear()} Corephia. All rights reserved. COREPHIA is a trademark of Corephia.
+              &copy; {new Date().getFullYear()} CorePhia. All rights reserved. COREPHIA is a trademark of CorePhia.
             </p>
           </div>
         </div>

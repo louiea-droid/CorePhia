@@ -2,10 +2,9 @@ import { useReveal } from "../hooks/useReveal"
 import { PersonAvatar } from "./Artwork"
 
 const doctor = {
-  name: "Dr. Daniel Antonious, MD",
-  role: "Double board certified in Internal Medicine and Nephrology",
-  tags: ["Internal Medicine", "Nephrology"],
-  bio: "Dr. Antonious is double board certified in internal medicine and nephrology and is pursuing an additional fellowship in critical care.",
+  role: "Double board certified in Internal Medicine",
+  tags: ["Internal Medicine"],
+ bio: "Dr. Antonious spent years in internal medicine before he started CorePhia. What bothered him was how often weight loss got treated like a prescription problem — a pill, a monthly fee, and nothing said about how someone actually eats or moves day to day. CorePhia pairs dietitian services and an exercise prescription with medication, and medication only enters the plan when a licensed provider decides it's clinically appropriate.",
   tone: "#2563eb",
 }
 
@@ -15,7 +14,7 @@ export default function TeamSection() {
   return (
     <section
       aria-labelledby="team-heading"
-      className="bg-gradient-to-br from-paper-50 via-paper-100 to-accent/15 py-16 sm:py-24"
+      className="bg-gradient-to-br from-paper-50 via-paper-100 to-accent/15 py-12 sm:py-16 lg:py-24"
     >
       <div className="mx-auto max-w-7xl px-4 text-center sm:px-6">
         <h2 id="team-heading" className="font-serif text-4xl leading-tight text-ink-950 sm:text-5xl">
@@ -24,7 +23,7 @@ export default function TeamSection() {
           by the best in medicine
         </h2>
         <p className="mx-auto mt-4 max-w-xl text-ink-950/60">
-          Meet the physician guiding Corephia's clinical approach.
+          Meet the physician guiding CorePhia's clinical approach.
         </p>
       </div>
 
@@ -55,6 +54,8 @@ export default function TeamSection() {
             <p className="text-sm leading-relaxed text-ink-950/60">{doctor.bio}</p>
           </div>
         </article>
+
+        
       </div>
     </section>
   )

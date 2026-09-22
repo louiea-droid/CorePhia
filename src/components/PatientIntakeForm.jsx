@@ -268,7 +268,7 @@ export default function PatientIntakeForm() {
         Patient intake form
       </h1>
       <p className="mt-3 max-w-xl text-ink-950/60">
-        Every Corephia patient completes the same intake, so nothing gets missed and your provider has your full
+        Every CorePhia patient completes the same intake, so nothing gets missed and your provider has your full
         picture before your first visit. It takes about 10 minutes. Your information is kept confidential and
         protected under HIPAA.
       </p>
@@ -600,7 +600,7 @@ export default function PatientIntakeForm() {
                 required
                 className="mt-0.5 size-4 shrink-0 rounded border-ink-950/30 text-accent-dark focus:ring-accent-dark"
               />
-              I consent to receive telehealth services from Corephia and understand the associated risks and
+              I consent to receive telehealth services from CorePhia and understand the associated risks and
               benefits. <span className="text-brand-dark">*</span>
             </label>
             <label className="flex items-start gap-3 rounded-2xl bg-paper-50 px-4 py-3.5 text-sm text-ink-950">

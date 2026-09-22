@@ -3,31 +3,38 @@ import { Helmet } from "react-helmet-async"
 import { Route, Routes } from "react-router-dom"
 import Activity from "./Activity"
 import Dashboard from "./Dashboard"
-import { getAdminRole, isConfigured, usingSeedData, watchAdminUser } from "./firebase"
+import { getAdminRole, isConfigured, signOutAdmin, usingSeedData, watchAdminUser } from "./firebase"
 import { MenuIcon } from "./icons"
 import Loader from "./Loader"
 import Login from "./Login"
 import Messages from "./Messages"
-import MessagesNotification from "./MessagesNotification"
 import Patients from "./Patients"
+import { readLastViewedMessagesAt, writeLastViewedMessagesAt } from "./recentMessages"
 import Security from "./Security"
 import Sidebar from "./Sidebar"
+import { useAdminTheme } from "./useAdminTheme"
 
-function AdminRoutes({ role, user }) {
+function AdminRoutes({ role, user, displayName, onDisplayNameChange, messagesViewedAt, onMessagesViewed }) {
   return (
     <Routes>
       <Route path="/admin" element={<Dashboard />} />
       <Route path="/admin/patients" element={<Patients role={role} />} />
-      <Route path="/admin/messages" element={<Messages role={role} />} />
+      <Route
+        path="/admin/messages"
+        element={<Messages role={role} messagesViewedAt={messagesViewedAt} onMessagesViewed={onMessagesViewed} />}
+      />
       <Route path="/admin/activity" element={<Activity role={role} />} />
-      <Route path="/admin/security" element={<Security user={user} />} />
+      <Route
+        path="/admin/security"
+        element={<Security user={user} displayName={displayName} onDisplayNameChange={onDisplayNameChange} />}
+      />
     </Routes>
   )
 }
 
 const COLLAPSED_KEY = "corephia-admin-sidebar-collapsed"
 
-function AdminChrome({ user, role, onSignOut, children }) {
+function AdminChrome({ user, role, displayName, messagesViewedAt, theme, onToggleTheme, onSignOut, children }) {
   const [collapsed, setCollapsed] = useState(() => {
     try {
       return localStorage.getItem(COLLAPSED_KEY) === "1"
@@ -56,11 +63,13 @@ function AdminChrome({ user, role, onSignOut, children }) {
     // instead, which individual pages (like Patients) can further subdivide
     // so only part of their own content scrolls.
     <div className="h-screen overflow-hidden bg-paper-50">
-      <MessagesNotification />
-
       <Sidebar
         user={user}
         role={role}
+        displayName={displayName}
+        messagesViewedAt={messagesViewedAt}
+        theme={theme}
+        onToggleTheme={onToggleTheme}
         collapsed={collapsed}
         onToggleCollapsed={toggleCollapsed}
         mobileOpen={mobileOpen}
@@ -95,7 +104,7 @@ function AdminChrome({ user, role, onSignOut, children }) {
   )
 }
 
-function NoAccessScreen({ email }) {
+function NoAccessScreen({ email, onSignOut }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-paper-50 px-4">
       <div className="w-full max-w-md rounded-3xl border border-ink-950/10 bg-white p-8">
@@ -104,6 +113,13 @@ function NoAccessScreen({ email }) {
           You are signed in as <span className="font-medium text-ink-950">{email}</span>, but this account has
           no admin role yet, so it cannot read patient records. A super admin needs to assign one.
         </p>
+        <button
+          type="button"
+          onClick={onSignOut}
+          className="mt-6 rounded-full bg-ink-950 px-5 py-2.5 text-sm font-semibold text-paper-50 transition-colors duration-200 hover:bg-ink-900"
+        >
+          Sign out
+        </button>
       </div>
     </div>
   )
@@ -129,6 +145,22 @@ export default function AdminApp() {
   const [role, setRole] = useState(null)
   const [checkingAuth, setCheckingAuth] = useState(isConfigured)
   const [demoSignedOut, setDemoSignedOut] = useState(false)
+  // updateProfile() mutates auth.currentUser in place rather than handing back
+  // a new object, so passing that same reference back into setUser() would be
+  // a no-op render-wise. Tracked separately so Security's save shows up on
+  // the sidebar immediately instead of waiting for the next sign-in.
+  const [displayName, setDisplayName] = useState(null)
+  const [theme, toggleTheme] = useAdminTheme()
+  // Lives here rather than inside Messages/Sidebar because both need it: the
+  // sidebar badge has to react the instant the Messages page marks itself
+  // viewed, and that only happens through shared state, not by each reading
+  // localStorage independently.
+  const [messagesViewedAt, setMessagesViewedAt] = useState(readLastViewedMessagesAt)
+  const markMessagesViewed = () => {
+    const now = Date.now()
+    setMessagesViewedAt(now)
+    writeLastViewedMessagesAt(now)
+  }
 
   useEffect(() => {
     if (!isConfigured) return
@@ -140,6 +172,7 @@ export default function AdminApp() {
       // sign-in until the real role arrived.
       setCheckingAuth(true)
       setUser(nextUser)
+      setDisplayName(nextUser?.displayName ?? null)
       setRole(nextUser ? await getAdminRole(nextUser) : null)
       setCheckingAuth(false)
     })
@@ -153,88 +186,100 @@ export default function AdminApp() {
     </Helmet>
   )
 
+  // Every branch below is collected into one `body` value and wrapped once,
+  // at the very end, in the element that carries the "dark" class (see
+  // useAdminTheme) — that keeps the theme scoped to this one subtree rather
+  // than document.documentElement, so the public marketing site (rendered
+  // from a completely different part of the tree) can never inherit it.
+  let body
+
   if (usingSeedData) {
     // Demo mode has no real session to end, but "Sign out" should still show
     // what a signed-out admin sees rather than doing nothing when clicked.
     if (demoSignedOut) {
-      return (
-        <>
-          {head}
-          <Login
-            notice={
-              <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-ink-950/10 bg-paper-100 px-4 py-3 text-sm text-ink-950/70">
-                <span>
-                  <strong className="font-semibold text-ink-950">Demo preview.</strong> Firebase isn't
-                  configured, so this just previews the signed-out screen.
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setDemoSignedOut(false)}
-                  className="shrink-0 font-semibold text-accent-dark transition-opacity duration-200 hover:opacity-70"
-                >
-                  Back
-                </button>
-              </div>
-            }
+      body = (
+        <Login
+          notice={
+            <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-ink-950/10 bg-paper-100 px-4 py-3 text-sm text-ink-950/70">
+              <span>
+                <strong className="font-semibold text-ink-950">Demo preview.</strong> Firebase isn't configured,
+                so this just previews the signed-out screen.
+              </span>
+              <button
+                type="button"
+                onClick={() => setDemoSignedOut(false)}
+                className="shrink-0 font-semibold text-accent-dark transition-opacity duration-200 hover:opacity-70"
+              >
+                Back
+              </button>
+            </div>
+          }
+        />
+      )
+    } else {
+      body = (
+        <AdminChrome
+          user={null}
+          role="superAdmin"
+          displayName={displayName}
+          messagesViewedAt={messagesViewedAt}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          onSignOut={() => setDemoSignedOut(true)}
+        >
+          <AdminRoutes
+            role="superAdmin"
+            user={null}
+            displayName={displayName}
+            onDisplayNameChange={setDisplayName}
+            messagesViewedAt={messagesViewedAt}
+            onMessagesViewed={markMessagesViewed}
           />
-        </>
+        </AdminChrome>
       )
     }
-
-    return (
-      <>
-        {head}
-        <AdminChrome user={null} role="superAdmin" onSignOut={() => setDemoSignedOut(true)}>
-          <AdminRoutes role="superAdmin" user={null} />
-        </AdminChrome>
-      </>
+  } else if (!isConfigured) {
+    body = <NotConfiguredScreen />
+  } else if (checkingAuth) {
+    body = (
+      <div className="flex min-h-screen items-center justify-center bg-paper-50">
+        <Loader />
+      </div>
     )
-  }
-
-  if (!isConfigured) {
-    return (
-      <>
-        {head}
-        <NotConfiguredScreen />
-      </>
-    )
-  }
-
-  if (checkingAuth) {
-    return (
-      <>
-        {head}
-        <div className="flex min-h-screen items-center justify-center bg-paper-50">
-          <Loader />
-        </div>
-      </>
-    )
-  }
-
-  if (!user) {
-    return (
-      <>
-        {head}
-        <Login />
-      </>
-    )
-  }
-
-  if (!role) {
-    return (
-      <>
-        {head}
-        <NoAccessScreen email={user.email} />
-      </>
+  } else if (!user) {
+    body = <Login />
+  } else if (!role) {
+    body = <NoAccessScreen email={user.email} onSignOut={signOutAdmin} />
+  } else {
+    body = (
+      <AdminChrome
+        user={user}
+        role={role}
+        displayName={displayName}
+        messagesViewedAt={messagesViewedAt}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+      >
+        <AdminRoutes
+          role={role}
+          user={user}
+          displayName={displayName}
+          onDisplayNameChange={setDisplayName}
+          messagesViewedAt={messagesViewedAt}
+          onMessagesViewed={markMessagesViewed}
+        />
+      </AdminChrome>
     )
   }
 
   return (
     <>
       {head}
-      <AdminChrome user={user} role={role}>
-        <AdminRoutes role={role} user={user} />
-      </AdminChrome>
+      {/* id targeted by portalRoot.js — modals/dialogs portal here instead
+          of document.body so they stay inside the dark-mode scope. */}
+      <div id="admin-portal-root" className={theme === "dark" ? "dark" : undefined}>
+        {body}
+      </div>
     </>
   )
 }

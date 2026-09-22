@@ -8,6 +8,7 @@ import {
   signInWithEmailAndPassword,
   signOut,
   TotpMultiFactorGenerator,
+  updateProfile,
 } from "firebase/auth"
 import {
   addDoc,
@@ -18,6 +19,7 @@ import {
   getDocs,
   getFirestore,
   limit,
+  onSnapshot,
   orderBy,
   query,
 } from "firebase/firestore"
@@ -76,6 +78,16 @@ export async function signOutAdmin() {
 export async function resetAdminPassword(email) {
   if (!auth) throw new Error("Firebase is not configured.")
   await sendPasswordResetEmail(auth, email)
+}
+
+// The audit trail and "signed in as" always key off the account's email —
+// that's the credential Firestore rules check, and it can't be self-edited.
+// displayName is purely a friendlier label for the sidebar/account chrome.
+export async function updateAdminDisplayName(name) {
+  if (!auth?.currentUser) throw new Error("Firebase is not configured.")
+  const trimmed = name.trim()
+  await updateProfile(auth.currentUser, { displayName: trimmed || null })
+  return trimmed || null
 }
 
 // --- Second factor ---------------------------------------------------------
@@ -232,12 +244,25 @@ export async function deleteContactMessage(id) {
   await deleteDoc(doc(db, MESSAGES_COLLECTION, id))
 }
 
-// No demo/seed fallback here (unlike loadIntakeRecords) — this is a smaller,
-// secondary surface, so the empty state in dev-without-Firebase just reads
-// "No messages yet" rather than needing its own fake dataset to review.
-export async function loadContactMessages() {
-  if (usingSeedData) return []
-  if (!db) throw new Error("Firebase is not configured.")
-  const snapshot = await getDocs(query(collection(db, MESSAGES_COLLECTION), orderBy("submittedAt", "desc")))
-  return snapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() }))
+// Live, unlike every other list in this admin (loadIntakeRecords,
+// loadAuditLog): both the sidebar badge and the Messages page mount this
+// independently, so a message submitted while an admin is already signed in
+// shows up without a reload. No demo/seed fallback (unlike loadIntakeRecords)
+// — this is a smaller, secondary surface, so the empty state in
+// dev-without-Firebase just reads "No messages yet" rather than needing its
+// own fake dataset to review.
+export function watchContactMessages(onChange, onError) {
+  if (usingSeedData) {
+    onChange([])
+    return () => {}
+  }
+  if (!db) {
+    onError?.(new Error("Firebase is not configured."))
+    return () => {}
+  }
+  return onSnapshot(
+    query(collection(db, MESSAGES_COLLECTION), orderBy("submittedAt", "desc")),
+    (snapshot) => onChange(snapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() }))),
+    (cause) => onError?.(cause),
+  )
 }

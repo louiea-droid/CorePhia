@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
+import { getAdminPortalRoot } from "./portalRoot"
 
 export default function ConfirmDialog({
   open,
@@ -36,7 +37,7 @@ export default function ConfirmDialog({
       <div
         aria-hidden="true"
         onClick={onCancel}
-        className="absolute inset-0 bg-ink-950/50 transition-opacity duration-200"
+        className="absolute inset-0 bg-scrim/50 transition-opacity duration-200"
       />
 
       <div className="flex min-h-full items-center justify-center p-4">
@@ -70,6 +71,6 @@ export default function ConfirmDialog({
         </div>
       </div>
     </div>,
-    document.body,
+    getAdminPortalRoot(),
   )
 }

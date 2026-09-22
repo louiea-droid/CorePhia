@@ -5,21 +5,22 @@ import { useReveal } from "../hooks/useReveal"
 import { ClipboardCheckIcon, LeafIcon, MapPinIcon, PillBottleIcon, StethoscopeIcon } from "../components/icons"
 
 const pillars = [
+    {
+    icon: PillBottleIcon,
+    title: "Medication Management",
+    body: "A licensed provider prescribes and manages your medication as one part of your program — never as the whole plan.",
+  },
   {
     icon: LeafIcon,
     title: "Dietitian services",
-    body: "A registered dietitian documents what they're recommending for you, and your plan is built around what you actually eat — not a template.",
+    body: "A licensed provider assesses and documents what's best for you, and your plan is built around what you actually eat — not a template.",
   },
   {
     icon: ClipboardCheckIcon,
     title: "Exercise prescriptions",
     body: "Movement is prescribed the way medication is: matched to your fitness level, your goals, and what you can realistically sustain.",
   },
-  {
-    icon: PillBottleIcon,
-    title: "Medication when appropriate",
-    body: "If medication is clinically appropriate for you, a licensed provider prescribes and manages it as one part of your program — never as the whole plan.",
-  },
+
 ]
 
 function Reveal({ children, className = "", delay = 0 }) {
@@ -41,10 +42,10 @@ export default function About() {
   return (
     <>
       <Helmet>
-        <title>About Corephia — Physician-Built Weight Loss Programs in Tampa</title>
+        <title>About CorePhia — Physician-Built Weight Loss Programs in Tampa</title>
         <meta
           name="description"
-          content="Corephia is a physician-built weight loss program based in Tampa, Florida, combining dietitian services, exercise prescriptions, and medication when clinically appropriate. Founded by Dr. Daniel Antonious, MD."
+          content="CorePhia is a physician-built weight loss program based in Tampa, Florida, combining dietitian services, exercise prescriptions, and medication when clinically appropriate. Founded by Dr. Daniel Antonious, MD."
         />
         <link rel="canonical" href="https://www.corephia.com/about" />
       </Helmet>
@@ -57,13 +58,13 @@ export default function About() {
           <span className="text-accent-dark">the right way.</span>
         </h1>
         <p className="mt-6 text-lg leading-relaxed text-ink-950/70">
-          Corephia is a physician-built weight loss program based in Tampa, Florida. We combine dietitian
+          CorePhia is a physician-built weight loss program based in Tampa, Florida. We combine dietitian
           services, exercise prescriptions, and — when it's clinically appropriate — weight loss medication,
           all guided by evidence-based medicine and a licensed provider.
         </p>
       </section>
 
-      <section aria-labelledby="mission-heading" className="bg-ink-950 py-16 sm:py-20" data-header-theme="dark">
+      <section aria-labelledby="mission-heading" className="bg-ink-950 py-12 sm:py-16 lg:py-20" data-header-theme="dark">
         <div className="mx-auto max-w-4xl px-4 sm:px-6">
           <Reveal>
             <h2 id="mission-heading" className="font-serif text-3xl leading-tight text-paper-100 sm:text-4xl">
@@ -71,33 +72,32 @@ export default function About() {
             </h2>
             <div className="mt-6 space-y-5 text-paper-100/70">
               <p className="leading-relaxed">
-                Too many weight loss companies have turned a serious medical condition into a transaction: pay a
-                monthly fee, receive a medication, and never speak to anyone about how you actually eat, move, or
-                live. Patients are left paying for a prescription with no real lifestyle change behind it — and
-                no one to call when it isn't working.
+                Most weight loss companies sell a subscription with a medication attached to it. What you eat,
+                whether you're moving, whether any of it is working — that's not really their concern, and if
+                the medication stops, there's nothing else behind it.
               </p>
               <p className="leading-relaxed">
-                Corephia was created to do things the correct way. We are not a medication storefront.{" "}
-                <span className="text-paper-100">What we provide is a program</span>, and that program includes
-                medication only when a licensed provider determines it's appropriate for you. The medicine is one
-                tool inside a plan — never the plan itself.
+                CorePhia exists to be the alternative.{" "}
+                <span className="text-paper-100">Dietitian services and an exercise prescription are full parts
+                of the program</span>, not an afterthought — and medication is something a licensed provider
+                adds when it's clinically appropriate, never the whole plan on its own.
               </p>
             </div>
           </Reveal>
         </div>
       </section>
 
-      <section aria-labelledby="approach-heading" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20">
+      <section aria-labelledby="approach-heading" className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:py-20">
         <Reveal>
           <h2 id="approach-heading" className="font-serif text-3xl leading-tight text-ink-950 sm:text-4xl">
             What the program is built on
           </h2>
         </Reveal>
-        <ul className="mt-10 grid gap-4 sm:grid-cols-3">
+        <ul className="mt-8 grid gap-4 sm:mt-10 sm:grid-cols-3">
           {pillars.map(({ icon: Icon, title, body }, index) => (
             <li key={title}>
               <Reveal delay={index * 90} className="h-full">
-                <article className="flex h-full flex-col gap-3 rounded-3xl bg-paper-100 p-7">
+                <article className="flex h-full flex-col gap-2.5 rounded-3xl bg-paper-100 p-6 sm:gap-3 sm:p-7">
                   <span className="flex size-12 items-center justify-center rounded-2xl bg-paper-200/70 text-accent-dark">
                     <Icon className="size-6" />
                   </span>
@@ -110,14 +110,14 @@ export default function About() {
         </ul>
       </section>
 
-      <section aria-labelledby="standard-heading" className="bg-paper-100/60 py-16 sm:py-20">
+      <section aria-labelledby="standard-heading" className="bg-paper-100/60 py-12 sm:py-16 lg:py-20">
         <div className="mx-auto max-w-4xl px-4 sm:px-6">
           <Reveal>
             <h2 id="standard-heading" className="font-serif text-3xl leading-tight text-ink-950 sm:text-4xl">
               Every patient, the same standard
             </h2>
             <p className="mt-6 leading-relaxed text-ink-950/70">
-              Before your first visit, you complete a full intake — your history, your medications and allergies,
+              Before your first visit, you complete a full intake form — your history, your medications and allergies,
               what you eat and drink in a day, how you move, and what you've already tried. Every patient answers
               the same questions, so nothing gets missed and your provider walks into your appointment already
               knowing your story.
@@ -136,10 +136,10 @@ export default function About() {
         </div>
       </section>
 
-      <section aria-labelledby="founder-heading" className="mx-auto max-w-4xl px-4 py-16 sm:px-6 sm:py-20">
+      <section aria-labelledby="founder-heading" className="mx-auto max-w-4xl px-4 py-12 sm:px-6 sm:py-16 lg:py-20">
         <Reveal>
           <h2 id="founder-heading" className="font-serif text-3xl leading-tight text-ink-950 sm:text-4xl">
-            The physician behind Corephia
+            The physician behind CorePhia
           </h2>
           <div className="mt-8 flex flex-col gap-8 sm:flex-row sm:items-start">
             <span className="size-28 shrink-0 overflow-hidden rounded-full bg-paper-200/70 ring-4 ring-paper-100">
@@ -148,11 +148,10 @@ export default function About() {
             <div>
               <h3 className="font-serif text-2xl text-ink-950">Dr. Daniel Antonious, MD</h3>
               <p className="mt-1 text-sm font-medium text-accent-dark">
-                Double board certified in Internal Medicine and Nephrology
+                Double board certified in Internal Medicine
               </p>
               <p className="mt-4 leading-relaxed text-ink-950/70">
-                Dr. Antonious is double board certified in internal medicine and nephrology and is currently
-                pursuing an additional fellowship in critical care.
+                Dr. Antonious spent years in internal medicine before he started CorePhia. What bothered him was how often weight loss got treated like a prescription problem — a pill, a monthly fee, and nothing said about how someone actually eats or moves day to day. CorePhia pairs dietitian services and an exercise prescription with medication, and medication only enters the plan when a licensed provider decides it's clinically appropriate.
               </p>
               <p className="mt-4 flex items-center gap-2 text-sm text-ink-950/60">
                 <MapPinIcon className="size-4 shrink-0 text-accent-dark" />
