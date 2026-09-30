@@ -1,0 +1,162 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e3]:
+    - banner [ref=f1e6]:
+      - navigation "Primary" [ref=f1e7]:
+        - link [ref=f1e8] [cursor=pointer]:
+          - /url: /
+          - img "CorePhia Health" [ref=f1e9]
+        - generic [ref=f1e10]:
+          - link "Get started" [ref=f1e11] [cursor=pointer]:
+            - /url: /intake
+          - button "Log in" [ref=f1e12]
+          - button "Open menu" [ref=f1e13]
+    - main [ref=f1e16]:
+      - region [ref=f1e17]:
+        - paragraph [ref=f1e18]: About us
+        - heading "Doing weight loss the right way." [level=1] [ref=f1e19]: Doing weight lossthe right way.
+        - paragraph [ref=f1e20]: CorePhia is a physician-built weight loss program based in Tampa, Florida. We combine dietitian services, exercise prescriptions, and, when clinically appropriate, weight loss medication, all guided by evidence-based medicine and a licensed provider.
+      - region [ref=f1e21]:
+        - generic [ref=f1e23]:
+          - heading "Why we exist" [level=2] [ref=f1e24]
+          - generic [ref=f1e25]:
+            - paragraph [ref=f1e26]: Most weight loss companies sell a subscription with a medication attached to it. What you eat, whether you're moving, whether any of it is working — that's not really their concern, and if the medication stops, there's nothing else behind it.
+            - paragraph [ref=f1e27]: CorePhia exists to be the alternative. Dietitian services and an exercise prescription are full parts of the program, not an afterthought, and medication is something a licensed provider adds when it's clinically appropriate, never the whole plan on its own.
+      - region [ref=f1e28]:
+        - heading "What the program is built on" [level=2] [ref=f1e30]
+        - list [ref=f1e31]:
+          - listitem [ref=f1e32]:
+            - article [ref=f1e34]:
+              - heading "Medication Management" [level=3] [ref=f1e39]
+              - paragraph [ref=f1e40]: A licensed provider prescribes and manages your medication as one part of your program, never as the whole plan.
+          - listitem [ref=f1e41]:
+            - article [ref=f1e43]:
+              - heading "Dietitian services" [level=3] [ref=f1e48]
+              - paragraph [ref=f1e49]: A licensed provider assesses and documents what's best for you, and your plan is built around what you actually eat, not a template.
+          - listitem [ref=f1e50]:
+            - article [ref=f1e52]:
+              - heading "Exercise prescriptions" [level=3] [ref=f1e58]
+              - paragraph [ref=f1e59]: "Movement is prescribed the way medication is: matched to your fitness level, your goals, and what you can realistically sustain."
+      - region [ref=f1e60]:
+        - generic [ref=f1e62]:
+          - heading "Every patient, the same standard" [level=2] [ref=f1e63]
+          - paragraph [ref=f1e64]: "Before your first visit, you complete a full intake form: your history, your medications and allergies, what you eat and drink in a day, how you move, and what you've already tried. Every patient answers the same questions, so nothing gets missed and your provider walks into your appointment already knowing your story."
+          - paragraph [ref=f1e65]: "From there it's structure: regular follow-ups, documented recommendations from your dietitian, and the ability to track your weight and results over time."
+          - link "Start your journey" [ref=f1e66] [cursor=pointer]:
+            - /url: /intake
+      - region [ref=f1e67]:
+        - generic [ref=f1e68]:
+          - heading "The physician behind CorePhia" [level=2] [ref=f1e69]
+          - generic [ref=f1e78]:
+            - heading "Dr. Daniel Antonious, MD" [level=3] [ref=f1e79]
+            - paragraph [ref=f1e80]: Double board certified in Internal Medicine
+            - paragraph [ref=f1e81]: "Dr. Antonious spent years in internal medicine before he started CorePhia. What bothered him was how often weight loss got treated like a prescription problem: a pill, a monthly fee, and nothing said about how someone actually eats or moves day to day. CorePhia pairs dietitian services and an exercise prescription with medication, and medication only enters the plan when a licensed provider decides it's clinically appropriate."
+            - paragraph [ref=f1e82]: Based in Tampa, Florida
+      - generic [ref=f1e88]:
+        - heading "Ready to start the right way?" [level=2] [ref=f1e93]
+        - paragraph [ref=f1e94]: Tell us about yourself and a member of our care team will reach out to get you started.
+        - generic [ref=f1e95]:
+          - link "Start your journey" [ref=f1e96] [cursor=pointer]:
+            - /url: /intake
+          - link "Contact us" [ref=f1e97] [cursor=pointer]:
+            - /url: /contact
+    - contentinfo [ref=f1e98]:
+      - generic [ref=f1e99]:
+        - generic [ref=f1e100]:
+          - generic [ref=f1e101]:
+            - link "CorePhia" [ref=f1e102] [cursor=pointer]:
+              - /url: /
+            - list [ref=f1e103]:
+              - listitem [ref=f1e104]: info@corephia.com
+              - listitem [ref=f1e108]: (000) 123-4567
+              - listitem [ref=f1e111]: Tampa, Florida
+          - navigation "Programs" [ref=f1e115]:
+            - heading "Programs" [level=3] [ref=f1e116]
+            - list [ref=f1e117]:
+              - listitem [ref=f1e118]:
+                - link "Weight loss programs" [ref=f1e119] [cursor=pointer]:
+                  - /url: /#programs
+              - listitem [ref=f1e120]:
+                - link "Membership pricing" [ref=f1e121] [cursor=pointer]:
+                  - /url: /pricing
+          - navigation "Company" [ref=f1e122]:
+            - heading "Company" [level=3] [ref=f1e123]
+            - list [ref=f1e124]:
+              - listitem [ref=f1e125]:
+                - link "About us" [ref=f1e126] [cursor=pointer]:
+                  - /url: /about
+              - listitem [ref=f1e127]:
+                - link "Contact us" [ref=f1e128] [cursor=pointer]:
+                  - /url: /contact
+          - navigation "Patients" [ref=f1e129]:
+            - heading "Patients" [level=3] [ref=f1e130]
+            - list [ref=f1e131]:
+              - listitem [ref=f1e132]:
+                - link "FAQs" [ref=f1e133] [cursor=pointer]:
+                  - /url: /faq
+              - listitem [ref=f1e134]:
+                - generic [ref=f1e135]: Privacy policy
+              - listitem [ref=f1e136]:
+                - generic [ref=f1e137]: Terms of service
+            - heading "Social" [level=3] [ref=f1e138]
+            - list [ref=f1e139]:
+              - listitem [ref=f1e140]:
+                - link "Facebook" [ref=f1e141] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=f1e144]:
+                - link "X" [ref=f1e145] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=f1e148]:
+                - link "Instagram" [ref=f1e149] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=f1e154]:
+                - link "LinkedIn" [ref=f1e155] [cursor=pointer]:
+                  - /url: "#"
+        - generic [ref=f1e160]:
+          - generic [ref=f1e161]: Certified
+          - paragraph [ref=f1e166]: © 2026 CorePhia. All rights reserved.
+  - generic:
+    - dialog "Menu":
+      - generic:
+        - generic:
+          - heading "Menu" [level=2]
+          - generic:
+            - button "Account"
+            - button "Close menu"
+        - generic:
+          - paragraph: Explore
+          - list:
+            - listitem:
+              - link "Home":
+                - /url: /
+            - listitem:
+              - button "Weight Loss"
+            - listitem:
+              - link "Membership Pricing":
+                - /url: /pricing
+            - listitem:
+              - link "About Us":
+                - /url: /about
+            - listitem:
+              - link "Contact Us":
+                - /url: /contact
+            - listitem:
+              - link "FAQs":
+                - /url: /faq
+        - generic:
+          - paragraph: What's included
+          - list:
+            - listitem:
+              - link "Balanced meal plate Nutrition Coaching":
+                - /url: /#programs
+                - img "Balanced meal plate"
+                - generic: Nutrition Coaching
+            - listitem:
+              - link "Dumbbell Exercise Plans":
+                - /url: /#programs
+                - img "Dumbbell"
+                - generic: Exercise Plans
+            - listitem:
+              - link "Physician-guided care Medical Support":
+                - /url: /#programs
+                - img "Physician-guided care"
+                - generic: Medical Support

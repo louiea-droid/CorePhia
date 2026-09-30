@@ -10,6 +10,7 @@ import {
   PatientsIcon,
   PersonIcon,
   SignOutIcon,
+  TrafficIcon,
 } from "./icons"
 import { signOutAdmin } from "./firebase"
 import { isNewMessage } from "./recentMessages"
@@ -22,6 +23,7 @@ const NAV_ITEMS = [
   { label: "Dashboard", icon: DashboardIcon, to: "/admin" },
   { label: "Patients", icon: PatientsIcon, to: "/admin/patients" },
   { label: "Messages", icon: MailIcon, to: "/admin/messages" },
+  { label: "Analytics", icon: TrafficIcon, to: "/admin/analytics" },
   { label: "Activity", icon: ActivityIcon, to: "/admin/activity", superAdminOnly: true },
 ]
 

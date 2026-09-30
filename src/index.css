@@ -39,6 +39,15 @@
    (backgrounds), so redefining just those five variables re-themes the
    whole admin without touching each component's classes. accent/brand stay
    fixed in both themes — they already read fine on light and dark alike. */
+/* Admin light theme: cards and panels (bg-white) get a soft blue tint instead
+   of pure white, which read as glaring against the blue-grey page (Louie,
+   2026-09-30). Scoped to the admin root and to light mode only, so the public
+   site keeps true white and dark mode keeps its own value below. Still
+   lighter than the page (paper-50), so cards stay distinct. */
+#admin-portal-root:not(.dark) {
+  --color-white: #f5f8fd;
+}
+
 .dark {
   --color-white: #131c38;
   --color-ink-950: #eef2f9;
@@ -53,10 +62,52 @@
      uses it as text, a translucent border or a hover tint, never as a solid
      fill behind light text. */
   --color-brand-dark: #8fb4ff;
+
+  /* A <select>'s open options list is a native OS popup, not something CSS
+     on the page can restyle directly — this is the one property that tells
+     the browser to render that popup (and other native form chrome) with
+     its own dark palette instead of always defaulting to light. Without it,
+     the closed control follows the theme fine but the opened list stays a
+     plain white box. */
+  color-scheme: dark;
 }
 
 html {
   scroll-behavior: smooth;
+  /* Same treatment as .scrollbar-thin, applied directly to the page's own
+     scrollbar — the public site has no .dark scope to override it under. */
+  scrollbar-width: thin;
+  scrollbar-color: rgb(13 26 61 / 25%) transparent;
+}
+
+html::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+html::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+html::-webkit-scrollbar-thumb {
+  background-color: rgb(13 26 61 / 15%);
+  border-radius: 9999px;
+}
+
+html::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(13 26 61 / 30%);
+}
+
+/* No visible page scrollbar on phones (below Tailwind's sm breakpoint).
+   Scrolling still works; only the bar is hidden. */
+@media (width < 40rem) {
+  html {
+    scrollbar-width: none;
+  }
+
+  html::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* Keeps anchor targets clear of the sticky header. */
@@ -107,6 +158,20 @@ body {
 
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
   background-color: rgb(13 26 61 / 30%);
+}
+
+/* ink-950 reads as near-black on the dark admin background, so the thumb
+   needs a light color there instead of just a lower opacity. */
+.dark .scrollbar-thin {
+  scrollbar-color: rgb(245 247 251 / 25%) transparent;
+}
+
+.dark .scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgb(245 247 251 / 20%);
+}
+
+.dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(245 247 251 / 35%);
 }
 
 @keyframes float {
@@ -229,6 +294,86 @@ body {
 
 .animate-loading-bar {
   animation: loading-bar 1s ease-in-out infinite;
+}
+
+/* View changes (MobileMenu.jsx drill-down, PatientIntakeForm.jsx screens): the
+   incoming view slides in from the side it came from, so forward and back
+   read as moving through a stack. */
+@keyframes menu-view-in {
+  from {
+    opacity: 0;
+    transform: translateX(var(--menu-from));
+  }
+}
+
+.animate-view-forward {
+  --menu-from: 2rem;
+  animation: menu-view-in 280ms var(--ease-out-smooth) both;
+}
+
+.animate-view-back {
+  --menu-from: -2rem;
+  animation: menu-view-in 280ms var(--ease-out-smooth) both;
+}
+
+/* Intake splash (PatientIntakeForm.jsx): each piece surfaces out of a soft
+   blur, slowly, like the Hims intro. Opacity and blur only; nothing moves.
+   Delays are set inline so the second line arrives word by word. */
+@keyframes splash-in {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+  }
+}
+
+.animate-splash-in {
+  animation: splash-in 1100ms var(--ease-out-smooth) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-splash-in {
+    animation: none;
+  }
+}
+
+/* Scroll reveals, one rule for the whole site (useReveal / Reveal.jsx set
+   data-reveal="hidden" | "shown"). A short rise and a near-imperceptible
+   scale, so blocks settle into place rather than slide. Only transform and
+   opacity animate. --reveal-i staggers siblings in a row on sm+ only: on a
+   phone, stacked cards reveal one at a time as they arrive, so a delay
+   there only reads as lag. Index 0 is kept for the section heading, so
+   the heading leads and its cards follow. */
+[data-reveal] {
+  transition:
+    opacity 800ms var(--ease-out-smooth),
+    translate 800ms var(--ease-out-smooth),
+    scale 800ms var(--ease-out-smooth),
+    box-shadow 300ms var(--ease-out-smooth);
+}
+
+[data-reveal="hidden"] {
+  opacity: 0;
+  translate: 0 1.5rem;
+  scale: 0.98;
+}
+
+@media (min-width: 40rem) {
+  [data-reveal="shown"] {
+    transition-delay: calc(var(--reveal-i, 0) * 80ms);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-view-forward,
+  .animate-view-back {
+    animation: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

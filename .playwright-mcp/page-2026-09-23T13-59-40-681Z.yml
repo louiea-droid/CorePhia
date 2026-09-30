@@ -1,0 +1,139 @@
+- generic [ref=f1e4]:
+  - generic [ref=f1e5]:
+    - paragraph [ref=f1e9]: Corephia Admin
+    - navigation "Admin" [ref=f1e10]:
+      - list [ref=f1e11]:
+        - listitem [ref=f1e12]:
+          - link "Dashboard" [ref=f1e13] [cursor=pointer]:
+            - /url: /admin
+        - listitem [ref=f1e18]:
+          - link "Patients" [ref=f1e19] [cursor=pointer]:
+            - /url: /admin/patients
+        - listitem [ref=f1e27]:
+          - link "Messages" [ref=f1e28] [cursor=pointer]:
+            - /url: /admin/messages
+        - listitem [ref=f1e34]:
+          - link "Activity" [ref=f1e35] [cursor=pointer]:
+            - /url: /admin/activity
+    - generic [ref=f1e40]:
+      - switch [ref=f1e44] [cursor=pointer]
+      - button "Collapse sidebar" [expanded] [ref=f1e45]:
+        - generic [ref=f1e48]: Collapse
+      - link [ref=f1e49] [cursor=pointer]:
+        - /url: /admin/security
+        - generic [ref=f1e54]:
+          - paragraph [ref=f1e55]: testing2@gmail.com
+          - paragraph [ref=f1e56]: Super admin
+      - button "Sign out" [ref=f1e57]
+  - main [ref=f1e63]:
+    - generic [ref=f1e64]:
+      - generic [ref=f1e65]:
+        - heading "Patients" [level=1] [ref=f1e66]
+        - paragraph
+      - generic [ref=f1e188]:
+        - generic [ref=f1e189]:
+          - searchbox "Search by patient name…" [ref=f1e190]
+          - combobox [ref=f1e191] [cursor=pointer]:
+            - option "All plans" [selected]
+            - option "Core"
+            - option "Core+"
+            - option "Core Complete"
+          - combobox [ref=f1e192] [cursor=pointer]:
+            - option "All statuses" [selected]
+            - option "Pending"
+            - option "Admitted"
+            - option "Declined"
+        - table [ref=f1e195]:
+          - rowgroup [ref=f1e203]:
+            - row [ref=f1e204]:
+              - columnheader "Patient" [ref=f1e205]
+              - columnheader "Submitted" [ref=f1e206]
+              - columnheader "Time" [ref=f1e207]
+              - columnheader "Status" [ref=f1e208]
+              - columnheader "Plan" [ref=f1e209]
+              - columnheader "Reason" [ref=f1e210]
+          - rowgroup [ref=f1e211]:
+            - button "View intake details for Sasha Ibarra" [ref=f1e212] [cursor=pointer]:
+              - cell "Sasha Ibarra" [ref=f1e213]
+              - cell "Sep 17, 2026" [ref=f1e214]
+              - cell "11:27am" [ref=f1e215]
+              - cell "admitted" [ref=f1e480]
+              - cell "Core" [ref=f1e217]
+              - cell "Exercise program consultation" [ref=f1e218]
+            - button "View intake details for Harper Nakamura" [ref=f1e219] [cursor=pointer]:
+              - cell "Harper Nakamura" [ref=f1e220]
+              - cell "Sep 17, 2026" [ref=f1e221]
+              - cell "11:19am" [ref=f1e222]
+              - cell "pending" [ref=f1e223]
+              - cell "Core+" [ref=f1e224]
+              - cell "Nutrition consultation" [ref=f1e225]
+            - button "View intake details for Elliot Ferreira" [ref=f1e226] [cursor=pointer]:
+              - cell "Elliot Ferreira" [ref=f1e227]
+              - cell "Sep 17, 2026" [ref=f1e228]
+              - cell "11:19am" [ref=f1e229]
+              - cell "pending" [ref=f1e230]
+              - cell "Core+" [ref=f1e231]
+              - cell "Weight loss consultation" [ref=f1e232]
+            - button "View intake details for Morgan Delacroix" [ref=f1e233] [cursor=pointer]:
+              - cell "Morgan Delacroix" [ref=f1e234]
+              - cell "Sep 17, 2026" [ref=f1e235]
+              - cell "11:19am" [ref=f1e236]
+              - cell "pending" [ref=f1e237]
+              - cell "Core" [ref=f1e238]
+              - cell "Weight loss consultation" [ref=f1e239]
+            - button "View intake details for Casey Marchetti" [ref=f1e240] [cursor=pointer]:
+              - cell "Casey Marchetti" [ref=f1e241]
+              - cell "Sep 17, 2026" [ref=f1e242]
+              - cell "11:18am" [ref=f1e243]
+              - cell "pending" [ref=f1e244]
+              - cell "Core Complete" [ref=f1e245]
+              - cell "Follow-up visit" [ref=f1e246]
+            - button "View intake details for Riley Okonkwo" [ref=f1e247] [cursor=pointer]:
+              - cell "Riley Okonkwo" [ref=f1e248]
+              - cell "Sep 17, 2026" [ref=f1e249]
+              - cell "11:16am" [ref=f1e250]
+              - cell "pending" [ref=f1e251]
+              - cell "Core" [ref=f1e252]
+              - cell "Nutrition consultation" [ref=f1e253]
+            - button "View intake details for Jordan Whitfield" [ref=f1e254] [cursor=pointer]:
+              - cell "Jordan Whitfield" [ref=f1e255]
+              - cell "Sep 17, 2026" [ref=f1e256]
+              - cell "11:16am" [ref=f1e257]
+              - cell "pending" [ref=f1e258]
+              - cell "Core Complete" [ref=f1e259]
+              - cell "General health check" [ref=f1e260]
+            - button "View intake details for Avery Sandoval" [ref=f1e261] [cursor=pointer]:
+              - cell "Avery Sandoval" [ref=f1e262]
+              - cell "Sep 17, 2026" [ref=f1e263]
+              - cell "11:15am" [ref=f1e264]
+              - cell "pending" [ref=f1e265]
+              - cell "Core+" [ref=f1e266]
+              - cell "Weight loss consultation" [ref=f1e267]
+            - button "View intake details for weee wooo" [ref=f1e268] [cursor=pointer]:
+              - cell "weee wooo" [ref=f1e269]
+              - cell "Sep 17, 2026" [ref=f1e270]
+              - cell "10:28am" [ref=f1e271]
+              - cell "pending" [ref=f1e272]
+              - cell "—" [ref=f1e273]
+              - cell "Weight loss consultation" [ref=f1e274]
+            - row [aria-hidden] [ref=f1e275]:
+              - cell [ref=f1e276]
+              - cell [ref=f1e277]
+              - cell [ref=f1e278]
+              - cell [ref=f1e279]
+              - cell [ref=f1e280]
+              - cell [ref=f1e281]
+        - generic [ref=f1e283]:
+          - generic [ref=f1e284]: Showing 1–9 of 9
+          - generic [ref=f1e285]:
+            - button "Previous page" [disabled] [ref=f1e286]: ‹
+            - button "1" [ref=f1e287] [cursor=pointer]
+            - button "Next page" [disabled] [ref=f1e288]: ›
+          - generic [ref=f1e289]:
+            - text: Show
+            - combobox "Show" [ref=f1e290] [cursor=pointer]:
+              - option "10" [selected]
+              - option "20"
+              - option "30"
+              - option "50"
+              - option "100"

@@ -16,7 +16,7 @@ function Field({ label, value }) {
   return (
     <div>
       <p className="text-xs font-medium tracking-wide text-ink-950/45 uppercase">{label}</p>
-      <p className="mt-0.5 text-sm text-ink-950">{value || "—"}</p>
+      <p className="mt-0.5 text-sm wrap-break-word text-ink-950">{value || "—"}</p>
     </div>
   )
 }
@@ -112,7 +112,7 @@ export default function MessageModal({ message, onClose, canDelete, onRequestDel
             </div>
             <div>
               <p className="text-xs font-medium tracking-wide text-ink-950/45 uppercase">Message</p>
-              <p className="mt-1 text-sm leading-relaxed whitespace-pre-wrap text-ink-950">
+              <p className="mt-1 text-sm leading-relaxed wrap-break-word whitespace-pre-wrap text-ink-950">
                 {message.message || "No additional message."}
               </p>
             </div>

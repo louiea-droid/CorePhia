@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react"
 import { Link } from "react-router-dom"
-import { deriveMetrics } from "./analytics"
+import { calorieBucket, deriveMetrics, goalBucket, medicationInterestLabel } from "./analytics"
 import { BarList, Card, ColumnChart, Histogram, RankedList, StackedBar, StatTile, TagCloud } from "./charts"
 import { ChevronLeftIcon } from "./icons"
 import PageHeader from "./PageHeader"
@@ -59,12 +59,14 @@ export default function Dashboard() {
         // overflow-x-clip so the hover tooltips, which are absolutely positioned
         // and can sit past a card's edge, never widen the page on a narrow screen.
         <div className="space-y-4 overflow-x-clip">
-          {/* 3 columns, not 4: six tiles divides evenly into two full rows
-              of three at every breakpoint, with no dangling empty cells —
-              4 columns was the right fit for seven tiles, not six. */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {/* 4 columns, not 3: eight tiles divides evenly into two full rows
+              of four at every breakpoint, with no dangling empty cells — the
+              same reasoning that picked 3 over 4 back when there were six. */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatTile label="Total intakes" value={metrics.total} caption="All forms submitted to date" />
             <StatTile label="Last 30 days" value={metrics.last30} caption="New patient intakes this month" />
+            <StatTile label="Admitted" value={metrics.admitted} caption="Cleared to start the program" />
+            <StatTile label="Pending" value={metrics.pending} caption="Awaiting an admission decision" />
             <StatTile
               label="Consent complete"
               value={metrics.consentCompleteRate}
@@ -123,9 +125,27 @@ export default function Dashboard() {
               of next to a much taller neighbor is what stops either one
               looking like it's floating in leftover space. */}
           <div className="grid gap-4 lg:grid-cols-2">
-            <Card title="Membership plan requested">
-              <StackedBar data={metrics.plans} total={metrics.total} />
-            </Card>
+            {/* Plans are switched off until real ones exist (data/pricingTiers.js),
+                so new intakes carry no plan. Show the split only if some do. */}
+            {metrics.plans.length ? (
+              <Card title="Membership plan requested">
+                <StackedBar data={metrics.plans} total={metrics.total} />
+              </Card>
+            ) : (
+              <Card title="Weight loss goal" hint="Typed goals are grouped into the same ranges">
+                <BarList
+                  data={metrics.goals}
+                  total={metrics.total}
+                  onSelect={(item) =>
+                    setDrilldown({
+                      title: item.label,
+                      description: "Weight loss goal",
+                      match: (record) => goalBucket(record) === item.label,
+                    })
+                  }
+                />
+              </Card>
+            )}
             <Card title="Where patients are" hint="By state on the intake address">
               <RankedList
                 data={metrics.states}
@@ -177,6 +197,54 @@ export default function Dashboard() {
                     title: item.label,
                     description: "Tobacco use",
                     match: (record) => record.socialHistory?.tobacco === item.label,
+                  })
+                }
+              />
+            </Card>
+          </div>
+
+          {/* The intake's newer questions: medication interest, meals and
+              calories. Medication interest is a preference the provider
+              weighs, never a request to fill (CLAUDE.md). */}
+          <div className="grid gap-4 lg:grid-cols-3">
+            <Card title="Interest in medication" hint="Discussed with the provider">
+              <BarList
+                data={metrics.medicationInterest}
+                total={metrics.total}
+                emptyLabel="No answers yet"
+                onSelect={(item) =>
+                  setDrilldown({
+                    title: item.label,
+                    description: "Interest in medication",
+                    match: (record) => medicationInterestLabel(record.medicalHistory?.medicationInterest) === item.label,
+                  })
+                }
+              />
+            </Card>
+            <Card title="Meals per day">
+              <BarList
+                data={metrics.meals}
+                total={metrics.total}
+                emptyLabel="No answers yet"
+                onSelect={(item) =>
+                  setDrilldown({
+                    title: item.label === "1" ? "1 meal a day" : `${item.label} meals a day`,
+                    description: "Meals per day",
+                    match: (record) => record.nutrition?.mealsPerDay === item.label,
+                  })
+                }
+              />
+            </Card>
+            <Card title="Estimated daily calories" hint="Self-reported">
+              <BarList
+                data={metrics.calories}
+                total={metrics.total}
+                emptyLabel="No answers yet"
+                onSelect={(item) =>
+                  setDrilldown({
+                    title: item.label,
+                    description: "Estimated daily calories",
+                    match: (record) => calorieBucket(record) === item.label,
                   })
                 }
               />

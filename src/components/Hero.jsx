@@ -19,13 +19,13 @@ const included = [
 
 const quickLinks = [
   { label: "Explore our", highlight: "weight loss programs", icon: LeafIcon, href: "/#programs" },
-  { label: "See", highlight: "membership pricing", icon: ClipboardCheckIcon, href: "/#pricing" },
-  { label: "Read", highlight: "Dr. Antonious's story", icon: StethoscopeIcon, to: "/about" },
+  { label: "Learn about", highlight: "membership", icon: ClipboardCheckIcon, to: "/membership" },
+  { label: "Read", highlight: "about our provider", icon: StethoscopeIcon, to: "/about" },
 ]
 
 const trustPoints = [
   { label: "Physician Guided", icon: StethoscopeIcon },
-  { label: "Evidence Based", icon: ClipboardCheckIcon },
+  { label: "Evidence-Based", icon: ClipboardCheckIcon },
   { label: "Personalized Care", icon: PersonIcon },
   { label: "Sustainable Results", icon: LeafIcon },
 ]
@@ -51,9 +51,7 @@ export default function Hero() {
             headlineIn ? "translate-y-0 opacity-100" : "translate-y-5 opacity-0"
           }`}
         >
-          Real results.
-          <br />
-          <span className="text-accent-dark">Lasting confidence.</span>
+          The weight loss care you deserve
         </h1>
 
         <ul
@@ -76,8 +74,15 @@ export default function Hero() {
         >
           <Link
             to="/intake"
-            className="group relative isolate flex min-h-64 flex-col justify-between overflow-hidden rounded-3xl bg-gradient-to-br from-ink-950 via-ink-900 to-accent-dark p-7 text-paper-100 shadow-lg transition-[transform,box-shadow] duration-300 ease-out-smooth hover:-translate-y-1 hover:shadow-2xl"
+            className="group relative isolate flex min-h-64 flex-col justify-between overflow-hidden rounded-3xl bg-gradient-to-br from-ink-950 via-ink-900 to-accent-dark p-7 text-paper-100 shadow-lg transition-shadow duration-300 ease-out-smooth hover:shadow-2xl"
           >
+            {/* Hover highlight, colour only (no movement, per Louie): a blue glow
+                fades up from the plate's corner. Also on keyboard focus. */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 bg-radial-[at_85%_95%] from-accent/60 via-accent/15 via-45% to-transparent to-70% opacity-0 transition-opacity duration-500 ease-out-smooth group-hover:opacity-100 group-focus-visible:opacity-100"
+            />
+
             {/* Declining area chart anchored to the left edge and the card
                 floor, so it reads as a grounded backdrop rather than a line
                 floating loose in the middle. It dives into the floor before
@@ -87,7 +92,7 @@ export default function Hero() {
             <svg
               viewBox="0 0 400 260"
               preserveAspectRatio="none"
-              className={`pointer-events-none absolute inset-0 h-full w-full origin-bottom-left transition-transform duration-1000 ease-out-smooth group-hover:scale-105 ${
+              className={`pointer-events-none absolute inset-0 h-full w-full origin-bottom-left transition-transform duration-1000 ease-out-smooth motion-safe:group-hover:scale-105 ${
                 cardsIn ? "scale-100" : "scale-110"
               }`}
               aria-hidden="true"
@@ -123,7 +128,7 @@ export default function Hero() {
             </div>
 
             <div
-              className={`pointer-events-none absolute -right-10 -bottom-8 opacity-90 transition-all duration-1000 ease-out-smooth group-hover:scale-105 ${
+              className={`pointer-events-none absolute -right-10 -bottom-8 opacity-90 transition-all duration-1000 ease-out-smooth motion-safe:group-hover:scale-105 ${
                 cardsIn ? "scale-100" : "scale-110"
               }`}
               aria-hidden="true"
@@ -131,15 +136,15 @@ export default function Hero() {
               <MealPlateArt className="size-28 rotate-12 opacity-80 drop-shadow-2xl sm:size-40 sm:opacity-100" />
             </div>
 
-            <span className="relative z-10 mt-6 inline-flex w-fit items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-ink-950">
-              Start my program
-              <ChevronRightIcon className="size-4 transition-transform duration-300 ease-out-smooth group-hover:translate-x-1" />
+            <span className="relative z-10 mt-6 inline-flex w-fit items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-ink-950 transition-colors duration-300 ease-out-smooth group-hover:bg-paper-50 group-focus-visible:bg-paper-50">
+              Get started
+              <ChevronRightIcon className="size-4" />
             </span>
           </Link>
 
           <a
             href="/#programs"
-            className="group flex min-h-64 flex-col justify-between rounded-3xl border border-ink-950/10 bg-paper-100 p-7 inset-shadow-[0_1px_0_rgb(255_255_255/0.85),0_0_60px_-12px_color-mix(in_oklab,var(--color-accent)_40%,transparent)] transition-[transform,box-shadow] duration-300 ease-out-smooth hover:-translate-y-1 hover:shadow-xl"
+            className="group flex min-h-64 flex-col justify-between rounded-3xl border border-ink-950/10 bg-paper-100 p-7 inset-shadow-[0_1px_0_rgb(255_255_255/0.85),0_0_60px_-12px_color-mix(in_oklab,var(--color-accent)_40%,transparent)] transition-shadow duration-300 ease-out-smooth hover:shadow-xl"
           >
             <div>
               <p className="text-xs font-semibold tracking-widest text-accent-dark uppercase">
@@ -162,7 +167,7 @@ export default function Hero() {
 
             <span className="mt-5 flex items-center justify-between text-sm font-semibold text-ink-950">
               See the full program
-              <ChevronRightIcon className="size-5 transition-transform duration-300 ease-out-smooth group-hover:translate-x-1.5" />
+              <ChevronRightIcon className="size-5" />
             </span>
           </a>
         </div>
@@ -179,16 +184,29 @@ export default function Hero() {
               <li key={label}>
                 <LinkTag
                   {...linkProps}
-                  className="group flex items-center justify-between gap-3 rounded-2xl bg-paper-100 py-4 pr-4 pl-5 transition-colors duration-200 ease-out-smooth hover:bg-paper-200/70"
+                  className="group relative isolate flex items-center justify-between gap-3 overflow-hidden rounded-2xl bg-paper-100 py-4 pr-4 pl-5"
                 >
-                  <span className="text-base text-ink-950">
-                    {label} {highlight && <span className="text-brand-dark">{highlight}</span>}
+                  {/* Hims-style hover: the tile fills with brand blue (a layer
+                      that fades in, since gradients can't transition) and the
+                      icon slowly zooms. Colour and zoom only, never movement
+                      (no "shake"). Also on keyboard focus. */}
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-0 -z-10 bg-linear-to-br from-brand to-brand-dark opacity-0 transition-opacity duration-300 ease-out-smooth group-hover:opacity-100 group-focus-visible:opacity-100"
+                  />
+                  <span className="text-base text-ink-950 transition-colors duration-300 ease-out-smooth group-hover:text-paper-50 group-focus-visible:text-paper-50">
+                    {label}{" "}
+                    {highlight && (
+                      <span className="text-brand-dark transition-colors duration-300 ease-out-smooth group-hover:text-paper-50 group-focus-visible:text-paper-50">
+                        {highlight}
+                      </span>
+                    )}
                   </span>
                   <span className="flex shrink-0 items-center gap-2">
-                    <span className="flex size-11 items-center justify-center rounded-xl bg-paper-200/70 transition-transform duration-300 ease-out-smooth group-hover:scale-110">
-                      <Icon className="size-6 text-ink-800" />
+                    <span className="flex size-11 items-center justify-center rounded-xl bg-paper-200/70 transition-colors duration-300 ease-out-smooth group-hover:bg-paper-50/15 group-focus-visible:bg-paper-50/15">
+                      <Icon className="size-6 text-ink-800 transition-[color,scale] duration-500 ease-out-smooth group-hover:text-paper-50 group-focus-visible:text-paper-50 motion-safe:group-hover:scale-115" />
                     </span>
-                    <ChevronRightIcon className="size-4 text-ink-950/60 transition-transform duration-300 ease-out-smooth group-hover:translate-x-1" />
+                    <ChevronRightIcon className="size-4 text-ink-950/60 transition-colors duration-300 ease-out-smooth group-hover:text-paper-50 group-focus-visible:text-paper-50" />
                   </span>
                 </LinkTag>
               </li>

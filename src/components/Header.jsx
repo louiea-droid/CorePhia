@@ -113,32 +113,6 @@ export default function Header() {
           </Link>
 
           <div className="flex items-center gap-2 sm:gap-4">
-            <Link
-              to="/intake"
-              className={`group relative isolate inline-flex items-center overflow-hidden rounded-full px-4 py-2 text-sm font-semibold outline-2 -outline-offset-1 transition-[transform,color,outline-color,box-shadow] duration-700 ease-out-smooth hover:scale-105 sm:px-5 ${
-                dark
-                  ? "text-paper-100 outline-paper-100/50 hover:text-ink-950 hover:outline-accent hover:shadow-xl hover:shadow-accent/30"
-                  : "text-ink-950 outline-ink-950/70 hover:text-ink-950 hover:outline-accent hover:shadow-[0_0_32px_6px] hover:shadow-accent/50"
-              }`}
-            >
-              {/* Outlined by default; a skewed panel wipes in from the left on
-                  hover to fill it solid, rather than the shine-sweep this
-                  replaced. Same mechanic as the reference snippet (an
-                  absolutely-positioned ::before skewed and widened on hover),
-                  reimplemented as a sibling span in the site's own tokens and
-                  pill shape rather than the source's teal/5px-radius look,
-                  which would have clashed with every other button on the site.
-                  The text/outline/shadow transition above shares this same
-                  700ms duration rather than Tailwind's shorter default — they
-                  used to drift out of sync, so the text flipped white before
-                  the fill caught up to it, showing pale text on a still-light
-                  background for part of the hover. */}
-              <span
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-y-0 left-[-10%] -z-10 w-0 -skew-x-12 bg-accent transition-[width] duration-700 ease-out-smooth group-hover:w-[220%]"
-              />
-              Get started
-            </Link>
             {patientSignedIn ? (
               <Link
                 to="/account"

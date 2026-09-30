@@ -100,32 +100,6 @@ export function CareShieldArt({ className = "" }) {
   )
 }
 
-/** Abstract illustrated bust used as a placeholder avatar (never a real likeness). */
-export function PersonAvatar({ className = "", tone = "#3b5bdb", skin = "#caa987" }) {
-  const bgId = nextGradientId("avatarbg")
-  return (
-    <svg
-      viewBox="0 0 200 220"
-      preserveAspectRatio="xMidYMid slice"
-      className={className}
-      role="img"
-      aria-hidden="true"
-    >
-      <defs>
-        <linearGradient id={bgId} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor={tone} stopOpacity="0.35" />
-          <stop offset="100%" stopColor={tone} stopOpacity="0.15" />
-        </linearGradient>
-      </defs>
-      <rect width="200" height="220" fill={`url(#${bgId})`} />
-      <path d="M20 220c8-46 46-72 80-72s72 26 80 72Z" fill={tone} opacity="0.9" />
-      <path d="M78 156h44l10 20-32 14-32-14Z" fill="#f5f8f6" />
-      <circle cx="100" cy="92" r="46" fill={skin} />
-      <path d="M55 88a45 45 0 0 1 90 0c0-8-6-12-14-12-4-10-14-16-31-16s-27 6-31 16c-8 0-14 4-14 12Z" fill="#4a3527" />
-    </svg>
-  )
-}
-
 /** Balanced meal plate, evokes personalized nutrition coaching. */
 export function MealPlateArt({ className = "" }) {
   const id = nextGradientId("plate")
@@ -154,7 +128,7 @@ export function HealthCheckArt({ className = "" }) {
   const tubeId = nextGradientId("tube")
   const drumId = nextGradientId("drum")
   return (
-    <svg viewBox="0 0 200 200" className={className} role="img" aria-label="Ongoing health checks">
+    <svg viewBox="0 0 200 200" className={className} role="img" aria-label="Follow-ups">
       <defs>
         <linearGradient id={tubeId} x1="0" y1="0" x2="0.35" y2="1">
           <stop offset="0%" stopColor="#ffffff" />

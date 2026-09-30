@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import Select from "../components/Select"
 import { PAGE_SIZE_OPTIONS } from "./constants"
 import { AUDIT_ACTIONS } from "./firebase"
 import PageHeader from "./PageHeader"
@@ -121,21 +122,20 @@ export default function Activity({ role }) {
               placeholder="Search by staff email or record…"
               className="min-w-0 flex-1 rounded-lg border border-ink-950/15 bg-paper-50 px-3 py-2 text-sm text-ink-950 outline-none transition-colors duration-200 placeholder:text-ink-950/40 focus:border-ink-950/40"
             />
-            <select
-              value={actionFilter}
-              onChange={(event) => {
-                setActionFilter(event.target.value)
-                setPage(1)
-              }}
-              className="cursor-pointer rounded-lg border border-ink-950/15 bg-white px-3 py-2 text-sm text-ink-950 outline-none transition-colors duration-200 focus:border-ink-950/40"
-            >
-              <option value="">All activity</option>
-              {Object.entries(ACTION_LABELS).map(([action, label]) => (
-                <option key={action} value={action}>
-                  {label}
-                </option>
-              ))}
-            </select>
+            <div className="w-52 shrink-0">
+              <Select
+                value={actionFilter}
+                onChange={(next) => {
+                  setActionFilter(next)
+                  setPage(1)
+                }}
+                options={[
+                  { value: "", label: "All activity" },
+                  ...Object.entries(ACTION_LABELS).map(([action, label]) => ({ value: action, label })),
+                ]}
+                triggerClassName="px-3 py-2 text-sm"
+              />
+            </div>
           </div>
 
           {!filteredEntries.length ? (

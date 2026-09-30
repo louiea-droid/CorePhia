@@ -156,7 +156,7 @@ export default function LoginPanel({ open, onClose }) {
       const fallback =
         mode === "sign-up"
           ? cause.code === "auth/email-already-in-use"
-            ? "An account with that email already exists — try signing in instead."
+            ? "An account with that email already exists. Try signing in instead."
             : "Something went wrong creating your account. Try again."
           : "Those sign-in details were not accepted."
       setError(describeAuthError(cause, fallback))

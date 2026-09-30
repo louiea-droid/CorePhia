@@ -1,7 +1,14 @@
+import { goalBucket } from "./analytics"
 import { formatClockTime, formatRelativeTime, useRelativeTimeClock } from "./relativeTime"
 
 function formatDate(iso) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+}
+
+const STATUS_BADGE = {
+  admitted: "bg-accent-dark/10 text-accent-dark",
+  pending: "bg-ink-950/10 text-ink-950/60",
+  declined: "bg-red-600/10 text-red-600",
 }
 
 // Mirrors PatientsTable's own row order: the 10 most recent submissions overall
@@ -18,11 +25,12 @@ export default function PatientsTable({ records, onSelect, minRows = 0, rankOffs
     <div className="scrollbar-thin -mx-4 overflow-x-auto px-4">
       <table className="w-full min-w-2xl table-fixed text-left text-sm">
         <colgroup>
-          <col className="w-[24%]" />
-          <col className="w-[16%]" />
+          <col className="w-[20%]" />
+          <col className="w-[14%]" />
+          <col className="w-[12%]" />
           <col className="w-[14%]" />
           <col className="w-[16%]" />
-          <col className="w-[30%]" />
+          <col className="w-[24%]" />
         </colgroup>
         <thead>
           <tr className="sticky top-0 z-10 border-b border-ink-950/10 bg-white text-xs tracking-wide text-ink-950/45 uppercase">
@@ -36,7 +44,10 @@ export default function PatientsTable({ records, onSelect, minRows = 0, rankOffs
               Time
             </th>
             <th scope="col" className="pb-2 font-medium">
-              Plan
+              Status
+            </th>
+            <th scope="col" className="pb-2 font-medium">
+              Goal
             </th>
             <th scope="col" className="pb-2 font-medium">
               Reason
@@ -69,7 +80,14 @@ export default function PatientsTable({ records, onSelect, minRows = 0, rankOffs
                 <td className="truncate py-4 tabular-nums whitespace-nowrap text-ink-950/60">
                   {isRecent ? formatRelativeTime(record.submittedAt, now) : formatClockTime(record.submittedAt)}
                 </td>
-                <td className="truncate py-4 text-ink-950/60">{record.visit?.membershipPlan || "—"}</td>
+                <td className="py-4">
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${STATUS_BADGE[record.status ?? "pending"]}`}
+                  >
+                    {record.status ?? "pending"}
+                  </span>
+                </td>
+                <td className="truncate py-4 text-ink-950/60">{goalBucket(record).replace("Not sure, I just need to lose weight", "Not sure") || "—"}</td>
                 <td className="truncate py-4 text-ink-950/60">{record.visit?.reason || "—"}</td>
               </tr>
             )
@@ -77,6 +95,7 @@ export default function PatientsTable({ records, onSelect, minRows = 0, rankOffs
           {Array.from({ length: fillerRowCount }).map((_, index) => (
             <tr key={`filler-${index}`} aria-hidden="true">
               <td className="py-4">&nbsp;</td>
+              <td className="py-4" />
               <td className="py-4" />
               <td className="py-4" />
               <td className="py-4" />

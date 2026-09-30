@@ -1,5 +1,7 @@
+import { Link } from "react-router-dom"
 import { useEffect, useRef, useState } from "react"
 import { ActivityArt } from "./Artwork"
+import { ChevronRightIcon } from "./icons"
 import { useReveal } from "../hooks/useReveal"
 
 // useReveal is deliberately one-shot, which left the needle's drop playing
@@ -90,43 +92,24 @@ export default function ScienceSection() {
   // The results card drives its own gauge, so the card's entrance and the
   // needle's drop start on the same frame and replay together.
   const [doseRef, doseVisible] = useReplayOnView()
-  const magnetRef = useRef(null)
-
-  // Written straight to style rather than through state so pointer movement
-  // doesn't re-render the section on every mousemove. It also has to live on
-  // a wrapper, not on the art itself: animate-sphere-drift already animates
-  // that element's transform, and a running animation outranks inline styles.
-  const pullTowardCursor = (event) => {
-    const el = magnetRef.current
-    if (!el || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
-    const rect = el.getBoundingClientRect()
-    const x = (event.clientX - rect.left) / rect.width - 0.5
-    const y = (event.clientY - rect.top) / rect.height - 0.5
-    el.style.transform = `translate(${x * 24}px, ${y * 16}px) scale(1.12)`
-  }
-
-  const releaseCursor = () => {
-    if (magnetRef.current) magnetRef.current.style.transform = ""
-  }
 
   return (
     <section
       id="science"
       aria-labelledby="science-heading"
       data-header-theme="dark"
-      className="bg-ink-950 py-12 sm:py-16 lg:py-24"
+      className="mt-4 overflow-hidden rounded-3xl bg-ink-950 py-12 sm:py-16 lg:py-24"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <h2 id="science-heading" className="sr-only">
-          How Corephia's weight loss programs work
+          How CorePhia's weight loss programs work
         </h2>
 
         <div className="grid gap-4 lg:grid-cols-2">
           <div
             ref={absorptionRef}
-            className={`flex flex-col gap-6 rounded-3xl bg-gradient-to-br from-ink-700 via-ink-800 to-ink-900 p-6 shadow-lg transition-[transform,box-shadow,opacity] duration-700 ease-out-smooth hover:-translate-y-1 hover:shadow-2xl sm:p-8 ${
-              absorptionVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
-            }`}
+            data-reveal={absorptionVisible ? "shown" : "hidden"}
+            className="flex flex-col gap-6 rounded-3xl bg-gradient-to-br from-ink-700 via-ink-800 to-ink-900 p-6 shadow-lg hover:shadow-2xl sm:p-8"
           >
             <p className="font-serif text-2xl leading-tight text-paper-100 sm:text-3xl">
               A program built on
@@ -142,12 +125,7 @@ export default function ScienceSection() {
               >
                 Builds habits through <span className="text-paper-100">personalized nutrition coaching</span>
               </p>
-              <div
-                ref={magnetRef}
-                onMouseMove={pullTowardCursor}
-                onMouseLeave={releaseCursor}
-                className="shrink-0 transition-transform duration-300 ease-out-smooth"
-              >
+              <div className="shrink-0">
                 <ActivityArt
                   className={`h-20 w-48 transition-all delay-300 duration-700 ease-out-smooth ${
                     absorptionVisible ? "scale-100 animate-sphere-drift opacity-100" : "scale-75 opacity-0"
@@ -162,13 +140,21 @@ export default function ScienceSection() {
                 Combines <span className="text-paper-100">structured exercise with medical support</span>
               </p>
             </div>
+
+            <Link
+              to="/about#research"
+              className="inline-flex w-fit items-center gap-1 text-sm font-semibold text-accent underline-offset-4 hover:underline"
+            >
+              Learn more about the research
+              <ChevronRightIcon className="size-4" />
+            </Link>
           </div>
 
           <div
             ref={doseRef}
-            className={`flex flex-col items-center rounded-3xl bg-gradient-to-bl from-ink-700 via-ink-800 to-ink-900 p-6 text-center shadow-lg transition-[transform,box-shadow,opacity] duration-700 ease-out-smooth hover:-translate-y-1 hover:shadow-2xl sm:p-8 ${
-              doseVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
-            }`}
+            data-reveal={doseVisible ? "shown" : "hidden"}
+            style={{ "--reveal-i": 1 }}
+            className="flex flex-col items-center rounded-3xl bg-gradient-to-bl from-ink-700 via-ink-800 to-ink-900 p-6 text-center shadow-lg hover:shadow-2xl sm:p-8"
           >
             <span className="animate-soft-pulse rounded-full border border-accent/40 px-3 py-1 text-xs font-semibold text-accent">
               Real member results
@@ -183,7 +169,7 @@ export default function ScienceSection() {
 
             <a
               href="/#programs"
-              className="mt-4 rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-ink-950 transition-[transform,background-color] duration-200 ease-out-smooth hover:scale-105 hover:bg-accent-dark"
+              className="mt-4 rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-ink-950 transition-colors duration-200 ease-out-smooth hover:bg-accent-dark"
             >
               Explore our programs
             </a>

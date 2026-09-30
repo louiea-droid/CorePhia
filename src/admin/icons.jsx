@@ -18,6 +18,15 @@ export function DashboardIcon(props) {
   )
 }
 
+export function TrafficIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+      <circle cx="12" cy="12" r="2.75" />
+    </svg>
+  )
+}
+
 export function PatientsIcon(props) {
   return (
     <svg {...base} {...props}>
@@ -95,6 +104,16 @@ export function TrashIcon(props) {
       <path d="M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2" />
       <path d="M6 7l1 13a2 2 0 002 2h6a2 2 0 002-2l1-13" />
       <path d="M10 11v6M14 11v6" />
+    </svg>
+  )
+}
+
+export function NoteIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M6 3.5h9l3.5 3.5V20a1 1 0 01-1 1H6a1 1 0 01-1-1V4.5a1 1 0 011-1Z" />
+      <path d="M15 3.5V7a1 1 0 001 1h3.5" />
+      <path d="M8 12.5h8M8 16h5.5" />
     </svg>
   )
 }

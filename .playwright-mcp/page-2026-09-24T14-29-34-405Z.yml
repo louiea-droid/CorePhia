@@ -1,0 +1,684 @@
+- generic [active] [ref=f5e1]:
+  - generic [ref=f5e3]:
+    - banner [ref=f5e6]:
+      - navigation "Primary" [ref=f5e7]:
+        - link [ref=f5e8] [cursor=pointer]:
+          - /url: /
+          - img "CorePhia Health" [ref=f5e9]
+        - generic [ref=f5e10]:
+          - link "Get started" [ref=f5e11] [cursor=pointer]:
+            - /url: /intake
+          - button "Log in" [ref=f5e12]
+          - button "Open menu" [ref=f5e13]
+    - main [ref=f5e16]:
+      - region [ref=f5e17]:
+        - link "← Back to home" [ref=f5e18] [cursor=pointer]:
+          - /url: /
+        - heading "Patient intake form" [level=1] [ref=f5e19]
+        - paragraph [ref=f5e20]: Every CorePhia patient completes the same intake, so nothing gets missed and your provider has your full picture before your first visit. It takes about 10 minutes. Your information is kept confidential and protected under HIPAA.
+        - generic [ref=f5e21]:
+          - group "Personal information" [ref=f5e22]:
+            - generic [ref=f5e24]:
+              - generic [ref=f5e25]:
+                - generic [ref=f5e26]: First name *
+                - textbox "First name *" [ref=f5e27]
+              - generic [ref=f5e28]:
+                - generic [ref=f5e29]: Last name *
+                - textbox "Last name *" [ref=f5e30]
+              - generic [ref=f5e31]:
+                - generic [ref=f5e32]: Date of birth *
+                - generic [ref=f5e33]:
+                  - textbox [aria-hidden] [ref=f5e34]
+                  - button "mm/dd/yyyy" [ref=f5e35]
+                  - dialog "Choose a date":
+                    - generic:
+                      - paragraph:
+                        - button "September"
+                        - button "2026"
+                      - generic:
+                        - button "Previous"
+                        - button "Next"
+                    - generic:
+                      - generic: Su
+                      - generic: Mo
+                      - generic: Tu
+                      - generic: We
+                      - generic: Th
+                      - generic: Fr
+                      - generic: Sa
+                    - generic:
+                      - button "30"
+                      - button "31"
+                      - button "1"
+                      - button "2"
+                      - button "3"
+                      - button "4"
+                      - button "5"
+                      - button "6"
+                      - button "7"
+                      - button "8"
+                      - button "9"
+                      - button "10"
+                      - button "11"
+                      - button "12"
+                      - button "13"
+                      - button "14"
+                      - button "15"
+                      - button "16"
+                      - button "17"
+                      - button "18"
+                      - button "19"
+                      - button "20"
+                      - button "21"
+                      - button "22"
+                      - button "23"
+                      - button "24"
+                      - button "25"
+                      - button "26"
+                      - button "27"
+                      - button "28"
+                      - button "29"
+                      - button "30"
+                      - button "1"
+                      - button "2"
+                      - button "3"
+                      - button "4"
+                      - button "5"
+                      - button "6"
+                      - button "7"
+                      - button "8"
+                      - button "9"
+                      - button "10"
+                    - generic:
+                      - button "Clear"
+                      - button "Today"
+              - generic [ref=f5e40]:
+                - generic [ref=f5e41]: Sex assigned at birth *
+                - generic [ref=f5e42]:
+                  - combobox [aria-hidden] [ref=f5e43]
+                  - button "Select one" [ref=f5e44]
+                  - listbox:
+                    - option "Female":
+                      - button "Female"
+                    - option "Male":
+                      - button "Male"
+                    - option "Intersex":
+                      - button "Intersex"
+                    - option "Prefer not to say":
+                      - button "Prefer not to say"
+              - generic [ref=f5e48]:
+                - generic [ref=f5e49]: Phone number *
+                - textbox "Phone number *" [ref=f5e50]
+              - generic [ref=f5e51]:
+                - generic [ref=f5e52]: Email address *
+                - textbox "Email address *" [ref=f5e53]
+              - generic [ref=f5e55]:
+                - generic [ref=f5e56]: Street address *
+                - textbox "Street address *" [ref=f5e57]
+              - generic [ref=f5e58]:
+                - generic [ref=f5e59]: City *
+                - textbox "City *" [ref=f5e60]
+              - generic [ref=f5e61]:
+                - generic [ref=f5e62]:
+                  - generic [ref=f5e63]: State *
+                  - generic [ref=f5e64]:
+                    - combobox [aria-hidden] [ref=f5e65]
+                    - button "State" [ref=f5e66]
+                    - listbox:
+                      - option "AL":
+                        - button "AL"
+                      - option "AK":
+                        - button "AK"
+                      - option "AZ":
+                        - button "AZ"
+                      - option "AR":
+                        - button "AR"
+                      - option "CA":
+                        - button "CA"
+                      - option "CO":
+                        - button "CO"
+                      - option "CT":
+                        - button "CT"
+                      - option "DE":
+                        - button "DE"
+                      - option "DC":
+                        - button "DC"
+                      - option "FL":
+                        - button "FL"
+                      - option "GA":
+                        - button "GA"
+                      - option "HI":
+                        - button "HI"
+                      - option "ID":
+                        - button "ID"
+                      - option "IL":
+                        - button "IL"
+                      - option "IN":
+                        - button "IN"
+                      - option "IA":
+                        - button "IA"
+                      - option "KS":
+                        - button "KS"
+                      - option "KY":
+                        - button "KY"
+                      - option "LA":
+                        - button "LA"
+                      - option "ME":
+                        - button "ME"
+                      - option "MD":
+                        - button "MD"
+                      - option "MA":
+                        - button "MA"
+                      - option "MI":
+                        - button "MI"
+                      - option "MN":
+                        - button "MN"
+                      - option "MS":
+                        - button "MS"
+                      - option "MO":
+                        - button "MO"
+                      - option "MT":
+                        - button "MT"
+                      - option "NE":
+                        - button "NE"
+                      - option "NV":
+                        - button "NV"
+                      - option "NH":
+                        - button "NH"
+                      - option "NJ":
+                        - button "NJ"
+                      - option "NM":
+                        - button "NM"
+                      - option "NY":
+                        - button "NY"
+                      - option "NC":
+                        - button "NC"
+                      - option "ND":
+                        - button "ND"
+                      - option "OH":
+                        - button "OH"
+                      - option "OK":
+                        - button "OK"
+                      - option "OR":
+                        - button "OR"
+                      - option "PA":
+                        - button "PA"
+                      - option "RI":
+                        - button "RI"
+                      - option "SC":
+                        - button "SC"
+                      - option "SD":
+                        - button "SD"
+                      - option "TN":
+                        - button "TN"
+                      - option "TX":
+                        - button "TX"
+                      - option "UT":
+                        - button "UT"
+                      - option "VT":
+                        - button "VT"
+                      - option "VA":
+                        - button "VA"
+                      - option "WA":
+                        - button "WA"
+                      - option "WV":
+                        - button "WV"
+                      - option "WI":
+                        - button "WI"
+                      - option "WY":
+                        - button "WY"
+                - generic [ref=f5e70]:
+                  - generic [ref=f5e71]: ZIP code *
+                  - textbox "ZIP code *" [ref=f5e72]
+          - group "Emergency contact" [ref=f5e73]:
+            - generic [ref=f5e75]:
+              - generic [ref=f5e76]:
+                - generic [ref=f5e77]: Full name *
+                - textbox "Full name *" [ref=f5e78]
+              - generic [ref=f5e79]:
+                - generic [ref=f5e80]: Relationship to patient *
+                - textbox "Relationship to patient *" [ref=f5e81]
+              - generic [ref=f5e82]:
+                - generic [ref=f5e83]: Phone number *
+                - textbox "Phone number *" [ref=f5e84]
+          - group "Insurance information" [ref=f5e85]:
+            - paragraph [ref=f5e87]: Optional — skip this section if you'll be paying out of pocket.
+            - generic [ref=f5e88]:
+              - generic [ref=f5e89]:
+                - generic [ref=f5e90]: Insurance provider
+                - textbox "Insurance provider" [ref=f5e91]
+              - generic [ref=f5e92]:
+                - generic [ref=f5e93]: Member / policy ID
+                - textbox "Member / policy ID" [ref=f5e94]
+              - generic [ref=f5e95]:
+                - generic [ref=f5e96]: Group number
+                - textbox "Group number" [ref=f5e97]
+              - generic [ref=f5e98]:
+                - generic [ref=f5e99]: Policyholder name (if not you)
+                - textbox "Policyholder name (if not you)" [ref=f5e100]
+          - group "Height & weight" [ref=f5e101]:
+            - paragraph [ref=f5e103]: Your provider uses these to calculate BMI and set a realistic target with you.
+            - generic [ref=f5e104]:
+              - generic [ref=f5e105]:
+                - generic [ref=f5e106]: Height *
+                - generic [ref=f5e107]:
+                  - generic [ref=f5e108]:
+                    - spinbutton "Height in feet" [ref=f5e109]
+                    - generic: ft
+                  - generic [ref=f5e110]:
+                    - spinbutton "Height in inches" [ref=f5e111]
+                    - generic: in
+              - generic [ref=f5e112]:
+                - generic [ref=f5e113]: Current weight (lbs) *
+                - spinbutton "Current weight (lbs) *" [ref=f5e114]
+              - generic [ref=f5e115]:
+                - generic [ref=f5e116]: Goal weight (lbs)
+                - spinbutton "Goal weight (lbs)" [ref=f5e117]
+              - generic [ref=f5e118]:
+                - generic [ref=f5e119]: Highest adult weight (lbs)
+                - spinbutton "Highest adult weight (lbs)" [ref=f5e120]
+          - group "Medical history" [ref=f5e121]:
+            - generic [ref=f5e123]:
+              - generic [ref=f5e125]:
+                - generic [ref=f5e126]: Current medications
+                - textbox "Current medications" [ref=f5e127]:
+                  - /placeholder: List any medications and dosages you're currently taking
+              - generic [ref=f5e129]:
+                - generic [ref=f5e130]: Known allergies
+                - textbox "Known allergies" [ref=f5e131]:
+                  - /placeholder: Medications, foods, or other allergies
+              - generic [ref=f5e132]:
+                - generic [ref=f5e133]: Existing conditions
+                - generic [ref=f5e134]:
+                  - generic [ref=f5e135]:
+                    - checkbox "Diabetes or prediabetes" [ref=f5e136]
+                    - text: Diabetes or prediabetes
+                  - generic [ref=f5e137]:
+                    - checkbox "High blood pressure" [ref=f5e138]
+                    - text: High blood pressure
+                  - generic [ref=f5e139]:
+                    - checkbox "High cholesterol" [ref=f5e140]
+                    - text: High cholesterol
+                  - generic [ref=f5e141]:
+                    - checkbox "Heart disease" [ref=f5e142]
+                    - text: Heart disease
+                  - generic [ref=f5e143]:
+                    - checkbox "Cancer (current or past)" [ref=f5e144]
+                    - text: Cancer (current or past)
+                  - generic [ref=f5e145]:
+                    - checkbox "Thyroid disorder" [ref=f5e146]
+                    - text: Thyroid disorder
+                  - generic [ref=f5e147]:
+                    - checkbox "Kidney disease" [ref=f5e148]
+                    - text: Kidney disease
+                  - generic [ref=f5e149]:
+                    - checkbox "Fatty liver disease" [ref=f5e150]
+                    - text: Fatty liver disease
+                  - generic [ref=f5e151]:
+                    - checkbox "PCOS" [ref=f5e152]
+                    - text: PCOS
+                  - generic [ref=f5e153]:
+                    - checkbox "Sleep apnea" [ref=f5e154]
+                    - text: Sleep apnea
+                  - generic [ref=f5e155]:
+                    - checkbox "Anxiety or depression" [ref=f5e156]
+                    - text: Anxiety or depression
+                  - generic [ref=f5e157]:
+                    - checkbox "None of the above" [ref=f5e158]
+                    - text: None of the above
+              - generic [ref=f5e160]:
+                - generic [ref=f5e161]: Previous surgeries
+                - textbox "Previous surgeries" [ref=f5e162]
+              - generic [ref=f5e164]:
+                - generic [ref=f5e165]: Previous weight loss treatment
+                - textbox "Previous weight loss treatment" [ref=f5e166]:
+                  - /placeholder: Any weight loss medication, programs, or surgery you've tried before — and how it went
+          - group "Family history" [ref=f5e167]:
+            - paragraph [ref=f5e169]: Conditions that run in your immediate family (parents, siblings, children).
+            - generic [ref=f5e170]:
+              - generic [ref=f5e171]:
+                - generic [ref=f5e172]: Select any that apply
+                - generic [ref=f5e173]:
+                  - generic [ref=f5e174]:
+                    - checkbox "Cancer" [ref=f5e175]
+                    - text: Cancer
+                  - generic [ref=f5e176]:
+                    - checkbox "Diabetes" [ref=f5e177]
+                    - text: Diabetes
+                  - generic [ref=f5e178]:
+                    - checkbox "Heart disease" [ref=f5e179]
+                    - text: Heart disease
+                  - generic [ref=f5e180]:
+                    - checkbox "High blood pressure" [ref=f5e181]
+                    - text: High blood pressure
+                  - generic [ref=f5e182]:
+                    - checkbox "Stroke" [ref=f5e183]
+                    - text: Stroke
+                  - generic [ref=f5e184]:
+                    - checkbox "Thyroid disorder" [ref=f5e185]
+                    - text: Thyroid disorder
+                  - generic [ref=f5e186]:
+                    - checkbox "Obesity" [ref=f5e187]
+                    - text: Obesity
+                  - generic [ref=f5e188]:
+                    - checkbox "None of the above" [ref=f5e189]
+                    - text: None of the above
+              - generic [ref=f5e191]:
+                - generic [ref=f5e192]: Additional detail
+                - textbox "Additional detail" [ref=f5e193]:
+                  - /placeholder: Who was affected and at what age, if known
+          - group "Lifestyle & nutrition" [ref=f5e194]:
+            - paragraph [ref=f5e196]: Your answers here shape the nutrition and exercise side of your plan.
+            - generic [ref=f5e197]:
+              - generic [ref=f5e198]:
+                - generic [ref=f5e199]: Tobacco use *
+                - generic [ref=f5e200]:
+                  - combobox [aria-hidden] [ref=f5e201]
+                  - button "Select one" [ref=f5e202]
+                  - listbox:
+                    - option "Never used tobacco":
+                      - button "Never used tobacco"
+                    - option "Former smoker":
+                      - button "Former smoker"
+                    - option "Current smoker":
+                      - button "Current smoker"
+                    - option "Vape / e-cigarettes only":
+                      - button "Vape / e-cigarettes only"
+                    - option "Other tobacco use":
+                      - button "Other tobacco use"
+              - generic [ref=f5e206]:
+                - generic [ref=f5e207]: Alcohol use *
+                - generic [ref=f5e208]:
+                  - combobox [aria-hidden] [ref=f5e209]
+                  - button "Select one" [ref=f5e210]
+                  - listbox:
+                    - option "None":
+                      - button "None"
+                    - option "Occasionally (1-2 drinks per week)":
+                      - button "Occasionally (1-2 drinks per week)"
+                    - option "Moderately (3-7 drinks per week)":
+                      - button "Moderately (3-7 drinks per week)"
+                    - option "Frequently (8 or more drinks per week)":
+                      - button "Frequently (8 or more drinks per week)"
+              - generic [ref=f5e214]:
+                - generic [ref=f5e215]: Water intake *
+                - generic [ref=f5e216]:
+                  - combobox [aria-hidden] [ref=f5e217]
+                  - button "Select one" [ref=f5e218]
+                  - listbox:
+                    - option "Less than 2 glasses a day":
+                      - button "Less than 2 glasses a day"
+                    - option "2-4 glasses a day":
+                      - button "2-4 glasses a day"
+                    - option "5-7 glasses a day":
+                      - button "5-7 glasses a day"
+                    - option "8 or more glasses a day":
+                      - button "8 or more glasses a day"
+              - generic [ref=f5e222]:
+                - generic [ref=f5e223]: Exercise *
+                - generic [ref=f5e224]:
+                  - combobox [aria-hidden] [ref=f5e225]
+                  - button "Select one" [ref=f5e226]
+                  - listbox:
+                    - option "None right now":
+                      - button "None right now"
+                    - option "1-2 days per week":
+                      - button "1-2 days per week"
+                    - option "3-4 days per week":
+                      - button "3-4 days per week"
+                    - option "5 or more days per week":
+                      - button "5 or more days per week"
+              - generic [ref=f5e230]:
+                - generic [ref=f5e231]: Estimated daily calories
+                - spinbutton "Estimated daily calories" [ref=f5e232]
+              - generic [ref=f5e233]:
+                - generic [ref=f5e234]: Meals per day
+                - spinbutton "Meals per day" [ref=f5e235]
+              - generic [ref=f5e237]:
+                - generic [ref=f5e238]: Tell us about how you eat
+                - textbox "Tell us about how you eat" [ref=f5e239]:
+                  - /placeholder: A typical day of eating, snacking habits, dietary restrictions, or anything else we should know
+          - group "Appointment details" [ref=f5e240]:
+            - generic [ref=f5e242]:
+              - generic [ref=f5e243]:
+                - generic [ref=f5e244]: Membership plan
+                - generic [ref=f5e245]:
+                  - combobox [aria-hidden] [ref=f5e246]
+                  - button "I'm not sure yet" [ref=f5e247]
+                  - listbox:
+                    - option "I'm not sure yet" [selected]:
+                      - button "I'm not sure yet"
+                    - option "Core":
+                      - button "Core"
+                    - option "Core+":
+                      - button "Core+"
+                    - option "Core Complete":
+                      - button "Core Complete"
+              - generic [ref=f5e251]:
+                - generic [ref=f5e252]: Reason for visit *
+                - generic [ref=f5e253]:
+                  - combobox [aria-hidden] [ref=f5e254]
+                  - button "Select an appointment type" [ref=f5e255]
+                  - listbox:
+                    - option "Weight loss consultation":
+                      - button "Weight loss consultation"
+                    - option "Nutrition consultation":
+                      - button "Nutrition consultation"
+                    - option "Exercise program consultation":
+                      - button "Exercise program consultation"
+                    - option "General health check":
+                      - button "General health check"
+                    - option "Follow-up visit":
+                      - button "Follow-up visit"
+                    - option "Other":
+                      - button "Other"
+              - generic [ref=f5e259]:
+                - generic [ref=f5e260]: Preferred time *
+                - generic [ref=f5e261]:
+                  - combobox [aria-hidden] [ref=f5e262]
+                  - button "Select a preferred time" [ref=f5e263]
+                  - listbox:
+                    - option "Morning (8am - 12pm)":
+                      - button "Morning (8am - 12pm)"
+                    - option "Afternoon (12pm - 4pm)":
+                      - button "Afternoon (12pm - 4pm)"
+                    - option "Evening (4pm - 7pm)":
+                      - button "Evening (4pm - 7pm)"
+              - generic [ref=f5e267]:
+                - generic [ref=f5e268]: Preferred date *
+                - generic [ref=f5e269]:
+                  - textbox [aria-hidden] [ref=f5e270]
+                  - button "mm/dd/yyyy" [ref=f5e271]
+                  - dialog "Choose a date":
+                    - generic:
+                      - paragraph:
+                        - button "September"
+                        - button "2026"
+                      - generic:
+                        - button "Previous"
+                        - button "Next"
+                    - generic:
+                      - generic: Su
+                      - generic: Mo
+                      - generic: Tu
+                      - generic: We
+                      - generic: Th
+                      - generic: Fr
+                      - generic: Sa
+                    - generic:
+                      - button "30" [disabled]
+                      - button "31" [disabled]
+                      - button "1" [disabled]
+                      - button "2" [disabled]
+                      - button "3" [disabled]
+                      - button "4" [disabled]
+                      - button "5" [disabled]
+                      - button "6" [disabled]
+                      - button "7" [disabled]
+                      - button "8" [disabled]
+                      - button "9" [disabled]
+                      - button "10" [disabled]
+                      - button "11" [disabled]
+                      - button "12" [disabled]
+                      - button "13" [disabled]
+                      - button "14" [disabled]
+                      - button "15" [disabled]
+                      - button "16" [disabled]
+                      - button "17" [disabled]
+                      - button "18" [disabled]
+                      - button "19" [disabled]
+                      - button "20" [disabled]
+                      - button "21" [disabled]
+                      - button "22" [disabled]
+                      - button "23" [disabled]
+                      - button "24"
+                      - button "25"
+                      - button "26"
+                      - button "27"
+                      - button "28"
+                      - button "29"
+                      - button "30"
+                      - button "1"
+                      - button "2"
+                      - button "3"
+                      - button "4"
+                      - button "5"
+                      - button "6"
+                      - button "7"
+                      - button "8"
+                      - button "9"
+                      - button "10"
+                    - generic:
+                      - button "Clear"
+                      - button "Today"
+              - generic [ref=f5e277]:
+                - generic [ref=f5e278]: Additional notes
+                - textbox "Additional notes" [ref=f5e279]:
+                  - /placeholder: Tell us more about what you'd like to discuss
+          - group "Consent & signature" [ref=f5e280]:
+            - generic [ref=f5e282]:
+              - generic [ref=f5e283]:
+                - generic [ref=f5e284]:
+                  - checkbox "I consent to receive telehealth services from CorePhia and understand the associated risks and benefits. *" [ref=f5e285]
+                  - text: I consent to receive telehealth services from CorePhia and understand the associated risks and benefits.
+                  - generic [ref=f5e286]: "*"
+                - generic [ref=f5e287]:
+                  - checkbox "I acknowledge that I have received and reviewed the Notice of Privacy Practices (HIPAA). *" [ref=f5e288]
+                  - text: I acknowledge that I have received and reviewed the Notice of Privacy Practices (HIPAA).
+                  - generic [ref=f5e289]: "*"
+                - generic [ref=f5e290]:
+                  - checkbox "I authorize Corephia to bill my insurance provider, if applicable." [ref=f5e291]
+                  - text: I authorize Corephia to bill my insurance provider, if applicable.
+              - generic [ref=f5e292]:
+                - generic [ref=f5e293]: Electronic signature (type your full legal name) *
+                - textbox "Electronic signature (type your full legal name) *" [ref=f5e294]:
+                  - /placeholder: Full legal name
+              - generic [ref=f5e295]:
+                - generic [ref=f5e296]: Date *
+                - textbox "Date *" [ref=f5e297]: 2026-09-24
+          - button "Submit intake form" [ref=f5e298]
+          - paragraph [ref=f5e299]: This form is not for medical emergencies. If you are experiencing a medical emergency, call 911 immediately.
+    - contentinfo [ref=f5e300]:
+      - generic [ref=f5e301]:
+        - generic [ref=f5e302]:
+          - generic [ref=f5e303]:
+            - link "CorePhia" [ref=f5e304] [cursor=pointer]:
+              - /url: /
+            - list [ref=f5e305]:
+              - listitem [ref=f5e306]: info@corephia.com
+              - listitem [ref=f5e310]: (000) 123-4567
+              - listitem [ref=f5e313]: Tampa, Florida
+          - navigation "Programs" [ref=f5e317]:
+            - heading "Programs" [level=3] [ref=f5e318]
+            - list [ref=f5e319]:
+              - listitem [ref=f5e320]:
+                - link "Weight loss programs" [ref=f5e321] [cursor=pointer]:
+                  - /url: /#programs
+              - listitem [ref=f5e322]:
+                - link "Membership pricing" [ref=f5e323] [cursor=pointer]:
+                  - /url: /#pricing
+          - navigation "Company" [ref=f5e324]:
+            - heading "Company" [level=3] [ref=f5e325]
+            - list [ref=f5e326]:
+              - listitem [ref=f5e327]:
+                - link "About us" [ref=f5e328] [cursor=pointer]:
+                  - /url: /about
+              - listitem [ref=f5e329]:
+                - link "Contact us" [ref=f5e330] [cursor=pointer]:
+                  - /url: /contact
+          - navigation "Patients" [ref=f5e331]:
+            - heading "Patients" [level=3] [ref=f5e332]
+            - list [ref=f5e333]:
+              - listitem [ref=f5e334]:
+                - link "FAQs" [ref=f5e335] [cursor=pointer]:
+                  - /url: /faq
+              - listitem [ref=f5e336]:
+                - generic [ref=f5e337]: Privacy policy
+              - listitem [ref=f5e338]:
+                - generic [ref=f5e339]: Terms of service
+            - heading "Social" [level=3] [ref=f5e340]
+            - list [ref=f5e341]:
+              - listitem [ref=f5e342]:
+                - link "Facebook" [ref=f5e343] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=f5e346]:
+                - link "X" [ref=f5e347] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=f5e350]:
+                - link "Instagram" [ref=f5e351] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=f5e356]:
+                - link "LinkedIn" [ref=f5e357] [cursor=pointer]:
+                  - /url: "#"
+        - generic [ref=f5e362]:
+          - generic [ref=f5e363]: Certified
+          - paragraph [ref=f5e368]: © 2026 CorePhia. All rights reserved.
+  - generic:
+    - dialog [aria-hidden]:
+      - generic:
+        - heading [level=2]: Menu
+        - generic:
+          - button
+          - button
+      - generic:
+        - paragraph: Explore
+        - list:
+          - listitem:
+            - link:
+              - /url: /
+              - text: Home
+          - listitem:
+            - link:
+              - /url: /#programs
+              - text: Weight Loss Programs
+          - listitem:
+            - link:
+              - /url: /#pricing
+              - text: Membership Pricing
+          - listitem:
+            - link:
+              - /url: /about
+              - text: About Us
+          - listitem:
+            - link:
+              - /url: /contact
+              - text: Contact Us
+          - listitem:
+            - link:
+              - /url: /faq
+              - text: FAQs
+      - generic:
+        - paragraph: What's included
+        - list:
+          - listitem:
+            - link:
+              - /url: /#programs
+              - generic: Nutrition Coaching
+          - listitem:
+            - link:
+              - /url: /#programs
+              - generic: Exercise Plans
+          - listitem:
+            - link:
+              - /url: /#programs
+              - generic: Medical Support

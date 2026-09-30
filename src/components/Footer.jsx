@@ -1,8 +1,8 @@
+import { openPrivacyChoices } from "../lib/analyticsConsent"
 import { Link } from "react-router-dom"
 import { useReveal } from "../hooks/useReveal"
 import {
   FacebookIcon,
-  GlobeIcon,
   InstagramIcon,
   LinkedInIcon,
   MailIcon,
@@ -11,11 +11,11 @@ import {
   ShieldCheckIcon,
   XIcon,
 } from "./icons"
+import { SUPPORT_PHONE } from "../lib/siteContact"
 
 const contactDetails = [
-  { icon: GlobeIcon, text: "corephia.com" },
   { icon: MailIcon, text: "info@corephia.com" },
-  { icon: PhoneIcon, text: "(000) 123-4567" },
+  { icon: PhoneIcon, text: SUPPORT_PHONE },
   { icon: MapPinIcon, text: "Tampa, Florida" },
 ]
 
@@ -32,14 +32,18 @@ const columns = [
   {
     title: "Programs",
     links: [
-      { label: "Weight loss programs", href: "/#programs" },
-      { label: "Membership pricing", href: "/#pricing" },
+      { label: "Medical care", to: "/programs/medical-care" },
+      { label: "Dietitian services", to: "/programs/dietitian-services" },
+      { label: "Comprehensive Exercise Plan", to: "/programs/exercise-plan" },
+      { label: "Follow-ups", to: "/programs/follow-ups" },
     ],
   },
   {
     title: "Company",
     links: [
       { label: "About us", to: "/about" },
+      { label: "Success stories", to: "/success-stories" },
+      { label: "Membership", to: "/membership" },
       { label: "Contact us", to: "/contact" },
     ],
   },
@@ -49,6 +53,7 @@ const columns = [
       { label: "FAQs", to: "/faq" },
       { label: "Privacy policy" },
       { label: "Terms of service" },
+      { label: "Privacy choices", onClick: openPrivacyChoices },
     ],
   },
 ]
@@ -57,10 +62,10 @@ export default function Footer() {
   const [wordmarkRef, wordmarkVisible] = useReveal()
 
   return (
-    <footer data-header-theme="dark" className="bg-ink-950 pt-16 pb-10 text-paper-100/70">
+    <footer data-header-theme="dark" className="bg-ink-950 pt-12 pb-8 text-paper-100/70 sm:pt-16 sm:pb-10">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
-          <div>
+        <div className="grid grid-cols-2 gap-x-6 gap-y-8 sm:gap-10 lg:grid-cols-4">
+          <div className="col-span-2 sm:col-span-1">
             <Link to="/" className="font-serif text-2xl text-paper-100">
               CorePhia
             </Link>
@@ -79,20 +84,28 @@ export default function Footer() {
             <nav key={col.title} aria-label={col.title}>
               <h3 className="text-sm font-semibold text-paper-100">{col.title}</h3>
               <ul className="mt-4 space-y-2 text-sm">
-                {col.links.map(({ label, to, href }) => (
+                {col.links.map(({ label, to, href, onClick }) => (
                   <li key={label}>
-                    {to || href ? (
+                    {onClick ? (
+                      <button
+                        type="button"
+                        onClick={onClick}
+                        className="inline-block cursor-pointer transition-colors duration-200 ease-out-smooth hover:text-paper-100"
+                      >
+                        {label}
+                      </button>
+                    ) : to || href ? (
                       to ? (
                         <Link
                           to={to}
-                          className="inline-block transition-[color,transform] duration-200 ease-out-smooth hover:translate-x-0.5 hover:text-paper-100"
+                          className="inline-block transition-colors duration-200 ease-out-smooth hover:text-paper-100"
                         >
                           {label}
                         </Link>
                       ) : (
                         <a
                           href={href}
-                          className="inline-block transition-[color,transform] duration-200 ease-out-smooth hover:translate-x-0.5 hover:text-paper-100"
+                          className="inline-block transition-colors duration-200 ease-out-smooth hover:text-paper-100"
                         >
                           {label}
                         </a>
@@ -126,7 +139,7 @@ export default function Footer() {
           ))}
         </div>
 
-        <div className="mt-14 flex flex-col gap-6 border-t border-paper-100/10 pt-6 sm:flex-row sm:items-start sm:justify-between">
+        <div className="mt-10 flex flex-col gap-4 border-t border-paper-100/10 pt-6 sm:mt-14 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
           <div className="flex items-center gap-2 text-xs text-paper-100/60">
             <ShieldCheckIcon className="size-8 text-accent" />
             Certified
@@ -134,15 +147,15 @@ export default function Footer() {
 
           <div className="text-xs leading-relaxed text-paper-100/40 sm:text-right">
           {/* <p>
-              Corephia is a telehealth platform connecting patients with independent, licensed healthcare providers.
-              Corephia does not itself provide medical care and is not a substitute for the independent judgment of
+              CorePhia is a telehealth platform connecting patients with independent, licensed healthcare providers.
+              CorePhia does not itself provide medical care and is not a substitute for the independent judgment of
               a healthcare provider. Prescription products require an online consultation with a provider who will
               determine if a prescription is appropriate. Not all products or doses are appropriate for all
               patients.
             </p> */}
            
             <p className="mt-2">
-              &copy; {new Date().getFullYear()} CorePhia. All rights reserved. COREPHIA is a trademark of CorePhia.
+              &copy; {new Date().getFullYear()} CorePhia. All rights reserved.
             </p>
           </div>
         </div>

@@ -1,0 +1,207 @@
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - banner [ref=e6]:
+      - navigation "Primary" [ref=e7]:
+        - link [ref=e8] [cursor=pointer]:
+          - /url: /
+          - img "CorePhia Health" [ref=e9]
+        - generic [ref=e10]:
+          - link "Get started" [ref=e11] [cursor=pointer]:
+            - /url: /intake
+          - button "Open menu" [expanded] [ref=e12]
+    - main [ref=e15]:
+      - region [ref=e16]:
+        - generic [ref=e17]:
+          - heading "The weight loss care you deserve." [level=1] [ref=e18]
+          - list [ref=e19]:
+            - listitem [ref=e20]: Physician Guided
+            - listitem [ref=e25]: Evidence Based
+            - listitem [ref=e30]: Personalized Care
+            - listitem [ref=e34]: Sustainable Results
+          - generic [ref=e38]:
+            - link [ref=e39] [cursor=pointer]:
+              - /url: /intake
+              - paragraph [ref=e41]: Start yourweight loss program today
+              - generic [ref=e42]: Start my program
+            - link "What's included Medical support Medication when a provider says it's appropriate Dietitian services A meal plan built around how you actually eat Exercise prescriptions Training matched to your level and your goal See the full program" [ref=e45] [cursor=pointer]:
+              - /url: /#programs
+              - generic [ref=e46]:
+                - paragraph [ref=e47]: What's included
+                - list [ref=e48]:
+                  - listitem [ref=e49]:
+                    - generic [ref=e54]:
+                      - generic [ref=e55]: Medical support
+                      - generic [ref=e56]: Medication when a provider says it's appropriate
+                  - listitem [ref=e57]:
+                    - generic [ref=e62]:
+                      - generic [ref=e63]: Dietitian services
+                      - generic [ref=e64]: A meal plan built around how you actually eat
+                  - listitem [ref=e65]:
+                    - generic [ref=e71]:
+                      - generic [ref=e72]: Exercise prescriptions
+                      - generic [ref=e73]: Training matched to your level and your goal
+              - generic [ref=e74]: See the full program
+          - list [ref=e77]:
+            - listitem [ref=e78]:
+              - link "Explore our weight loss programs" [ref=e79] [cursor=pointer]:
+                - /url: /#programs
+            - listitem [ref=e88]:
+              - link "See membership pricing" [ref=e89] [cursor=pointer]:
+                - /url: /pricing
+            - listitem [ref=e99]:
+              - link "Read Dr. Antonious's story" [ref=e100] [cursor=pointer]:
+                - /url: /about
+      - region [ref=e110]:
+        - generic [ref=e112]:
+          - heading "Your weight loss, done the right way" [level=2] [ref=e113]: Your weight loss,done the right way
+          - list [ref=e114]:
+            - listitem [ref=e115]:
+              - article [ref=e116]:
+                - generic "FDA approved medication, when prescribed" [ref=e117]: FDA approved
+                - generic [ref=e129]:
+                  - paragraph [ref=e130]: Physician-guided medical support
+                  - paragraph [ref=e131]: Prescription medication, guided by a licensed provider.
+            - listitem [ref=e132]:
+              - article [ref=e133]:
+                - generic [ref=e143]:
+                  - paragraph [ref=e144]: Personalized nutrition coaching
+                  - paragraph [ref=e145]: A meal plan built around your goals, preferences, and lifestyle.
+            - listitem [ref=e146]:
+              - article [ref=e147]:
+                - generic [ref=e156]:
+                  - paragraph [ref=e157]: Ongoing health checks
+                  - paragraph [ref=e158]: Regular check-ins and progress tracking to keep your plan on target.
+            - listitem [ref=e159]:
+              - article [ref=e160]:
+                - generic [ref=e168]:
+                  - paragraph [ref=e169]: Structured exercise plans
+                  - paragraph [ref=e170]: Workouts tailored to your fitness level, with a plan that grows with you.
+          - paragraph [ref=e171]: Medication is prescribed by a licensed provider as part of your plan. An active CorePhia Weight Loss Membership is required. Membership does not include or guarantee a prescription.
+      - region [ref=e176]:
+        - generic [ref=e177]:
+          - heading "How Corephia's weight loss programs work" [level=2] [ref=e178]
+          - generic [ref=e179]:
+            - generic [ref=e180]:
+              - paragraph [ref=e181]: A program built onreal, sustainable habits
+              - generic [ref=e182]:
+                - paragraph [ref=e183]: Builds habits through personalized nutrition coaching
+                - img "Dumbbell" [ref=e185]
+                - paragraph [ref=e191]: Combines structured exercise with medical support
+            - generic [ref=e192]:
+              - generic [ref=e193]: Real member results
+              - paragraph [ref=e194]: Members lose up to 20% body weight*
+              - paragraph [ref=e212]: 20%
+              - link "Explore our programs" [ref=e213] [cursor=pointer]:
+                - /url: /#programs
+          - paragraph [ref=e214]: "*Based on program outcomes combining nutrition, exercise, and medication when prescribed. Individual results vary."
+      - region [ref=e215]:
+        - generic [ref=e216]:
+          - heading "The best care by the best in medicine" [level=2] [ref=e217]: The best careby the best in medicine
+          - paragraph [ref=e218]: Meet the physician guiding CorePhia's clinical approach.
+        - article [ref=e220]:
+          - generic [ref=e228]:
+            - paragraph [ref=e229]: Double board certified in Internal Medicine
+            - list [ref=e230]:
+              - listitem [ref=e231]: Internal Medicine
+            - paragraph
+            - paragraph [ref=e233]: Dr. Antonious spent years in internal medicine before he started CorePhia. What bothered him was how often weight loss got treated like a prescription problem, a pill, a monthly fee, and nothing said about how someone actually eats or moves day to day. CorePhia pairs dietitian services and an exercise prescription with medication, and medication only enters the plan when a licensed provider decides it's clinically appropriate.
+    - contentinfo [ref=e234]:
+      - generic [ref=e235]:
+        - generic [ref=e236]:
+          - generic [ref=e237]:
+            - link "CorePhia" [ref=e238] [cursor=pointer]:
+              - /url: /
+            - list [ref=e239]:
+              - listitem [ref=e240]: info@corephia.com
+              - listitem [ref=e244]: (000) 123-4567
+              - listitem [ref=e247]: Tampa, Florida
+          - navigation "Programs" [ref=e251]:
+            - heading "Programs" [level=3] [ref=e252]
+            - list [ref=e253]:
+              - listitem [ref=e254]:
+                - link "Weight loss programs" [ref=e255] [cursor=pointer]:
+                  - /url: /#programs
+              - listitem [ref=e256]:
+                - link "Membership pricing" [ref=e257] [cursor=pointer]:
+                  - /url: /pricing
+          - navigation "Company" [ref=e258]:
+            - heading "Company" [level=3] [ref=e259]
+            - list [ref=e260]:
+              - listitem [ref=e261]:
+                - link "About us" [ref=e262] [cursor=pointer]:
+                  - /url: /about
+              - listitem [ref=e263]:
+                - link "Contact us" [ref=e264] [cursor=pointer]:
+                  - /url: /contact
+          - navigation "Patients" [ref=e265]:
+            - heading "Patients" [level=3] [ref=e266]
+            - list [ref=e267]:
+              - listitem [ref=e268]:
+                - link "FAQs" [ref=e269] [cursor=pointer]:
+                  - /url: /faq
+              - listitem [ref=e270]:
+                - generic [ref=e271]: Privacy policy
+              - listitem [ref=e272]:
+                - generic [ref=e273]: Terms of service
+            - heading "Social" [level=3] [ref=e274]
+            - list [ref=e275]:
+              - listitem [ref=e276]:
+                - link "Facebook" [ref=e277] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=e280]:
+                - link "X" [ref=e281] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=e284]:
+                - link "Instagram" [ref=e285] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=e290]:
+                - link "LinkedIn" [ref=e291] [cursor=pointer]:
+                  - /url: "#"
+        - generic [ref=e296]:
+          - generic [ref=e297]: Certified
+          - paragraph [ref=e302]: © 2026 CorePhia. All rights reserved.
+  - dialog "Menu" [ref=e305]:
+    - generic [ref=e417]:
+      - generic [ref=e418]:
+        - heading "Menu" [level=2] [ref=e419]
+        - generic [ref=e420]:
+          - button "Account" [ref=e421]
+          - button "Close menu" [ref=e425]
+      - generic [ref=e428]:
+        - paragraph [ref=e429]: Explore
+        - list [ref=e430]:
+          - listitem [ref=e431]:
+            - link "Home" [ref=e432] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e435]:
+            - button "Weight Loss" [active] [ref=e436]
+          - listitem [ref=e439]:
+            - link "Membership Pricing" [ref=e440] [cursor=pointer]:
+              - /url: /pricing
+          - listitem [ref=e443]:
+            - link "About Us" [ref=e444] [cursor=pointer]:
+              - /url: /about
+          - listitem [ref=e447]:
+            - link "Contact Us" [ref=e448] [cursor=pointer]:
+              - /url: /contact
+          - listitem [ref=e451]:
+            - link "FAQs" [ref=e452] [cursor=pointer]:
+              - /url: /faq
+      - generic [ref=e455]:
+        - paragraph [ref=e456]: What's included
+        - list [ref=e457]:
+          - listitem [ref=e458]:
+            - link "Balanced meal plate Nutrition Coaching" [ref=e459] [cursor=pointer]:
+              - /url: /#programs
+              - img "Balanced meal plate" [ref=e460]
+              - generic [ref=e468]: Nutrition Coaching
+          - listitem [ref=e469]:
+            - link "Dumbbell Exercise Plans" [ref=e470] [cursor=pointer]:
+              - /url: /#programs
+              - img "Dumbbell" [ref=e471]
+              - generic [ref=e477]: Exercise Plans
+          - listitem [ref=e478]:
+            - link "Physician-guided care Medical Support" [ref=e479] [cursor=pointer]:
+              - /url: /#programs
+              - img "Physician-guided care" [ref=e480]
+              - generic [ref=e486]: Medical Support

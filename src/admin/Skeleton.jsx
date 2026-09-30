@@ -96,20 +96,39 @@ export function StackedBarSkeleton({ className = "", segments = 3 }) {
 // Shared by Dashboard's "Most recent intakes" preview and the full Patients
 // list loading states — matches PatientsTable's real table-fixed + colgroup
 // widths and py-4 row height exactly.
-export function TableSkeleton({ rows = 8 }) {
+// The dashboard's recent-patients table and the Patients page's table have
+// different column counts, so the shape is a parameter rather than baked in —
+// each caller passes the colgroup it actually renders, and neither reflows.
+const DASHBOARD_TABLE_COLS = [
+  { col: "w-[26%]", head: "w-16", cell: "w-28" },
+  { col: "w-[18%]", head: "w-20", cell: "w-20" },
+  { col: "w-[18%]", head: "w-12", cell: "w-16" },
+  { col: "w-[38%]", head: "w-14", cell: "w-32" },
+]
+
+// Mirrors PatientsTable.jsx's own colgroup.
+const PATIENTS_TABLE_COLS = [
+  { col: "w-[20%]", head: "w-16", cell: "w-28" },
+  { col: "w-[14%]", head: "w-20", cell: "w-20" },
+  { col: "w-[12%]", head: "w-10", cell: "w-14" },
+  { col: "w-[14%]", head: "w-12", cell: "w-16" },
+  { col: "w-[16%]", head: "w-10", cell: "w-20" },
+  { col: "w-[24%]", head: "w-14", cell: "w-32" },
+]
+
+export function TableSkeleton({ rows = 8, cols = DASHBOARD_TABLE_COLS }) {
   return (
     <table className="w-full min-w-xl table-fixed text-left text-sm">
       <colgroup>
-        <col className="w-[26%]" />
-        <col className="w-[18%]" />
-        <col className="w-[18%]" />
-        <col className="w-[38%]" />
+        {cols.map((column, index) => (
+          <col key={index} className={column.col} />
+        ))}
       </colgroup>
       <thead>
         <tr className="border-b border-ink-950/10">
-          {["w-16", "w-20", "w-12", "w-14"].map((width, index) => (
+          {cols.map((column, index) => (
             <th key={index} className="pb-2">
-              <Bar className={`h-2.5 ${width}`} />
+              <Bar className={`h-2.5 ${column.head}`} />
             </th>
           ))}
         </tr>
@@ -117,18 +136,11 @@ export function TableSkeleton({ rows = 8 }) {
       <tbody className="divide-y divide-ink-950/5">
         {Array.from({ length: rows }).map((_, index) => (
           <tr key={index}>
-            <td className="py-4">
-              <Bar className="h-3.5 w-28" />
-            </td>
-            <td className="py-4">
-              <Bar className="h-3.5 w-20" />
-            </td>
-            <td className="py-4">
-              <Bar className="h-3.5 w-16" />
-            </td>
-            <td className="py-4">
-              <Bar className="h-3.5 w-32" />
-            </td>
+            {cols.map((column, columnIndex) => (
+              <td key={columnIndex} className="py-4">
+                <Bar className={`h-3.5 ${column.cell}`} />
+              </td>
+            ))}
           </tr>
         ))}
       </tbody>
@@ -142,14 +154,15 @@ export function TableSkeleton({ rows = 8 }) {
 export function DashboardSkeleton() {
   return (
     <div className="space-y-4">
+      {/* Mirrors Dashboard.jsx's own stat-tile grid exactly (one row, 4
+          columns, 8 tiles) — it was two separate grids (4 + 3) left over
+          from an earlier tile count that no longer matched. */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatTileSkeleton />
         <StatTileSkeleton />
         <StatTileSkeleton />
         <StatTileSkeleton />
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <StatTileSkeleton />
         <StatTileSkeleton />
         <StatTileSkeleton />
         <StatTileSkeleton />
@@ -192,10 +205,11 @@ export function PatientsSkeleton() {
       <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-ink-950/10 p-4">
         <Bar className="h-9 min-w-0 flex-1 rounded-lg" />
         <Bar className="h-9 w-28 rounded-lg" />
+        <Bar className="h-9 w-32 rounded-lg" />
       </div>
 
       <div className="flex-1 overflow-hidden px-4 pt-3">
-        <TableSkeleton rows={10} />
+        <TableSkeleton rows={10} cols={PATIENTS_TABLE_COLS} />
       </div>
 
       <div className="shrink-0 px-4 pb-4">

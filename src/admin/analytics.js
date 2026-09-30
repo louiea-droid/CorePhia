@@ -26,6 +26,38 @@ function tallyInOrder(values, order) {
 }
 
 const PLAN_ORDER = ["Core", "Core+", "Core Complete"]
+
+// The intake's own answer order (components/intakeScreens.jsx). Patients who
+// typed an exact goal weight are bucketed into the same ranges from current
+// minus goal, so the chart covers everyone rather than only the tappers.
+const GOAL_ORDER = ["Losing 1-15 lbs", "Losing 16-50 lbs", "Losing 51+ lbs", "Not sure, I just need to lose weight"]
+const MEDICATION_INTEREST_LABELS = {
+  discuss: "Wants to discuss it",
+  unsure: "Not sure",
+  no: "Lifestyle program only",
+}
+const MEDICATION_ORDER = Object.values(MEDICATION_INTEREST_LABELS)
+const MEALS_ORDER = ["1", "2", "3", "4 or more", "It varies"]
+const CALORIE_ORDER = ["Under 1,500", "1,500 to 2,000", "2,000 to 2,500", "Over 2,500", "Not sure"]
+
+export function goalBucket(record) {
+  const range = record.vitals?.weightLossGoalRange
+  if (range) return range
+  const toLose = Number(record.vitals?.currentWeightLb) - Number(record.vitals?.goalWeightLb)
+  if (!Number.isFinite(toLose) || toLose <= 0) return ""
+  return toLose <= 15 ? GOAL_ORDER[0] : toLose <= 50 ? GOAL_ORDER[1] : GOAL_ORDER[2]
+}
+
+export const medicationInterestLabel = (value) => MEDICATION_INTEREST_LABELS[value] ?? ""
+
+// Same idea for calories: a typed number lands in its range.
+export function calorieBucket(record) {
+  const range = record.nutrition?.estimatedDailyCaloriesRange
+  if (range) return range
+  const calories = Number(record.nutrition?.estimatedDailyCalories)
+  if (!Number.isFinite(calories) || calories <= 0) return ""
+  return calories < 1500 ? CALORIE_ORDER[0] : calories < 2000 ? CALORIE_ORDER[1] : calories <= 2500 ? CALORIE_ORDER[2] : CALORIE_ORDER[3]
+}
 const EXERCISE_ORDER = [
   "None right now",
   "1-2 days per week",
@@ -107,9 +139,16 @@ export function deriveMetrics(records) {
     .map((record) => Number(record.vitals?.currentWeightLb) - Number(record.vitals?.goalWeightLb))
     .filter((value) => Number.isFinite(value) && value > 0)
 
+  // Records saved before the admission feature existed have no status field —
+  // same "missing means pending" default the admin UI uses everywhere else.
+  const admitted = records.filter((record) => record.status === "admitted").length
+  const pending = records.filter((record) => (record.status ?? "pending") === "pending").length
+
   return {
     total,
     last30: countSince(records, 30),
+    admitted,
+    pending,
     consentCompleteRate: total ? Math.round((consentComplete / total) * 100) : 0,
     avgCurrentWeight: average(currentWeights),
     avgGoalWeight: average(goalWeights),
@@ -121,6 +160,13 @@ export function deriveMetrics(records) {
       PLAN_ORDER,
     ),
     reasons: tally(records.map((record) => record.visit?.reason)),
+    goals: tallyInOrder(records.map(goalBucket), GOAL_ORDER),
+    medicationInterest: tallyInOrder(
+      records.map((record) => medicationInterestLabel(record.medicalHistory?.medicationInterest)),
+      MEDICATION_ORDER,
+    ),
+    meals: tallyInOrder(records.map((record) => record.nutrition?.mealsPerDay), MEALS_ORDER),
+    calories: tallyInOrder(records.map(calorieBucket), CALORIE_ORDER),
     conditions: tally(
       records.flatMap((record) =>
         (record.medicalHistory?.conditions ?? []).filter((item) => item !== "None of the above"),

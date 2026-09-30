@@ -98,7 +98,7 @@ export function BarList({ data, total, emptyLabel = "No data yet", onSelect }) {
 
 // Weekly submission counts. Columns rather than a line because each bar is a
 // discrete per-week total, not a continuous measure.
-export function ColumnChart({ data }) {
+export function ColumnChart({ data, describe = (item) => `${item.value} intake${item.value === 1 ? "" : "s"} the week of ${item.label}` }) {
   const max = Math.max(...data.map((item) => item.value), 1)
 
   return (
@@ -109,7 +109,7 @@ export function ColumnChart({ data }) {
         {data.map((item) => (
           <div key={item.label} className="group relative flex flex-1 flex-col items-center justify-end">
             <span className="pointer-events-none absolute -top-1 left-1/2 z-10 -translate-x-1/2 rounded-lg bg-ink-950 px-2 py-1 text-xs whitespace-nowrap text-paper-50 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-              {item.value} intake{item.value === 1 ? "" : "s"} the week of {item.label}
+              {describe(item)}
             </span>
             {item.value > 0 && (
               <span className="mb-1 text-xs font-semibold tabular-nums text-ink-950/70">{item.value}</span>

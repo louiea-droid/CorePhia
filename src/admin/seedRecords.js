@@ -13,7 +13,6 @@ const LAST_NAMES = [
   "Abernathy", "Voss", "Calloway", "Ibarra", "Petrov", "Nwosu",
 ]
 
-const PLANS = ["Core", "Core+", "Core Complete"]
 const APPOINTMENT_TYPES = [
   "Weight loss consultation",
   "Nutrition consultation",
@@ -121,6 +120,8 @@ function buildSeedRecords(count) {
         currentWeightLb: String(currentWeight),
         goalWeightLb: String(currentWeight - (25 + Math.floor(random() * 55))),
         highestAdultWeightLb: String(currentWeight + Math.floor(random() * 25)),
+        weightLossGoalRange: "",
+        highestAdultWeightRange: "",
       },
       medicalHistory: {
         conditions: conditions.length ? conditions : ["None of the above"],
@@ -128,6 +129,7 @@ function buildSeedRecords(count) {
         allergies: "",
         surgeries: "",
         priorWeightLossTreatment: random() > 0.6 ? "Yes" : "No",
+        medicationInterest: pick(["discuss", "unsure", "no"]),
       },
       familyHistory: { conditions: family.length ? family : ["None of the above"], notes: "" },
       socialHistory: {
@@ -135,9 +137,15 @@ function buildSeedRecords(count) {
         alcohol: pick(ALCOHOL_USE),
         exerciseFrequency: pick(EXERCISE_FREQUENCY),
       },
-      nutrition: { waterIntake: "", estimatedDailyCalories: "", mealsPerDay: "", dietNotes: "" },
+      nutrition: {
+        waterIntake: "",
+        estimatedDailyCalories: "",
+        estimatedDailyCaloriesRange: pick(["Under 1,500", "1,500 to 2,000", "2,000 to 2,500", "Over 2,500", "Not sure"]),
+        mealsPerDay: pick(["1", "2", "3", "4 or more", "It varies"]),
+        dietNotes: "",
+      },
       visit: {
-        membershipPlan: pick(PLANS),
+        membershipPlan: "",
         reason: pick(APPOINTMENT_TYPES),
         preferredDate: "",
         preferredTime: "",

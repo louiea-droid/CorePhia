@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import Select from "../components/Select"
 import ConfirmDialog from "./ConfirmDialog"
 import { PAGE_SIZE_OPTIONS } from "./constants"
 import { AUDIT_ACTIONS, INTAKE_COLLECTION, recordAuditEvent } from "./firebase"
@@ -12,6 +13,11 @@ import { useIntakeRecords } from "./useIntakeRecords"
 
 const PAGE_SIZE_KEY = "corephia-admin-patients-page-size"
 const PLAN_OPTIONS = ["Core", "Core+", "Core Complete"]
+const STATUS_FILTER_OPTIONS = [
+  { value: "pending", label: "Pending" },
+  { value: "admitted", label: "Admitted" },
+  { value: "declined", label: "Declined" },
+]
 
 function readStoredPageSize() {
   try {
@@ -23,7 +29,7 @@ function readStoredPageSize() {
 }
 
 export default function Patients({ role }) {
-  const { records, error, removeRecord } = useIntakeRecords()
+  const { records, error, removeRecord, patchRecord } = useIntakeRecords()
   const [selectedRecord, setSelectedRecord] = useState(null)
   const [pendingDelete, setPendingDelete] = useState(null)
   const [deleting, setDeleting] = useState(false)
@@ -32,6 +38,7 @@ export default function Patients({ role }) {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState("")
   const [planFilter, setPlanFilter] = useState("")
+  const [statusFilter, setStatusFilter] = useState("")
 
   const usingSampleFallback = records && records.length === 0
   const baseRecords = usingSampleFallback ? TEMP_FAKE_RECORDS : records
@@ -39,6 +46,25 @@ export default function Patients({ role }) {
   // either no-op against a nonexistent id or (worse) collide with an unrelated
   // real id, so the option is hidden rather than wired to something misleading.
   const canDelete = role === "superAdmin" && !usingSampleFallback
+  // Admitting/declining isn't destructive, so both admin tiers can do it —
+  // just not against the sample fallback rows, same reasoning as canDelete.
+  const canReview = Boolean(role) && !usingSampleFallback
+
+  const updateStatus = async (record, status) => {
+    await patchRecord(record.id, { status })
+    recordAuditEvent({
+      action: AUDIT_ACTIONS.updateIntakeStatus,
+      targetCollection: INTAKE_COLLECTION,
+      targetId: record.id,
+      targetLabel: [record.demographics?.firstName, record.demographics?.lastName].filter(Boolean).join(" "),
+    })
+    setSelectedRecord((current) => (current?.id === record.id ? { ...current, status } : current))
+  }
+
+  const saveNote = async (record, adminNote) => {
+    await patchRecord(record.id, { adminNote })
+    setSelectedRecord((current) => (current?.id === record.id ? { ...current, adminNote } : current))
+  }
 
   const confirmDelete = async () => {
     if (!pendingDelete) return
@@ -71,11 +97,12 @@ export default function Patients({ role }) {
     const query = search.trim().toLowerCase()
     return baseRecords.filter((record) => {
       if (planFilter && record.visit?.membershipPlan !== planFilter) return false
+      if (statusFilter && (record.status ?? "pending") !== statusFilter) return false
       if (!query) return true
       const name = `${record.demographics?.firstName ?? ""} ${record.demographics?.lastName ?? ""}`.toLowerCase()
       return name.includes(query)
     })
-  }, [baseRecords, search, planFilter])
+  }, [baseRecords, search, planFilter, statusFilter])
 
   const totalPages = filteredRecords ? Math.max(1, Math.ceil(filteredRecords.length / pageSize)) : 1
   // Clamped at render time rather than synced back into state via an effect
@@ -100,6 +127,11 @@ export default function Patients({ role }) {
 
   const updatePlanFilter = (value) => {
     setPlanFilter(value)
+    setPage(1)
+  }
+
+  const updateStatusFilter = (value) => {
+    setStatusFilter(value)
     setPage(1)
   }
 
@@ -139,18 +171,22 @@ export default function Patients({ role }) {
               placeholder="Search by patient name…"
               className="min-w-0 flex-1 rounded-lg border border-ink-950/15 bg-paper-50 px-3 py-2 text-sm text-ink-950 outline-none transition-colors duration-200 placeholder:text-ink-950/40 focus:border-ink-950/40"
             />
-            <select
-              value={planFilter}
-              onChange={(event) => updatePlanFilter(event.target.value)}
-              className="cursor-pointer rounded-lg border border-ink-950/15 bg-white px-3 py-2 text-sm text-ink-950 outline-none transition-colors duration-200 focus:border-ink-950/40"
-            >
-              <option value="">All plans</option>
-              {PLAN_OPTIONS.map((plan) => (
-                <option key={plan} value={plan}>
-                  {plan}
-                </option>
-              ))}
-            </select>
+            <div className="w-40 shrink-0">
+              <Select
+                value={planFilter}
+                onChange={updatePlanFilter}
+                options={[{ value: "", label: "All plans" }, ...PLAN_OPTIONS.map((plan) => ({ value: plan, label: plan }))]}
+                triggerClassName="px-3 py-2 text-sm"
+              />
+            </div>
+            <div className="w-44 shrink-0">
+              <Select
+                value={statusFilter}
+                onChange={updateStatusFilter}
+                options={[{ value: "", label: "All statuses" }, ...STATUS_FILTER_OPTIONS]}
+                triggerClassName="px-3 py-2 text-sm"
+              />
+            </div>
           </div>
 
           {!filteredRecords.length ? (
@@ -200,6 +236,9 @@ export default function Patients({ role }) {
         onClose={() => setSelectedRecord(null)}
         canDelete={canDelete}
         onRequestDelete={setPendingDelete}
+        canReview={canReview}
+        onUpdateStatus={updateStatus}
+        onSaveNote={saveNote}
         // Sample fallback rows aren't real records, so opening one isn't a
         // real access event — keeping them out stops the audit trail filling
         // with entries that point at documents that never existed.

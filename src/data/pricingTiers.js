@@ -3,6 +3,14 @@ import { CrownIcon, LeafIcon, StarIcon } from "../components/icons"
 // Shared so the pricing cards and the FAQ quote the same prices. Lives outside
 // PricingSection because exporting non-components from a component file breaks
 // Fast Refresh.
+// Two switches (Louie, 2026-09-30):
+// - PLANS_SHOWN: the three plans appear on /membership, and the intake asks
+//   which plan (the "Choose {plan}" buttons preselect it via ?plan=).
+// - PRICES_ANNOUNCED: while false, every price reads "Coming soon" (plan cards
+//   and the FAQ). Set true once the client confirms real prices below.
+export const PLANS_SHOWN = true
+export const PRICES_ANNOUNCED = true
+
 export const tiers = [
   {
     name: "Core",

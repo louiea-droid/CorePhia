@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState } from "react"
 import { ChevronDownIcon } from "./icons"
 
-const triggerClass =
-  "flex w-full items-center justify-between gap-2 rounded-2xl border border-ink-950/15 bg-paper-50 px-4 py-3.5 text-left text-ink-950 outline-none transition-colors duration-200 ease-out-smooth focus:border-ink-950/40"
+// Padding/text-size lives outside this base string (as the triggerClassName
+// default below) rather than baked in, so a caller overriding it isn't
+// fighting Tailwind's build-order class precedence with a second, later
+// px-*/py-* utility that may or may not win.
+const baseTriggerClass =
+  "flex w-full items-center justify-between gap-2 rounded-2xl border border-ink-950/15 bg-paper-50 text-left text-ink-950 outline-none transition-colors duration-200 ease-out-smooth focus:border-ink-950/40"
 
 function optionValue(option) {
   return typeof option === "string" ? option : option.value
@@ -17,8 +21,23 @@ function optionLabel(option) {
 // against `required` — while everything visible is a custom listbox the OS
 // dropdown can't be. sr-only rather than removed-from-flow keeps the native
 // "please fill this out" bubble anchored roughly where the button is.
-export default function Select({ name, options, defaultValue = "", placeholder = "Select one", required = false }) {
-  const [value, setValue] = useState(defaultValue)
+//
+// value/onChange make this usable as a controlled filter too (see admin
+// Patients.jsx) — pass both and the component defers to them instead of its
+// own state, same as any other controlled/uncontrolled React input.
+export default function Select({
+  name,
+  options,
+  value: controlledValue,
+  onChange,
+  defaultValue = "",
+  placeholder = "Select one",
+  required = false,
+  triggerClassName = "px-4 py-3.5",
+}) {
+  const isControlled = controlledValue !== undefined
+  const [internalValue, setInternalValue] = useState(defaultValue)
+  const value = isControlled ? controlledValue : internalValue
   const [open, setOpen] = useState(false)
   const rootRef = useRef(null)
 
@@ -66,7 +85,7 @@ export default function Select({ name, options, defaultValue = "", placeholder =
         onClick={() => setOpen((previous) => !previous)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className={triggerClass}
+        className={`${baseTriggerClass} ${triggerClassName}`}
       >
         <span className={selectedLabel ? "" : "text-ink-950/40"}>
           {selectedLabel ? optionLabel(selectedLabel) : placeholder}
@@ -91,11 +110,18 @@ export default function Select({ name, options, defaultValue = "", placeholder =
               <button
                 type="button"
                 onClick={() => {
-                  setValue(optionValue(option))
+                  if (!isControlled) setInternalValue(optionValue(option))
+                  onChange?.(optionValue(option))
                   setOpen(false)
                 }}
                 className={`block w-full rounded-xl px-3.5 py-2.5 text-left text-sm transition-colors duration-150 ease-out-smooth ${
-                  isSelected ? "bg-accent-dark font-medium text-paper-50" : "text-ink-950 hover:bg-paper-100"
+                  // oncolor, not paper-50: this text sits on a solid accent-dark
+                  // fill, so it must stay light in both themes — paper-50 flips
+                  // to near-black under .dark and goes invisible there (this
+                  // component is now also used from the admin, which is
+                  // dark-mode capable; the public form has no .dark scope, so
+                  // this is a no-op there since both tokens are the same hex).
+                  isSelected ? "bg-accent-dark font-medium text-oncolor" : "text-ink-950 hover:bg-paper-100"
                 }`}
               >
                 {optionLabel(option)}

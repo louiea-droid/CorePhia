@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Helmet } from "react-helmet-async"
-import { Route, Routes } from "react-router-dom"
+import { Navigate, Route, Routes } from "react-router-dom"
 import Activity from "./Activity"
 import Dashboard from "./Dashboard"
 import { getAdminRole, isConfigured, signOutAdmin, usingSeedData, watchAdminUser } from "./firebase"
+import IdleWarningModal from "./IdleWarningModal"
 import { MenuIcon } from "./icons"
 import Loader from "./Loader"
 import Login from "./Login"
@@ -12,7 +13,15 @@ import Patients from "./Patients"
 import { readLastViewedMessagesAt, writeLastViewedMessagesAt } from "./recentMessages"
 import Security from "./Security"
 import Sidebar from "./Sidebar"
+import SiteTraffic from "./SiteTraffic"
 import { useAdminTheme } from "./useAdminTheme"
+import { useIdleTimeout } from "./useIdleTimeout"
+
+// Chart access sits behind these two on top of the password: idle staff get
+// signed out automatically rather than leaving an open session on a shared
+// or unattended machine for however long the browser tab stays open.
+const IDLE_TIMEOUT_MS = 15 * 60 * 1000
+const IDLE_WARNING_MS = 60 * 1000
 
 function AdminRoutes({ role, user, displayName, onDisplayNameChange, messagesViewedAt, onMessagesViewed }) {
   return (
@@ -23,6 +32,8 @@ function AdminRoutes({ role, user, displayName, onDisplayNameChange, messagesVie
         path="/admin/messages"
         element={<Messages role={role} messagesViewedAt={messagesViewedAt} onMessagesViewed={onMessagesViewed} />}
       />
+      <Route path="/admin/analytics" element={<SiteTraffic />} />
+      <Route path="/admin/traffic" element={<Navigate to="/admin/analytics" replace />} />
       <Route path="/admin/activity" element={<Activity role={role} />} />
       <Route
         path="/admin/security"
@@ -98,7 +109,7 @@ function AdminChrome({ user, role, displayName, messagesViewedAt, theme, onToggl
         {/* No top padding: PageHeader owns its own top spacing directly
             (plain padding, not a negative margin trying to cancel this
             element's), so there's exactly one place that math lives. */}
-        <main className="flex-1 overflow-y-auto px-4 pb-6 sm:px-6 sm:pb-8">{children}</main>
+        <main className="scrollbar-thin flex-1 overflow-y-auto px-4 pb-6 sm:px-6 sm:pb-8">{children}</main>
       </div>
     </div>
   )
@@ -162,6 +173,17 @@ export default function AdminApp() {
     writeLastViewedMessagesAt(now)
   }
 
+  const idleEnabled = isConfigured && !usingSeedData && !checkingAuth && Boolean(user) && Boolean(role)
+  const handleIdle = useCallback(() => {
+    signOutAdmin()
+  }, [])
+  const idleWarningSecondsLeft = useIdleTimeout({
+    enabled: idleEnabled,
+    timeoutMs: IDLE_TIMEOUT_MS,
+    warningMs: IDLE_WARNING_MS,
+    onIdle: handleIdle,
+  })
+
   useEffect(() => {
     if (!isConfigured) return
     return watchAdminUser(async (nextUser) => {
@@ -199,6 +221,8 @@ export default function AdminApp() {
     if (demoSignedOut) {
       body = (
         <Login
+          theme={theme}
+          onToggleTheme={toggleTheme}
           notice={
             <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-ink-950/10 bg-paper-100 px-4 py-3 text-sm text-ink-950/70">
               <span>
@@ -247,7 +271,7 @@ export default function AdminApp() {
       </div>
     )
   } else if (!user) {
-    body = <Login />
+    body = <Login theme={theme} onToggleTheme={toggleTheme} />
   } else if (!role) {
     body = <NoAccessScreen email={user.email} onSignOut={signOutAdmin} />
   } else {
@@ -279,6 +303,7 @@ export default function AdminApp() {
           of document.body so they stay inside the dark-mode scope. */}
       <div id="admin-portal-root" className={theme === "dark" ? "dark" : undefined}>
         {body}
+        {idleWarningSecondsLeft != null && <IdleWarningModal secondsLeft={idleWarningSecondsLeft} />}
       </div>
     </>
   )

@@ -260,7 +260,7 @@ function SignInForm({ onForgotPassword, onSecondFactorRequired }) {
   )
 }
 
-export default function Login({ notice }) {
+export default function Login({ notice, theme, onToggleTheme }) {
   // Lifted above both forms so the email a person typed while signing in
   // carries over if they tap "Forgot password?" instead of retyping it.
   const [mode, setMode] = useState("sign-in")
@@ -286,7 +286,13 @@ export default function Login({ notice }) {
     <div
       ref={surfaceRef}
       onMouseMove={trackCursor}
-      className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-paper-100 via-paper-200 to-accent/50 px-4"
+      // from-paper-50, not -100: under .dark, paper-100 (#182446) and
+      // paper-200 (#22304f) sit almost on top of each other, so two-thirds
+      // of the gradient read as a flat dark fill that then jumps abruptly
+      // to the lighter corner — paper-50's near-black dark value (#0a0f22)
+      // gives three visibly distinct steps instead. Light mode is
+      // unaffected: paper-50 and paper-100 are nearly identical there too.
+      className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-paper-50 via-paper-200 to-accent/50 px-4"
     >
       <div
         ref={orbRef}
@@ -328,6 +334,31 @@ export default function Login({ notice }) {
           )}
         </div>
       </div>
+
+      {/* Same compact icon button as the collapsed sidebar rail's theme
+          toggle (see Sidebar.jsx and .theme-knob in index.css) — there's no
+          sidebar to put it in yet at this point, so it floats on its own. */}
+      <button
+        type="button"
+        onClick={onToggleTheme}
+        aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+        title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+        className="fixed right-4 bottom-4 z-10 cursor-pointer"
+      >
+        <span className="theme-knob" data-mode={theme}>
+          <span className="theme-toggle__icon" aria-hidden="true">
+            <span className="theme-toggle__icon-part" />
+            <span className="theme-toggle__icon-part" />
+            <span className="theme-toggle__icon-part" />
+            <span className="theme-toggle__icon-part" />
+            <span className="theme-toggle__icon-part" />
+            <span className="theme-toggle__icon-part" />
+            <span className="theme-toggle__icon-part" />
+            <span className="theme-toggle__icon-part" />
+            <span className="theme-toggle__icon-part" />
+          </span>
+        </span>
+      </button>
     </div>
   )
 }

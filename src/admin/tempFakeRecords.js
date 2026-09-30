@@ -24,6 +24,11 @@ const RAW_ROWS = [
   { firstName: "Samuel", lastName: "Okoro", daysAgo: 14, plan: "Core Complete", reason: "Other", state: "GA", weight: 227, goal: 185, condition: "Kidney disease", family: "Obesity", exercise: "None right now", tobacco: "Never used tobacco" },
 ]
 
+// Answers to the intake's newer questions, cycled so the charts have a spread.
+const INTEREST = ["discuss", "unsure", "no", "discuss"]
+const MEALS = ["3", "2", "It varies", "3", "4 or more", "1"]
+const CALORIES = ["1,500 to 2,000", "2,000 to 2,500", "Not sure", "Over 2,500", "Under 1,500"]
+
 export const TEMP_FAKE_RECORDS = RAW_ROWS.map((row, index) => ({
   id: `tmp-${index + 1}`,
   submittedAt: new Date(Date.now() - row.daysAgo * 86400000).toISOString(),
@@ -33,9 +38,11 @@ export const TEMP_FAKE_RECORDS = RAW_ROWS.map((row, index) => ({
     address: { state: row.state },
   },
   vitals: { currentWeightLb: String(row.weight), goalWeightLb: String(row.goal) },
-  medicalHistory: { conditions: [row.condition] },
+  medicalHistory: { conditions: [row.condition], medicationInterest: INTEREST[index % INTEREST.length] },
+  nutrition: { mealsPerDay: MEALS[index % MEALS.length], estimatedDailyCaloriesRange: CALORIES[index % CALORIES.length] },
   familyHistory: { conditions: [row.family] },
   socialHistory: { exerciseFrequency: row.exercise, tobacco: row.tobacco },
-  visit: { membershipPlan: row.plan, reason: row.reason },
+  // No plan: the intake no longer asks for one (data/pricingTiers.js).
+  visit: { membershipPlan: "", reason: row.reason },
   consent: { telehealth: true, hipaaAcknowledged: true },
 }))

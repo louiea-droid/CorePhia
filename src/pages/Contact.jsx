@@ -4,6 +4,7 @@ import { Link } from "react-router-dom"
 import { useReveal } from "../hooks/useReveal"
 import { CheckCircleIcon, MailIcon, MapPinIcon, PhoneIcon } from "../components/icons"
 import Select from "../components/Select"
+import { SUPPORT_PHONE } from "../lib/siteContact"
 
 const INTERESTS = [
   "Starting a weight loss program",
@@ -19,9 +20,8 @@ const inputClass =
 
 const labelClass = "mb-1.5 block text-sm font-medium text-ink-950/80"
 
-// TODO: replace the phone number with a real one before launch.
 const contactDetails = [
-  { icon: PhoneIcon, label: "Phone", value: "(000) 123-4567" },
+  { icon: PhoneIcon, label: "Phone", value: SUPPORT_PHONE },
   { icon: MailIcon, label: "Email", value: "info@corephia.com" },
   { icon: MapPinIcon, label: "Location", value: "Tampa, Florida" },
 ]
@@ -68,10 +68,10 @@ export default function Contact() {
   return (
     <>
       <Helmet>
-        <title>Contact Corephia — Tampa Weight Loss Program</title>
+        <title>Contact CorePhia | Tampa Weight Loss Program</title>
         <meta
           name="description"
-          content="Get in touch with Corephia's care team in Tampa, Florida. Ask a question or tell us what you're looking for and we'll reach out to get you started."
+          content="Get in touch with CorePhia's care team in Tampa, Florida. Ask a question or tell us what you're looking for and we'll reach out to get you started."
         />
         <link rel="canonical" href="https://www.corephia.com/contact" />
       </Helmet>
@@ -87,11 +87,11 @@ export default function Contact() {
         </p>
 
         <div className="mt-8 grid gap-10 sm:mt-12 lg:grid-cols-[1.4fr_1fr]">
-          <div ref={ref} className={`transition-all duration-700 ease-out-smooth ${visible ? "opacity-100" : "opacity-0"}`}>
+          <div ref={ref} data-reveal={visible ? "shown" : "hidden"}>
             {status === "sent" ? (
               <div className="flex flex-col items-start rounded-3xl bg-paper-100 p-8">
                 <CheckCircleIcon className="size-12 text-accent-dark" />
-                <h2 className="mt-4 font-serif text-2xl text-ink-950">Thanks — we've got it.</h2>
+                <h2 className="mt-4 font-serif text-2xl text-ink-950">Thanks, we've got it.</h2>
                 <p className="mt-2 max-w-md text-ink-950/70">
                   A member of our care team will reach out shortly. If you'd like to save time, you can complete
                   your full patient intake form now.
@@ -148,7 +148,7 @@ export default function Contact() {
                     <div role="alert" className="mb-4 rounded-2xl border border-brand-dark/30 bg-paper-50 p-4">
                       <p className="text-sm font-medium text-ink-950">We could not send your message.</p>
                       <p className="mt-1 text-sm text-ink-950/70">
-                        Nothing was sent — try again in a moment, or call us directly.
+                        Nothing was sent. Try again in a moment, or call us directly.
                       </p>
                     </div>
                   )}
@@ -161,7 +161,7 @@ export default function Contact() {
                   </button>
                   <p className="mt-4 text-xs text-ink-950/50">
                     This form is not for medical emergencies. If you are experiencing a medical emergency, call
-                    911 immediately. Please don't include sensitive medical details here — you'll share those
+                    911 immediately. Please don't include sensitive medical details here. You'll share those
                     securely in your intake form.
                   </p>
                 </div>
@@ -196,9 +196,9 @@ export default function Contact() {
               </p>
               <Link
                 to="/intake"
-                className="mt-5 inline-flex rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-ink-950 transition-[transform,background-color] duration-200 ease-out-smooth hover:scale-[1.02] hover:bg-accent-dark"
+                className="mt-5 inline-flex rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-ink-950 transition-colors duration-200 ease-out-smooth hover:bg-accent-dark"
               >
-                Start your journey
+                Get started
               </Link>
             </div>
           </aside>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { deleteIntakeRecord, loadIntakeRecords } from "./firebase"
+import { deleteIntakeRecord, loadIntakeRecords, updateIntakeRecord } from "./firebase"
 
 // Shared by Dashboard and Patients so each owns its own fetch rather than
 // threading records through a context — fine at this scale (a two-person
@@ -26,5 +26,12 @@ export function useIntakeRecords() {
     setRecords((current) => current?.filter((record) => record.id !== id) ?? current)
   }
 
-  return { records, error, removeRecord }
+  // Same confirm-then-reflect order as removeRecord: local state only moves
+  // once Firestore has actually accepted the write.
+  async function patchRecord(id, patch) {
+    await updateIntakeRecord(id, patch)
+    setRecords((current) => current?.map((record) => (record.id === id ? { ...record, ...patch } : record)) ?? current)
+  }
+
+  return { records, error, removeRecord, patchRecord }
 }

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
+import Select from "../components/Select"
 import ConfirmDialog from "./ConfirmDialog"
 import { PAGE_SIZE_OPTIONS } from "./constants"
 import { AUDIT_ACTIONS, MESSAGES_COLLECTION, recordAuditEvent } from "./firebase"
@@ -143,18 +144,14 @@ export default function Messages({ role, messagesViewedAt = 0, onMessagesViewed 
               placeholder="Search by name or email…"
               className="min-w-0 flex-1 rounded-lg border border-ink-950/15 bg-paper-50 px-3 py-2 text-sm text-ink-950 outline-none transition-colors duration-200 placeholder:text-ink-950/40 focus:border-ink-950/40"
             />
-            <select
-              value={topicFilter}
-              onChange={(event) => updateTopicFilter(event.target.value)}
-              className="cursor-pointer rounded-lg border border-ink-950/15 bg-white px-3 py-2 text-sm text-ink-950 outline-none transition-colors duration-200 focus:border-ink-950/40"
-            >
-              <option value="">All topics</option>
-              {TOPIC_OPTIONS.map((topic) => (
-                <option key={topic} value={topic}>
-                  {topic}
-                </option>
-              ))}
-            </select>
+            <div className="w-60 shrink-0">
+              <Select
+                value={topicFilter}
+                onChange={updateTopicFilter}
+                options={[{ value: "", label: "All topics" }, ...TOPIC_OPTIONS.map((topic) => ({ value: topic, label: topic }))]}
+                triggerClassName="px-3 py-2 text-sm"
+              />
+            </div>
           </div>
 
           {!filteredMessages.length ? (

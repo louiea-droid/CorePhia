@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom"
 import { useReveal } from "../hooks/useReveal"
 import { ActivityArt, CareShieldArt, HealthCheckArt, MealPlateArt } from "./Artwork"
 import { BadgeCheckIcon, ClipboardCheckIcon } from "./icons"
@@ -20,16 +21,14 @@ function PillarCard({ pillar, index }) {
   return (
     <li
       ref={ref}
-      style={{ transitionDelay: visible ? `${index * 90}ms` : "0ms" }}
-      className={`transition-all duration-700 ease-out-smooth ${
-        visible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
-      }`}
+      data-reveal={visible ? "shown" : "hidden"}
+      style={{ "--reveal-i": index + 1 }}
     >
-      <article className="group relative flex h-full min-h-48 flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-b from-brand to-brand-dark p-4 shadow-lg transition-[transform,box-shadow] duration-300 ease-out-smooth hover:-translate-y-1.5 hover:shadow-2xl sm:min-h-80 sm:rounded-3xl sm:p-6">
+      <article className="group relative flex h-full min-h-48 flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-b from-brand to-brand-dark p-4 shadow-lg transition-shadow duration-300 ease-out-smooth hover:shadow-2xl sm:min-h-80 sm:rounded-3xl sm:p-6">
         {pillar.fda && <FdaSeal />}
 
         <div
-          className="flex flex-1 items-center justify-center py-2 transition-transform duration-300 ease-out-smooth group-hover:scale-110 sm:py-6"
+          className="flex flex-1 items-center justify-center py-2 sm:py-6"
           aria-hidden="true"
         >
           {pillar.art}
@@ -41,6 +40,11 @@ function PillarCard({ pillar, index }) {
             {pillar.description}
           </p>
         </div>
+        {/* Cards with a landing page link to it. The link covers the whole
+            card, so it is the only thing to tap. */}
+        {pillar.to && (
+          <Link to={pillar.to} className="absolute inset-0 rounded-2xl sm:rounded-3xl" aria-label={pillar.name} />
+        )}
       </article>
     </li>
   )
@@ -48,25 +52,29 @@ function PillarCard({ pillar, index }) {
 
 const pillars = [
     {
-    name: "Physician-guided medical support",
+    name: "Medical care",
+    to: "/programs/medical-care",
     description: "Prescription medication, guided by a licensed provider.",
     art: <CareShieldArt className="h-20 sm:h-40" />,
     fda: true,
   },
   {
-    name: "Personalized nutrition coaching",
+    name: "Dietitian services",
+    to: "/programs/dietitian-services",
     description: "A meal plan built around your goals, preferences, and lifestyle.",
     art: <MealPlateArt className="size-16 sm:size-28" />,
     fda: false,
   },
     {
-    name: "Ongoing health checks",
+    name: "Follow-ups",
+    to: "/programs/follow-ups",
     description: "Regular check-ins and progress tracking to keep your plan on target.",
     art: <HealthCheckArt className="size-16 sm:size-28" />,
     fda: false,
   },
   {
-    name: "Structured exercise plans",
+    name: "Comprehensive Exercise Plan",
+    to: "/programs/exercise-plan",
     description: "Workouts tailored to your fitness level, with a plan that grows with you.",
     art: <ActivityArt className="h-14 w-32 sm:h-24 sm:w-56" />,
     fda: false,
@@ -95,9 +103,8 @@ export default function ProgramGrid() {
         <h2
           ref={headingRef}
           id="programs-heading"
-          className={`font-serif text-4xl leading-tight text-paper-100 transition-all duration-700 ease-out-smooth sm:text-5xl ${
-            headingVisible ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
-          }`}
+          data-reveal={headingVisible ? "shown" : "hidden"}
+          className="font-serif text-4xl leading-tight text-paper-100 sm:text-5xl"
         >
           Your weight loss,
           <br />

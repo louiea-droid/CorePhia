@@ -1,8 +1,8 @@
 import { Helmet } from "react-helmet-async"
 import { Link } from "react-router-dom"
 import { ChevronRightIcon, StethoscopeIcon } from "../components/icons"
-import { tiers } from "../data/pricingTiers"
-import { useReveal } from "../hooks/useReveal"
+import { PRICES_ANNOUNCED, tiers } from "../data/pricingTiers"
+import Reveal from "../components/Reveal"
 
 const priceList = tiers.map((tier) => `${tier.name} at $${tier.price} per month`).join(", ")
 
@@ -23,7 +23,7 @@ const faqGroups = [
       },
       {
         q: "Who qualifies for the program?",
-        a: "Eligibility is a clinical decision rather than a checkbox. A licensed provider reviews your intake, your medical history and your goals, then recommends a plan — including whether medication is appropriate for you. Some patients are a better fit for nutrition and exercise support on its own.",
+        a: "Eligibility is a clinical decision rather than a checkbox. A licensed provider reviews your intake, your medical history and your goals, then recommends a plan, including whether medication is appropriate for you. Some patients are a better fit for nutrition and exercise support on its own.",
       },
     ],
   },
@@ -32,7 +32,7 @@ const faqGroups = [
     items: [
       {
         q: "Is medication included in the price?",
-        a: "What you pay for is the program. Medication is one part of that program, and it is prescribed only when a licensed provider determines it is clinically appropriate for you — it is never promised in advance, and it is never the whole plan. Corephia is not a medication storefront.",
+        a: "What you pay for is the program. Medication is one part of that program, and it is prescribed only when a licensed provider determines it is clinically appropriate for you. It is never promised in advance, and it is never the whole plan. CorePhia is not a medication storefront.",
       },
       {
         q: "Do I have to take medication to join?",
@@ -40,7 +40,7 @@ const faqGroups = [
       },
       {
         q: "What do the nutrition and exercise parts actually involve?",
-        a: "A licensed provider documents what they're recommending for you and builds your plan around what you actually eat, rather than handing you a template. Your exercise plan is prescribed the way medication is — matched to your current fitness level, your goals, and what you can realistically sustain — and it progresses as you do.",
+        a: "A licensed provider documents what they're recommending for you and builds your plan around what you actually eat, rather than handing you a template. Your exercise plan is prescribed the way medication is: matched to your current fitness level, your goals, and what you can realistically sustain, and it progresses as you do.",
       },
       {
         q: "How quickly will I see results?",
@@ -53,11 +53,11 @@ const faqGroups = [
     items: [
       {
         q: "Is this safe?",
-        a: "Your care is delivered by licensed providers who review your complete history — your conditions, current medications, allergies and family history — before recommending anything. You are then seen at regular follow-ups, so your plan is monitored and adjusted rather than left to run on its own.",
+        a: "Your care is delivered by licensed providers who review your complete history (your conditions, current medications, allergies and family history) before recommending anything. You are then seen at regular follow-ups, so your plan is monitored and adjusted rather than left to run on its own.",
       },
       {
         q: "Who will I be working with?",
-        a: "A licensed provider oversees your medical care and a registered dietitian handles the nutrition side. CorePhia was founded by Dr. Daniel Antonious, MD, who is double board certified in internal medicine.",
+        a: "A licensed provider oversees your medical care and a registered dietitian handles the nutrition side. Your provider is board certified in internal medicine and follows your care from your first review.",
       },
       {
         q: "What happens to the health information I submit?",
@@ -70,7 +70,9 @@ const faqGroups = [
     items: [
       {
         q: "How much does the program cost?",
-        a: `Membership is billed monthly, with a tier for the level of support you want: ${priceList}. Each tier lists exactly what it includes in the pricing section of our home page.`,
+        a: PRICES_ANNOUNCED
+          ? `Membership is billed monthly, with a tier for the level of support you want: ${priceList}. Each tier lists exactly what it includes on our membership page.`
+          : "Membership is billed monthly, with a tier for the level of support you want. Each tier lists exactly what it includes on our membership page, and prices are coming soon.",
       },
       {
         // TODO: replace with a definitive answer once the client confirms whether
@@ -99,21 +101,6 @@ const faqSchema = {
   ),
 }
 
-function Reveal({ children, className = "", delay = 0 }) {
-  const [ref, visible] = useReveal()
-  return (
-    <div
-      ref={ref}
-      style={{ transitionDelay: visible ? `${delay}ms` : "0ms" }}
-      className={`transition-all duration-700 ease-out-smooth ${
-        visible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
-      } ${className}`}
-    >
-      {children}
-    </div>
-  )
-}
-
 function FaqItem({ question, answer }) {
   return (
     <details className="group border-b border-ink-950/10 last:border-b-0">
@@ -132,10 +119,10 @@ export default function Faq() {
   return (
     <>
       <Helmet>
-        <title>FAQs — Corephia Weight Loss Programs in Tampa</title>
+        <title>FAQs | CorePhia Weight Loss Programs in Tampa</title>
         <meta
           name="description"
-          content="Answers to common questions about Corephia's weight loss program in Tampa, Florida — who qualifies, how medication is prescribed, what the program costs, and how your care is delivered."
+          content="Answers to common questions about CorePhia's weight loss program in Tampa, Florida: who qualifies, how medication is prescribed, what the program costs, and how your care is delivered."
         />
         <link rel="canonical" href="https://www.corephia.com/faq" />
         <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
@@ -150,7 +137,7 @@ export default function Faq() {
         </h1>
         <p className="mt-6 text-lg leading-relaxed text-ink-950/70">
           What the program includes, how medication is actually handled, who it's for and what it costs. If
-          something you need isn't here, ask us directly — we would rather answer it properly.
+          something you need isn't here, ask us directly. We would rather answer it properly.
         </p>
       </section>
 
@@ -192,9 +179,9 @@ export default function Faq() {
             <div className="flex flex-wrap gap-3">
               <Link
                 to="/intake"
-                className="rounded-full bg-accent px-6 py-3 text-sm font-semibold text-ink-950 transition-[transform,background-color] duration-200 ease-out-smooth hover:scale-[1.02] hover:bg-accent-dark"
+                className="rounded-full bg-accent px-6 py-3 text-sm font-semibold text-ink-950 transition-colors duration-200 ease-out-smooth hover:bg-accent-dark"
               >
-                Start your journey
+                Get started
               </Link>
               <Link
                 to="/contact"

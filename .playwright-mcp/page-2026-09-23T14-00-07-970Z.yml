@@ -1,0 +1,315 @@
+- generic [ref=f2e3]:
+  - generic [ref=f2e4]:
+    - generic [ref=f2e5]:
+      - paragraph [ref=f2e9]: Corephia Admin
+      - navigation "Admin" [ref=f2e10]:
+        - list [ref=f2e11]:
+          - listitem [ref=f2e12]:
+            - link "Dashboard" [ref=f2e13] [cursor=pointer]:
+              - /url: /admin
+          - listitem [ref=f2e18]:
+            - link "Patients" [ref=f2e19] [cursor=pointer]:
+              - /url: /admin/patients
+          - listitem [ref=f2e27]:
+            - link "Messages" [ref=f2e28] [cursor=pointer]:
+              - /url: /admin/messages
+          - listitem [ref=f2e34]:
+            - link "Activity" [ref=f2e35] [cursor=pointer]:
+              - /url: /admin/activity
+      - generic [ref=f2e40]:
+        - switch [ref=f2e44] [cursor=pointer]
+        - button "Collapse sidebar" [expanded] [ref=f2e45]:
+          - generic [ref=f2e48]: Collapse
+        - link [ref=f2e49] [cursor=pointer]:
+          - /url: /admin/security
+          - generic [ref=f2e54]:
+            - paragraph [ref=f2e55]: testing2@gmail.com
+            - paragraph [ref=f2e56]: Super admin
+        - button "Sign out" [ref=f2e57]
+    - main [ref=f2e63]:
+      - generic [ref=f2e64]:
+        - generic [ref=f2e65]:
+          - heading "Patients" [level=1] [ref=f2e66]
+          - paragraph
+        - generic [ref=f2e67]:
+          - generic [ref=f2e68]:
+            - searchbox "Search by patient name…" [ref=f2e69]
+            - combobox [ref=f2e70] [cursor=pointer]:
+              - option "All plans" [selected]
+              - option "Core"
+              - option "Core+"
+              - option "Core Complete"
+            - combobox [ref=f2e71] [cursor=pointer]:
+              - option "All statuses" [selected]
+              - option "Pending"
+              - option "Admitted"
+              - option "Declined"
+          - table [ref=f2e74]:
+            - rowgroup [ref=f2e82]:
+              - row [ref=f2e83]:
+                - columnheader "Patient" [ref=f2e84]
+                - columnheader "Submitted" [ref=f2e85]
+                - columnheader "Time" [ref=f2e86]
+                - columnheader "Status" [ref=f2e87]
+                - columnheader "Plan" [ref=f2e88]
+                - columnheader "Reason" [ref=f2e89]
+            - rowgroup [ref=f2e90]:
+              - button "View intake details for Sasha Ibarra" [ref=f2e91] [cursor=pointer]:
+                - cell "Sasha Ibarra" [ref=f2e92]
+                - cell "Sep 17, 2026" [ref=f2e93]
+                - cell "11:27am" [ref=f2e94]
+                - cell "admitted" [ref=f2e95]
+                - cell "Core" [ref=f2e96]
+                - cell "Exercise program consultation" [ref=f2e97]
+              - button "View intake details for Harper Nakamura" [ref=f2e98] [cursor=pointer]:
+                - cell "Harper Nakamura" [ref=f2e99]
+                - cell "Sep 17, 2026" [ref=f2e100]
+                - cell "11:19am" [ref=f2e101]
+                - cell "pending" [ref=f2e102]
+                - cell "Core+" [ref=f2e103]
+                - cell "Nutrition consultation" [ref=f2e104]
+              - button "View intake details for Elliot Ferreira" [ref=f2e105] [cursor=pointer]:
+                - cell "Elliot Ferreira" [ref=f2e106]
+                - cell "Sep 17, 2026" [ref=f2e107]
+                - cell "11:19am" [ref=f2e108]
+                - cell "pending" [ref=f2e109]
+                - cell "Core+" [ref=f2e110]
+                - cell "Weight loss consultation" [ref=f2e111]
+              - button "View intake details for Morgan Delacroix" [ref=f2e112] [cursor=pointer]:
+                - cell "Morgan Delacroix" [ref=f2e113]
+                - cell "Sep 17, 2026" [ref=f2e114]
+                - cell "11:19am" [ref=f2e115]
+                - cell "pending" [ref=f2e116]
+                - cell "Core" [ref=f2e117]
+                - cell "Weight loss consultation" [ref=f2e118]
+              - button "View intake details for Casey Marchetti" [ref=f2e119] [cursor=pointer]:
+                - cell "Casey Marchetti" [ref=f2e120]
+                - cell "Sep 17, 2026" [ref=f2e121]
+                - cell "11:18am" [ref=f2e122]
+                - cell "pending" [ref=f2e123]
+                - cell "Core Complete" [ref=f2e124]
+                - cell "Follow-up visit" [ref=f2e125]
+              - button "View intake details for Riley Okonkwo" [ref=f2e126] [cursor=pointer]:
+                - cell "Riley Okonkwo" [ref=f2e127]
+                - cell "Sep 17, 2026" [ref=f2e128]
+                - cell "11:16am" [ref=f2e129]
+                - cell "pending" [ref=f2e130]
+                - cell "Core" [ref=f2e131]
+                - cell "Nutrition consultation" [ref=f2e132]
+              - button "View intake details for Jordan Whitfield" [ref=f2e133] [cursor=pointer]:
+                - cell "Jordan Whitfield" [ref=f2e134]
+                - cell "Sep 17, 2026" [ref=f2e135]
+                - cell "11:16am" [ref=f2e136]
+                - cell "pending" [ref=f2e137]
+                - cell "Core Complete" [ref=f2e138]
+                - cell "General health check" [ref=f2e139]
+              - button "View intake details for Avery Sandoval" [ref=f2e140] [cursor=pointer]:
+                - cell "Avery Sandoval" [ref=f2e141]
+                - cell "Sep 17, 2026" [ref=f2e142]
+                - cell "11:15am" [ref=f2e143]
+                - cell "pending" [ref=f2e144]
+                - cell "Core+" [ref=f2e145]
+                - cell "Weight loss consultation" [ref=f2e146]
+              - button "View intake details for weee wooo" [ref=f2e147] [cursor=pointer]:
+                - cell "weee wooo" [ref=f2e148]
+                - cell "Sep 17, 2026" [ref=f2e149]
+                - cell "10:28am" [ref=f2e150]
+                - cell "pending" [ref=f2e151]
+                - cell "—" [ref=f2e152]
+                - cell "Weight loss consultation" [ref=f2e153]
+              - row [aria-hidden] [ref=f2e154]:
+                - cell [ref=f2e155]
+                - cell [ref=f2e156]
+                - cell [ref=f2e157]
+                - cell [ref=f2e158]
+                - cell [ref=f2e159]
+                - cell [ref=f2e160]
+          - generic [ref=f2e162]:
+            - generic [ref=f2e163]: Showing 1–9 of 9
+            - generic [ref=f2e164]:
+              - button "Previous page" [disabled] [ref=f2e165]: ‹
+              - button "1" [ref=f2e166] [cursor=pointer]
+              - button "Next page" [disabled] [ref=f2e167]: ›
+            - generic [ref=f2e168]:
+              - text: Show
+              - combobox "Show" [ref=f2e169] [cursor=pointer]:
+                - option "10" [selected]
+                - option "20"
+                - option "30"
+                - option "50"
+                - option "100"
+  - dialog "Sasha Ibarra's intake details" [ref=f2e172]:
+    - generic [ref=f2e173]:
+      - generic [ref=f2e174]:
+        - generic [ref=f2e175]:
+          - paragraph [ref=f2e177]: Sasha Ibarra
+          - paragraph [ref=f2e178]: Submitted September 17, 2026
+        - generic [ref=f2e179]:
+          - button "Delete this intake record" [ref=f2e180]
+          - button "Close" [active] [ref=f2e185]
+      - generic [ref=f2e188]:
+        - generic [ref=f2e189]:
+          - group "Admission status" [ref=f2e190]:
+            - button "Admit" [pressed] [ref=f2e192] [cursor=pointer]
+            - button "Pending" [ref=f2e193] [cursor=pointer]
+            - button "Decline" [ref=f2e194] [cursor=pointer]
+          - button "Note" [ref=f2e196] [cursor=pointer]
+        - generic:
+          - generic:
+            - textbox "Notes for the care team — not visible to the patient." [ref=f2e201]
+            - button "Save note" [disabled] [ref=f2e203]
+    - generic [ref=f2e204]:
+      - generic [ref=f2e205]:
+        - heading "Demographics" [level=3] [ref=f2e206]
+        - generic [ref=f2e207]:
+          - generic [ref=f2e208]:
+            - paragraph [ref=f2e209]: Date of birth
+            - paragraph [ref=f2e210]: 9/30/2024
+          - generic [ref=f2e211]:
+            - paragraph [ref=f2e212]: Sex assigned at birth
+            - paragraph [ref=f2e213]: intersex
+          - generic [ref=f2e214]:
+            - paragraph [ref=f2e215]: Phone
+            - paragraph [ref=f2e216]: "8135550815"
+          - generic [ref=f2e217]:
+            - paragraph [ref=f2e218]: Email
+            - paragraph [ref=f2e219]: sasha.ibarra.test@example.com
+          - generic [ref=f2e220]:
+            - paragraph [ref=f2e221]: Address
+            - paragraph [ref=f2e222]: 244 S Willow Ave
+          - generic [ref=f2e223]:
+            - paragraph [ref=f2e224]: City, state
+            - paragraph [ref=f2e225]: Tampa, FL
+          - generic [ref=f2e226]:
+            - paragraph [ref=f2e227]: Postal code
+            - paragraph [ref=f2e228]: "33606"
+      - generic [ref=f2e229]:
+        - heading "Emergency contact" [level=3] [ref=f2e230]
+        - generic [ref=f2e231]:
+          - generic [ref=f2e232]:
+            - paragraph [ref=f2e233]: Name
+            - paragraph [ref=f2e234]: Toni Ibarra
+          - generic [ref=f2e235]:
+            - paragraph [ref=f2e236]: Relationship
+            - paragraph [ref=f2e237]: Partner
+          - generic [ref=f2e238]:
+            - paragraph [ref=f2e239]: Phone
+            - paragraph [ref=f2e240]: "8135550816"
+      - generic [ref=f2e241]:
+        - heading "Insurance" [level=3] [ref=f2e242]
+        - generic [ref=f2e243]:
+          - generic [ref=f2e244]:
+            - paragraph [ref=f2e245]: Provider
+            - paragraph [ref=f2e246]: Humana
+          - generic [ref=f2e247]:
+            - paragraph [ref=f2e248]: Member ID
+            - paragraph [ref=f2e249]: HUM8899001
+          - generic [ref=f2e250]:
+            - paragraph [ref=f2e251]: Group number
+            - paragraph [ref=f2e252]: GRP-2255
+          - generic [ref=f2e253]:
+            - paragraph [ref=f2e254]: Policyholder
+            - paragraph [ref=f2e255]: Sasha Ibarra
+      - generic [ref=f2e256]:
+        - heading "Vitals" [level=3] [ref=f2e257]
+        - generic [ref=f2e258]:
+          - generic [ref=f2e259]:
+            - paragraph [ref=f2e260]: Height
+            - paragraph [ref=f2e261]: 5 ft 7 in
+          - generic [ref=f2e262]:
+            - paragraph [ref=f2e263]: Current weight
+            - paragraph [ref=f2e264]: 230 lb
+          - generic [ref=f2e265]:
+            - paragraph [ref=f2e266]: Goal weight
+            - paragraph [ref=f2e267]: 180 lb
+          - generic [ref=f2e268]:
+            - paragraph [ref=f2e269]: Highest adult weight
+            - paragraph [ref=f2e270]: 240 lb
+      - generic [ref=f2e271]:
+        - heading "Medical history" [level=3] [ref=f2e272]
+        - generic [ref=f2e273]:
+          - generic [ref=f2e274]:
+            - paragraph [ref=f2e275]: Conditions
+            - paragraph [ref=f2e276]: High cholesterol, Anxiety or depression
+          - generic [ref=f2e277]:
+            - paragraph [ref=f2e278]: Medications
+            - paragraph [ref=f2e279]: Sertraline 100mg daily, Trazodone 50mg as needed for sleep
+          - generic [ref=f2e280]:
+            - paragraph [ref=f2e281]: Allergies
+            - paragraph [ref=f2e282]: None known
+          - generic [ref=f2e283]:
+            - paragraph [ref=f2e284]: Prior weight loss treatment
+            - paragraph [ref=f2e285]: Worked with a personal trainer for 6 months, saw modest results but stress eating undid progress.
+          - generic [ref=f2e286]:
+            - paragraph [ref=f2e287]: Surgeries
+            - paragraph [ref=f2e288]: None
+      - generic [ref=f2e289]:
+        - heading "Family history" [level=3] [ref=f2e290]
+        - generic [ref=f2e291]:
+          - generic [ref=f2e292]:
+            - paragraph [ref=f2e293]: Conditions
+            - paragraph [ref=f2e294]: Cancer, High blood pressure
+          - generic [ref=f2e295]:
+            - paragraph [ref=f2e296]: Notes
+            - paragraph [ref=f2e297]: Aunt had colon cancer; father has high blood pressure.
+      - generic [ref=f2e298]:
+        - heading "Social history & nutrition" [level=3] [ref=f2e299]
+        - generic [ref=f2e300]:
+          - generic [ref=f2e301]:
+            - paragraph [ref=f2e302]: Tobacco
+            - paragraph [ref=f2e303]: Other tobacco use
+          - generic [ref=f2e304]:
+            - paragraph [ref=f2e305]: Alcohol
+            - paragraph [ref=f2e306]: Moderately (3-7 drinks per week)
+          - generic [ref=f2e307]:
+            - paragraph [ref=f2e308]: Exercise frequency
+            - paragraph [ref=f2e309]: 1-2 days per week
+          - generic [ref=f2e310]:
+            - paragraph [ref=f2e311]: Water intake
+            - paragraph [ref=f2e312]: 2-4 glasses a day
+          - generic [ref=f2e313]:
+            - paragraph [ref=f2e314]: Est. daily calories
+            - paragraph [ref=f2e315]: "2300"
+          - generic [ref=f2e316]:
+            - paragraph [ref=f2e317]: Meals per day
+            - paragraph [ref=f2e318]: "3"
+          - generic [ref=f2e319]:
+            - paragraph [ref=f2e320]: Diet notes
+            - paragraph [ref=f2e321]: Stress eating in the evenings is the biggest challenge, otherwise eats reasonably balanced meals.
+      - generic [ref=f2e322]:
+        - heading "Visit" [level=3] [ref=f2e323]
+        - generic [ref=f2e324]:
+          - generic [ref=f2e325]:
+            - paragraph [ref=f2e326]: Membership plan
+            - paragraph [ref=f2e327]: Core
+          - generic [ref=f2e328]:
+            - paragraph [ref=f2e329]: Reason
+            - paragraph [ref=f2e330]: Exercise program consultation
+          - generic [ref=f2e331]:
+            - paragraph [ref=f2e332]: Preferred date
+            - paragraph [ref=f2e333]: 9/23/2026
+          - generic [ref=f2e334]:
+            - paragraph [ref=f2e335]: Preferred time
+            - paragraph [ref=f2e336]: Evening (4pm - 7pm)
+          - generic [ref=f2e337]:
+            - paragraph [ref=f2e338]: Notes
+            - paragraph [ref=f2e339]: Would like the exercise plan to accommodate a knee that flares up occasionally.
+      - generic [ref=f2e340]:
+        - heading "Consent" [level=3] [ref=f2e341]
+        - generic [ref=f2e342]:
+          - generic [ref=f2e343]:
+            - generic [ref=f2e344]:
+              - generic [ref=f2e345]: ✓
+              - generic [ref=f2e346]: Telehealth consent
+            - generic [ref=f2e347]:
+              - generic [ref=f2e348]: ✓
+              - generic [ref=f2e349]: HIPAA acknowledged
+            - generic [ref=f2e350]:
+              - generic [ref=f2e351]: ✓
+              - generic [ref=f2e352]: Insurance billing authorized
+          - generic [ref=f2e353]:
+            - paragraph [ref=f2e354]: Signed by
+            - paragraph [ref=f2e355]: Sasha Ibarra
+          - generic [ref=f2e356]:
+            - paragraph [ref=f2e357]: Signed on
+            - paragraph [ref=f2e358]: 9/16/2026

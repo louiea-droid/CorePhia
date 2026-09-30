@@ -1,12 +1,17 @@
 import { Suspense, lazy, useEffect } from "react"
-import { Route, Routes, useLocation, useNavigationType } from "react-router-dom"
+import { Navigate, Route, Routes, useLocation, useNavigationType } from "react-router-dom"
+import CookieBanner from "./components/CookieBanner"
 import Footer from "./components/Footer"
 import Header from "./components/Header"
 import PatientIntakeForm from "./components/PatientIntakeForm"
+import SiteAnalytics from "./components/SiteAnalytics"
 import About from "./pages/About"
 import Contact from "./pages/Contact"
 import Faq from "./pages/Faq"
 import Home from "./pages/Home"
+import Membership from "./pages/Membership"
+import ProgramPage from "./pages/ProgramPage"
+import SuccessStories from "./pages/SuccessStories"
 
 // Lazily loaded so the admin bundle — and the Firebase SDK it pulls in — is
 // never downloaded by visitors to the public site.
@@ -48,9 +53,22 @@ function App() {
     )
   }
 
+  // The intake is locked in (client meeting, docs/meeting-analysis.md): no
+  // header, footer or nav, so the only ways out are finishing it or closing
+  // the tab. PatientIntakeForm draws its own minimal top bar.
+  if (pathname.replace(/\/$/, "") === "/intake") {
+    return (
+      <>
+        <ScrollManager />
+        <PatientIntakeForm />
+      </>
+    )
+  }
+
   return (
     <div className="bg-paper-50">
       <ScrollManager />
+      <SiteAnalytics />
       <Header />
       <main>
         <Routes>
@@ -58,6 +76,10 @@ function App() {
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/faq" element={<Faq />} />
+          <Route path="/membership" element={<Membership />} />
+          <Route path="/pricing" element={<Navigate to="/membership" replace />} />
+          <Route path="/programs/:slug" element={<ProgramPage />} />
+          <Route path="/success-stories" element={<SuccessStories />} />
           <Route path="/intake" element={<PatientIntakeForm />} />
           <Route
             path="/account"
@@ -70,6 +92,7 @@ function App() {
         </Routes>
       </main>
       <Footer />
+      <CookieBanner />
     </div>
   )
 }

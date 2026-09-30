@@ -22,6 +22,8 @@ import {
   onSnapshot,
   orderBy,
   query,
+  updateDoc,
+  where,
 } from "firebase/firestore"
 
 const config = {
@@ -37,13 +39,19 @@ export const INTAKE_COLLECTION = "intakeRecords"
 export const MESSAGES_COLLECTION = "contactMessages"
 export const AUDIT_COLLECTION = "auditLog"
 export const USERS_COLLECTION = "user"
+export const SITE_EVENTS_COLLECTION = "siteEvents"
 
 export const AUDIT_ACTIONS = {
   viewIntake: "view_intake_record",
   deleteIntake: "delete_intake_record",
+  updateIntakeStatus: "update_intake_status",
   viewMessage: "view_contact_message",
   deleteMessage: "delete_contact_message",
 }
+
+// A record with no status field yet (every one submitted before this feature
+// existed) reads as pending rather than needing a backfill migration.
+export const INTAKE_STATUSES = ["pending", "admitted", "declined"]
 
 export const isConfigured = Boolean(config.apiKey && config.projectId)
 
@@ -186,6 +194,15 @@ export async function deleteIntakeRecord(id) {
   await deleteDoc(doc(db, INTAKE_COLLECTION, id))
 }
 
+// Status and the admin note are saved separately (buttons vs. a free-text
+// field with its own Save action), so this only ever writes the fields it's
+// given rather than clobbering one with a stale copy of the other.
+export async function updateIntakeRecord(id, patch) {
+  if (usingSeedData) return
+  if (!db) throw new Error("Firebase is not configured.")
+  await updateDoc(doc(db, INTAKE_COLLECTION, id), patch)
+}
+
 export async function loadIntakeRecords() {
   // Imported dynamically so the sample records are not bundled into a
   // production build, where this branch is unreachable anyway.
@@ -234,6 +251,20 @@ export async function loadAuditLog(entryLimit = 250) {
   if (!db) throw new Error("Firebase is not configured.")
   const snapshot = await getDocs(query(collection(db, AUDIT_COLLECTION), orderBy("at", "desc"), limit(entryLimit)))
   return snapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() }))
+}
+
+// Anonymous page-view and click counts from the public site (lib/siteEvents.js),
+// read for the Analytics page. `day` is the visitor's local YYYY-MM-DD, so a
+// string comparison selects the window; single-field, so no composite index.
+export async function loadSiteEvents(days = 30) {
+  const since = new Date(Date.now() - (days - 1) * 86400000).toLocaleDateString("en-CA")
+  if (usingSeedData) {
+    const { sampleSiteEvents } = await import("./sampleSiteEvents")
+    return sampleSiteEvents(days)
+  }
+  if (!db) throw new Error("Firebase is not configured.")
+  const snapshot = await getDocs(query(collection(db, SITE_EVENTS_COLLECTION), where("day", ">=", since)))
+  return snapshot.docs.map((entry) => entry.data())
 }
 
 // Same rules restriction as deleteIntakeRecord: superAdmin only, enforced by

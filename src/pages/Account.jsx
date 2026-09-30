@@ -19,7 +19,7 @@ export default function Account() {
   return (
     <section className="mx-auto max-w-2xl px-4 py-20 sm:px-6">
       <Helmet>
-        <title>My Account — Corephia</title>
+        <title>My Account | CorePhia</title>
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
 
