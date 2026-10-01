@@ -4,9 +4,9 @@ import { calorieBucket, deriveMetrics, goalBucket, medicationInterestLabel } fro
 import { BarList, Card, ColumnChart, Histogram, RankedList, StackedBar, StatTile, TagCloud } from "./charts"
 import { ChevronLeftIcon } from "./icons"
 import PageHeader from "./PageHeader"
-import PatientListModal from "./PatientListModal"
-import PatientModal from "./PatientModal"
-import PatientsTable from "./PatientsTable"
+import ApplicantListModal from "./ApplicantListModal"
+import ApplicantModal from "./ApplicantModal"
+import ApplicantsTable from "./ApplicantsTable"
 import { DashboardSkeleton } from "./Skeleton"
 import { TEMP_FAKE_RECORDS } from "./tempFakeRecords"
 import { useIntakeRecords } from "./useIntakeRecords"
@@ -52,7 +52,7 @@ export default function Dashboard() {
         <div className="rounded-2xl border border-ink-950/10 bg-white p-8 text-center">
           <h2 className="font-serif text-2xl text-ink-950">No intakes yet</h2>
           <p className="mx-auto mt-3 max-w-md text-sm text-ink-950/60">
-            Completed patient intake forms will appear here, with a breakdown of what patients reported.
+            Completed patient intake forms will appear here, with a breakdown of what applicants reported.
           </p>
         </div>
       ) : (
@@ -83,7 +83,7 @@ export default function Dashboard() {
               label="Avg goal weight"
               value={metrics.avgGoalWeight ?? "—"}
               unit="lb"
-              caption="What patients are aiming for"
+              caption="What applicants are aiming for"
             />
             <StatTile
               label="Avg intended loss"
@@ -146,7 +146,7 @@ export default function Dashboard() {
                 />
               </Card>
             )}
-            <Card title="Where patients are" hint="By state on the intake address">
+            <Card title="Where applicants are" hint="By state on the intake address">
               <RankedList
                 data={metrics.states}
                 total={metrics.total}
@@ -252,7 +252,7 @@ export default function Dashboard() {
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <Card title="Conditions patients reported" hint="Patients may report more than one">
+            <Card title="Conditions applicants reported" hint="Applicants may report more than one">
               <TagCloud
                 data={metrics.conditions}
                 emptyLabel="No conditions reported yet"
@@ -265,7 +265,7 @@ export default function Dashboard() {
                 }
               />
             </Card>
-            <Card title="Family history reported" hint="Patients may report more than one">
+            <Card title="Family history reported" hint="Applicants may report more than one">
               <TagCloud
                 data={metrics.familyHistory}
                 emptyLabel="No family history reported yet"
@@ -284,24 +284,24 @@ export default function Dashboard() {
             title="Most recent intakes"
             hint={
               <Link
-                to="/admin/patients"
-                className="inline-flex items-center gap-1 font-medium text-accent-dark hover:opacity-70"
+                to="/admin/applicants"
+                className="inline-flex items-center gap-1 font-medium text-accent-text hover:opacity-70"
               >
-                See all patients
+                See all applicants
                 <ChevronLeftIcon className="size-3.5 rotate-180" />
               </Link>
             }
           >
-            <PatientsTable records={baseRecords.slice(0, 8)} onSelect={setSelectedRecord} />
+            <ApplicantsTable records={baseRecords.slice(0, 8)} onSelect={setSelectedRecord} />
           </Card>
         </div>
       )}
 
-      <PatientListModal
+      <ApplicantListModal
         title={drilldown?.title}
         subtitle={
           drilldown &&
-          `${drilldown.description}: ${drilldownMatches.length} patient${drilldownMatches.length === 1 ? "" : "s"}`
+          `${drilldown.description}: ${drilldownMatches.length} applicant${drilldownMatches.length === 1 ? "" : "s"}`
         }
         records={drilldownMatches}
         onSelectPatient={(record) => {
@@ -311,7 +311,7 @@ export default function Dashboard() {
         onClose={() => setDrilldown(null)}
       />
 
-      <PatientModal
+      <ApplicantModal
         record={selectedRecord}
         onClose={() => setSelectedRecord(null)}
         audit={!usingSampleFallback}

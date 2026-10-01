@@ -1,11 +1,13 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
+import { flushSync } from "react-dom"
 import { Helmet } from "react-helmet-async"
 import { Link, useSearchParams } from "react-router-dom"
 import { SUPPORT_PHONE } from "../lib/siteContact"
 import { trackEvent } from "../lib/track"
 import { PLANS_SHOWN } from "../data/pricingTiers"
-import { ArrowRightIcon, CheckCircleIcon } from "./icons"
+import { ArrowRightIcon, CheckCircleIcon, ChevronRightIcon, CloseIcon } from "./icons"
 import { EXACT, PLANS, SCREENS } from "./intakeScreens"
+import { SET_VALUE_EVENT } from "./Select"
 
 const MULTI_FIELDS = new Set(["conditions", "familyHistory"])
 const NONE = "None of the above"
@@ -53,8 +55,170 @@ function enforceNoneExclusive(input) {
   }
 }
 
+// Points the patient at a missing answer. The custom Select and DatePicker
+// keep their real input sr-only and aria-hidden, so the browser's own report
+// would focus something a screen reader can't describe. Focus their visible
+// trigger and name the field in an alert instead.
+function reportInvalid(invalid, showError) {
+  if (invalid.getAttribute("aria-hidden") !== "true") {
+    invalid.reportValidity()
+    return
+  }
+  invalid.parentElement.querySelector("button")?.focus()
+  const label = invalid.closest("label")?.querySelector("span")?.textContent.replace("*", "").trim()
+  showError(`${label || "This field"} is required.`)
+}
+
+const fieldNames = (form) => new Set([...form.elements].map((element) => element.name).filter(Boolean))
+
+// Copies the named answers from one form to another: the intake into the edit
+// dialog when it opens, and back out on Save. Select and DatePicker hold their
+// value in React state (their hidden input is aria-hidden), so they're set
+// through SET_VALUE_EVENT rather than a .value write React would overwrite.
+function copyAnswers(from, to, names) {
+  for (const name of names) {
+    const source = [...from.elements].filter((element) => element.name === name)
+    const target = [...to.elements].filter((element) => element.name === name)
+    if (target[0]?.type === "radio" || target[0]?.type === "checkbox") {
+      const picked = new Set(source.filter((element) => element.checked).map((element) => element.value))
+      for (const element of target) element.checked = picked.has(element.value)
+      continue
+    }
+    const value = source[0]?.value ?? ""
+    for (const element of target) {
+      if (element.getAttribute("aria-hidden") === "true") {
+        element.dispatchEvent(new CustomEvent(SET_VALUE_EVENT, { detail: value }))
+      } else {
+        element.value = value
+      }
+    }
+  }
+}
+
+// The review's per-answer Edit (Louie, 2026-10-01): the question(s) behind
+// one answer in a dialog over the review, instead of sending the patient back
+// through the flow. It renders the same screens in its own <form>, prefilled
+// from the intake; Save validates and copies the answers back, Cancel just
+// drops the copy, so it's a true undo. Native <dialog> traps focus, closes on
+// Escape and sits in the top layer above everything.
+function EditDialog({ screenIds, intakeForm, intakeAnswers, selectedPlan, today, onSave, onClose }) {
+  const dialogRef = useRef(null)
+  const formRef = useRef(null)
+  const [answers, setAnswers] = useState(intakeAnswers)
+  const [error, setError] = useState("")
+
+  // Open prefilled, before first paint. Page scroll is locked underneath.
+  useLayoutEffect(() => {
+    copyAnswers(intakeForm, formRef.current, fieldNames(formRef.current))
+    dialogRef.current.showModal()
+    const root = document.documentElement
+    root.style.overflow = "hidden"
+    return () => {
+      root.style.overflow = ""
+    }
+  }, [intakeForm])
+
+  // The dialog's answers over the intake's, so a screen that reads an earlier
+  // answer (the BMI readout reads current weight) still sees it. Its own
+  // fields are cleared first, so unticking every box really reads as none.
+  const handleChange = (event) => {
+    enforceNoneExclusive(event.target)
+    setError("")
+    const merged = { ...intakeAnswers }
+    for (const name of fieldNames(formRef.current)) delete merged[name]
+    setAnswers({ ...merged, ...readAnswers(formRef.current) })
+  }
+
+  const handleSubmit = (event) => {
+    event.preventDefault()
+    const invalid = firstInvalid(formRef.current)
+    if (invalid) {
+      reportInvalid(invalid, setError)
+      return
+    }
+    // Synchronously, so the intake's Select/DatePicker state has landed in
+    // the DOM before onSave reads the answers back out of it. onSave runs it
+    // twice: a follow-up box the intake only renders once it sees the new
+    // answer (Surgeries "Yes" shows "Which surgeries?") gets its text on the
+    // second pass.
+    const names = fieldNames(formRef.current)
+    onSave(() => flushSync(() => copyAnswers(formRef.current, intakeForm, names)))
+  }
+
+  const screens = screenIds
+    .map((id) => SCREENS.find((screen) => screen.id === id))
+    .filter((screen) => !screen.showIf || screen.showIf(answers))
+
+  return (
+    <dialog
+      ref={dialogRef}
+      aria-labelledby="edit-dialog-title"
+      // Escape. A Select or DatePicker that is open closes itself first.
+      onCancel={(event) => {
+        event.preventDefault()
+        if (!dialogRef.current.querySelector('[aria-expanded="true"]')) onClose()
+      }}
+      // The dialog has no padding, so only a press on the backdrop lands on it.
+      onClick={(event) => event.target === event.currentTarget && onClose()}
+      className="animate-sheet-in mx-0 mt-auto mb-0 max-h-[92dvh] w-full max-w-none overflow-hidden rounded-t-3xl bg-paper-50 p-0 text-ink-950 shadow-2xl shadow-ink-950/30 backdrop:bg-ink-950/45 backdrop:backdrop-blur-[2px] sm:m-auto sm:max-w-lg sm:rounded-3xl"
+    >
+      <form ref={formRef} noValidate onSubmit={handleSubmit} onChange={handleChange} className="flex max-h-[92dvh] flex-col">
+        <div className="flex items-center justify-between gap-4 px-6 pt-5">
+          <p className="text-sm font-medium text-ink-950/60">Edit your answer</p>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close without saving"
+            className="-mr-2 cursor-pointer rounded-full p-2 text-ink-950/60 transition-colors duration-200 ease-out-smooth hover:bg-paper-100 hover:text-ink-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-dark"
+          >
+            <CloseIcon className="size-5" />
+          </button>
+        </div>
+
+        <div className="space-y-10 overflow-y-auto overscroll-contain px-6 pt-3 pb-8">
+          {screens.map((screen, index) => (
+            <div key={screen.id}>
+              <h2
+                id={index === 0 ? "edit-dialog-title" : undefined}
+                className={`font-serif leading-tight text-balance text-ink-950 ${
+                  index === 0 ? "text-2xl sm:text-3xl" : "text-xl sm:text-2xl"
+                }`}
+              >
+                {screen.question}
+              </h2>
+              {screen.hint && <p className="mt-2 text-sm text-ink-950/70">{screen.hint}</p>}
+              <div className="mt-6 space-y-5">{screen.render({ answers, selectedPlan, today })}</div>
+            </div>
+          ))}
+          {error && (
+            <p role="alert" className="text-sm font-medium text-brand-dark">
+              {error}
+            </p>
+          )}
+        </div>
+
+        <div className="flex items-center justify-end gap-2 border-t border-ink-950/10 bg-paper-50 px-6 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <button
+            type="button"
+            onClick={onClose}
+            className="cursor-pointer rounded-full px-5 py-3 text-sm font-semibold text-ink-950/70 transition-colors duration-200 ease-out-smooth hover:bg-paper-100 hover:text-ink-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-dark"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="inline-flex h-12 cursor-pointer items-center justify-center rounded-full bg-ink-950 px-7 text-sm font-semibold text-paper-50 shadow-lg shadow-ink-950/20 transition-colors duration-200 ease-out-smooth hover:bg-brand-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-dark focus-visible:ring-offset-2 focus-visible:ring-offset-paper-50"
+          >
+            Save changes
+          </button>
+        </div>
+      </form>
+    </dialog>
+  )
+}
+
 // Grouped to mirror the sections of a standard EMR intake (demographics,
-// emergency contact, vitals, history, social history, visit, consent) so it
+// vitals, history, social history, visit, consent) so it
 // can be mapped onto the EMR's own intake record with minimal translation.
 // firestore.rules accepts only these top-level keys, so new fields go inside
 // an existing group. The has* gate answers are deliberately not read: an
@@ -83,11 +247,6 @@ function buildIntakeRecord(form) {
         postalCode: text("zip"),
       },
     },
-    emergencyContact: {
-      name: text("emergencyName"),
-      relationship: text("emergencyRelationship"),
-      phone: text("emergencyPhone"),
-    },
     vitals: {
       heightFeet: text("heightFeet"),
       heightInches: text("heightInches"),
@@ -95,7 +254,6 @@ function buildIntakeRecord(form) {
       goalWeightLb: text("goalWeight"),
       weightLossGoalRange: range("weightLossGoal"),
       highestAdultWeightLb: text("highestWeight"),
-      highestAdultWeightRange: range("highestWeightRange"),
     },
     medicalHistory: {
       conditions: many("conditions"),
@@ -246,7 +404,7 @@ function Splash({ onDone }) {
         <img
           src="/cp-health.webp"
           alt=""
-          className="animate-splash-in h-10 w-fit brightness-0 invert sm:h-12"
+          className="animate-splash-in h-10 w-auto self-start brightness-0 invert sm:h-12"
         />
         <div className="my-auto">
           <p
@@ -284,6 +442,8 @@ export default function PatientIntakeForm() {
   const [direction, setDirection] = useState("forward")
   const [dirty, setDirty] = useState(false)
   const [fieldError, setFieldError] = useState("")
+  // The review answer being edited: { screenIds, opener }, or null.
+  const [editing, setEditing] = useState(null)
   const [settling, setSettling] = useState(false)
   const [answered, setAnswered] = useState({ any: false, typed: false })
   const [keyboardPick, setKeyboardPick] = useState(false)
@@ -411,18 +571,15 @@ export default function PatientIntakeForm() {
     setCurrentId(id)
   }
 
-  // Points the patient at a missing answer. The custom Select and DatePicker
-  // keep their real input sr-only and aria-hidden, so the browser's own
-  // report would focus something a screen reader can't describe. Focus their
-  // visible trigger and name the field in an alert instead.
-  const report = (invalid) => {
-    if (invalid.getAttribute("aria-hidden") !== "true") {
-      invalid.reportValidity()
-      return
-    }
-    invalid.parentElement.querySelector("button")?.focus()
-    const label = invalid.closest("label")?.querySelector("span")?.textContent.replace("*", "").trim()
-    setFieldError(`${label || "This field"} is required.`)
+  const report = (invalid) => reportInvalid(invalid, setFieldError)
+
+  // Back to the Edit that opened the dialog, so keyboard focus picks up where
+  // the patient was. The dialog has to be gone first: while it's open, the
+  // page behind it is inert and can't take focus.
+  const closeEdit = () => {
+    const { opener } = editing
+    flushSync(() => setEditing(null))
+    opener.focus()
   }
 
   const goNext = () => {
@@ -439,11 +596,12 @@ export default function PatientIntakeForm() {
     if (target) goTo(target.id)
   }
 
-  // The review screen's Edit buttons (data-goto) jump back to a section.
+  // The review screen's Edit buttons (data-edit) open that answer's screens
+  // in the edit dialog.
   const handleClick = (event) => {
-    const target = event.target.closest("[data-goto]")?.dataset.goto
-    if (target) {
-      goTo(target, "back")
+    const edit = event.target.closest("[data-edit]")
+    if (edit) {
+      setEditing({ screenIds: edit.dataset.edit.split(" "), opener: edit })
       return
     }
     // A tap on a single-choice answer moves on, including a tap on the answer
@@ -537,7 +695,7 @@ export default function PatientIntakeForm() {
   }
 
   return (
-    <div className="min-h-dvh bg-paper-50">
+    <div className="min-h-dvh overflow-x-clip bg-paper-50">
       <Helmet>
         <title>Schedule an Appointment | CorePhia Patient Intake Form</title>
         <meta
@@ -603,11 +761,23 @@ export default function PatientIntakeForm() {
             </p>
           )}
 
-          {/* No Back button (Louie's call): the browser or phone back gesture
-              steps back a question, and the review screen's Edit links cover
-              changing an answer. Continue appears once the screen has an
-              answer; an optional screen offers Skip until then. */}
-          <div className="mt-10 flex items-center">
+          {/* Continue appears once the screen has an answer; an optional
+              screen offers Skip until then. Back steps one question through
+              the same history entries as the phone's back gesture (see onPop),
+              so both behave identically. Not on the first question (it would
+              leave the intake) or on the review, where each answer has its
+              own Edit. */}
+          <div className="mt-10 flex items-center gap-3">
+            {position > 0 && !isLast && (
+              <button
+                type="button"
+                onClick={() => window.history.back()}
+                className="-ml-2 inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-full py-2 pr-3 pl-2 text-sm font-medium text-ink-950/60 transition-colors duration-200 ease-out-smooth hover:text-ink-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-dark"
+              >
+                <ChevronRightIcon className="size-4 rotate-180" />
+                Back
+              </button>
+            )}
             {current.optional && !canContinue && (
               <button
                 type="button"
@@ -621,7 +791,7 @@ export default function PatientIntakeForm() {
               <button
                 type="submit"
                 disabled={status === "sending"}
-                className="inline-flex h-14 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-ink-950 px-8 text-base font-semibold text-paper-50 shadow-lg shadow-ink-950/20 transition-colors duration-200 ease-out-smooth hover:bg-brand-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-dark focus-visible:ring-offset-2 focus-visible:ring-offset-paper-50 disabled:cursor-not-allowed disabled:opacity-60 sm:ml-auto sm:w-auto sm:min-w-44"
+                className="inline-flex h-14 flex-1 cursor-pointer items-center justify-center gap-2 rounded-full bg-ink-950 px-8 text-base font-semibold text-paper-50 shadow-lg shadow-ink-950/20 transition-colors duration-200 ease-out-smooth hover:bg-brand-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-dark focus-visible:ring-offset-2 focus-visible:ring-offset-paper-50 disabled:cursor-not-allowed disabled:opacity-60 sm:ml-auto sm:min-w-44 sm:flex-none"
               >
                 {isLast ? (status === "sending" ? "Sending…" : "Submit intake form") : "Continue"}
                 {!isLast && <ArrowRightIcon className="size-5" />}
@@ -630,6 +800,26 @@ export default function PatientIntakeForm() {
           </div>
         </form>
       </main>
+      {/* Outside the intake <form>, so its fields stay out of the intake's
+          FormData and its changes don't reach handleChange. */}
+      {editing && (
+        <EditDialog
+          screenIds={editing.screenIds}
+          intakeForm={formRef.current}
+          intakeAnswers={answers}
+          selectedPlan={selectedPlan}
+          today={today}
+          onSave={(copyBack) => {
+            copyBack()
+            flushSync(() => setAnswers(readAnswers(formRef.current)))
+            copyBack()
+            setAnswers(readAnswers(formRef.current))
+            setDirty(true)
+            closeEdit()
+          }}
+          onClose={closeEdit}
+        />
+      )}
     </div>
   )
 }

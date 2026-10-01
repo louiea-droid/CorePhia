@@ -1,15 +1,22 @@
 import { useCallback, useEffect, useState } from "react"
 import { Helmet } from "react-helmet-async"
 import { Navigate, Route, Routes } from "react-router-dom"
+import AccountMenu from "./AccountMenu"
 import Activity from "./Activity"
 import Dashboard from "./Dashboard"
-import { getAdminRole, isConfigured, signOutAdmin, usingSeedData, watchAdminUser } from "./firebase"
+import { getAdminAccess, isConfigured, signOutAdmin, usingSeedData, watchAdminUser } from "./firebase"
 import IdleWarningModal from "./IdleWarningModal"
 import { MenuIcon } from "./icons"
 import Loader from "./Loader"
 import Login from "./Login"
 import Messages from "./Messages"
+import Applicants from "./Applicants"
+import PatientChart from "./PatientChart"
 import Patients from "./Patients"
+import { canOpen } from "./roles"
+import Staff from "./Staff"
+import ThemeSwitch from "./ThemeSwitch"
+import Todo from "./Todo"
 import { readLastViewedMessagesAt, writeLastViewedMessagesAt } from "./recentMessages"
 import Security from "./Security"
 import Sidebar from "./Sidebar"
@@ -23,21 +30,51 @@ import { useIdleTimeout } from "./useIdleTimeout"
 const IDLE_TIMEOUT_MS = 15 * 60 * 1000
 const IDLE_WARNING_MS = 60 * 1000
 
-function AdminRoutes({ role, user, displayName, onDisplayNameChange, messagesViewedAt, onMessagesViewed }) {
+// A page the role can't open shows this instead of loading data the rules
+// would refuse anyway (the sidebar already hides its link).
+function Guard({ page, role, children }) {
+  if (canOpen(page, role)) return children
+  return (
+    <div className="flex h-full items-center justify-center p-8">
+      <div className="max-w-md rounded-2xl border border-ink-950/10 bg-white p-8 text-center">
+        <p className="font-serif text-2xl text-ink-950">Not available for your role</p>
+        <p className="mt-3 text-sm text-ink-950/60">Your role can't open this page. Ask an admin if you need access.</p>
+      </div>
+    </div>
+  )
+}
+
+function AdminRoutes({ role, signerName, user, displayName, onDisplayNameChange, messagesViewedAt, onMessagesViewed }) {
+  // Who is acting, for chart admission, note signing and staff changes.
+  // name is the staff record's (getAdminAccess), not the editable display
+  // name: it is what gets stamped on signed notes, and the rules check it.
+  const actor = { uid: user?.uid ?? "demo", name: signerName || "Demo admin", role }
+  const guard = (page, element) => (
+    <Guard page={page} role={role}>
+      {element}
+    </Guard>
+  )
   return (
     <Routes>
-      <Route path="/admin" element={<Dashboard />} />
-      <Route path="/admin/patients" element={<Patients role={role} />} />
+      <Route path="/admin" element={guard("dashboard", <Dashboard />)} />
+      <Route path="/admin/applicants" element={guard("applicants", <Applicants role={role} actor={actor} />)} />
+      <Route path="/admin/patients" element={guard("patients", <Patients actor={actor} />)} />
+      <Route path="/admin/patients/:chartId" element={guard("patients", <PatientChart actor={actor} />)} />
+      <Route path="/admin/todo" element={guard("todo", <Todo actor={actor} />)} />
       <Route
         path="/admin/messages"
-        element={<Messages role={role} messagesViewedAt={messagesViewedAt} onMessagesViewed={onMessagesViewed} />}
+        element={guard(
+          "messages",
+          <Messages role={role} messagesViewedAt={messagesViewedAt} onMessagesViewed={onMessagesViewed} />,
+        )}
       />
-      <Route path="/admin/analytics" element={<SiteTraffic />} />
+      <Route path="/admin/analytics" element={guard("analytics", <SiteTraffic />)} />
       <Route path="/admin/traffic" element={<Navigate to="/admin/analytics" replace />} />
-      <Route path="/admin/activity" element={<Activity role={role} />} />
+      <Route path="/admin/staff" element={guard("staff", <Staff actor={actor} />)} />
+      <Route path="/admin/activity" element={guard("activity", <Activity role={role} />)} />
       <Route
         path="/admin/security"
-        element={<Security user={user} displayName={displayName} onDisplayNameChange={onDisplayNameChange} />}
+        element={<Security user={user} role={role} displayName={displayName} onDisplayNameChange={onDisplayNameChange} />}
       />
     </Routes>
   )
@@ -75,24 +112,25 @@ function AdminChrome({ user, role, displayName, messagesViewedAt, theme, onToggl
     // so only part of their own content scrolls.
     <div className="h-screen overflow-hidden bg-paper-50">
       <Sidebar
-        user={user}
         role={role}
-        displayName={displayName}
         messagesViewedAt={messagesViewedAt}
-        theme={theme}
-        onToggleTheme={onToggleTheme}
         collapsed={collapsed}
         onToggleCollapsed={toggleCollapsed}
         mobileOpen={mobileOpen}
         onCloseMobile={() => setMobileOpen(false)}
-        onSignOut={onSignOut}
       />
 
       <div
-        className={`flex h-full flex-col transition-[padding] duration-300 ease-out-smooth ${
+        className={`relative flex h-full flex-col transition-[padding] duration-300 ease-out-smooth ${
           collapsed ? "lg:pl-18" : "lg:pl-64"
         }`}
       >
+        {/* Sits over the right end of the first bar: the mobile top bar on
+            phones, each page's sticky PageHeader on desktop. */}
+        <div className="absolute top-2 right-4 z-20 flex items-center gap-2 sm:right-6">
+          <ThemeSwitch theme={theme} onToggle={onToggleTheme} />
+          <AccountMenu user={user} role={role} displayName={displayName} onSignOut={onSignOut} />
+        </div>
         <div className="flex shrink-0 items-center gap-3 border-b border-ink-950/10 bg-white px-4 py-3 lg:hidden">
           <button
             type="button"
@@ -103,7 +141,7 @@ function AdminChrome({ user, role, displayName, messagesViewedAt, theme, onToggl
           >
             <MenuIcon className="size-5" />
           </button>
-          <p className="font-serif text-base leading-none text-ink-950">Corephia Admin</p>
+          <p className="font-serif text-base leading-none text-ink-950">CorePhia Admin</p>
         </div>
 
         {/* No top padding: PageHeader owns its own top spacing directly
@@ -154,6 +192,7 @@ function NotConfiguredScreen() {
 export default function AdminApp() {
   const [user, setUser] = useState(null)
   const [role, setRole] = useState(null)
+  const [signerName, setSignerName] = useState(null)
   const [checkingAuth, setCheckingAuth] = useState(isConfigured)
   const [demoSignedOut, setDemoSignedOut] = useState(false)
   // updateProfile() mutates auth.currentUser in place rather than handing back
@@ -195,7 +234,9 @@ export default function AdminApp() {
       setCheckingAuth(true)
       setUser(nextUser)
       setDisplayName(nextUser?.displayName ?? null)
-      setRole(nextUser ? await getAdminRole(nextUser) : null)
+      const access = nextUser ? await getAdminAccess(nextUser) : { role: null, name: null }
+      setRole(access.role)
+      setSignerName(access.name)
       setCheckingAuth(false)
     })
   }, [])
@@ -203,7 +244,7 @@ export default function AdminApp() {
   // The admin must never be indexed or followed, wherever it is hosted.
   const head = (
     <Helmet>
-      <title>Corephia Admin</title>
+      <title>CorePhia Admin</title>
       <meta name="robots" content="noindex, nofollow" />
     </Helmet>
   )
@@ -232,7 +273,7 @@ export default function AdminApp() {
               <button
                 type="button"
                 onClick={() => setDemoSignedOut(false)}
-                className="shrink-0 font-semibold text-accent-dark transition-opacity duration-200 hover:opacity-70"
+                className="shrink-0 font-semibold text-accent-text transition-opacity duration-200 hover:opacity-70"
               >
                 Back
               </button>
@@ -279,13 +320,16 @@ export default function AdminApp() {
       <AdminChrome
         user={user}
         role={role}
-        displayName={displayName}
+        // The account button shows a name, never the email: the display name,
+        // else the staff record's (getAdminAccess falls back to the email).
+        displayName={displayName || (signerName !== user.email ? signerName : null)}
         messagesViewedAt={messagesViewedAt}
         theme={theme}
         onToggleTheme={toggleTheme}
       >
         <AdminRoutes
           role={role}
+          signerName={signerName}
           user={user}
           displayName={displayName}
           onDisplayNameChange={setDisplayName}

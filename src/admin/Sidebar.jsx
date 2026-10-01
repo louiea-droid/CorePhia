@@ -1,40 +1,37 @@
 import { useState } from "react"
 import { Link, useLocation } from "react-router-dom"
-import ConfirmDialog from "./ConfirmDialog"
 import {
   ActivityIcon,
+  ApplicantsIcon,
   ChevronLeftIcon,
   CloseIcon,
   DashboardIcon,
   MailIcon,
   PatientsIcon,
-  PersonIcon,
-  SignOutIcon,
+  StaffIcon,
+  TodoIcon,
   TrafficIcon,
 } from "./icons"
-import { signOutAdmin } from "./firebase"
+import { canOpen } from "./roles"
 import { isNewMessage } from "./recentMessages"
 import { useContactMessages } from "./useContactMessages"
 
-// `superAdminOnly` mirrors firestore.rules rather than adding a second source
-// of truth: a plain admin following the URL directly still gets refused by
-// Firestore, this just keeps a link they can't use out of their sidebar.
+// `page` keys into roles.js, which mirrors firestore.rules rather than adding
+// a second source of truth: someone following a URL directly is still refused
+// by Firestore (and by the route guard); this keeps links they can't use out
+// of their sidebar.
 const NAV_ITEMS = [
-  { label: "Dashboard", icon: DashboardIcon, to: "/admin" },
-  { label: "Patients", icon: PatientsIcon, to: "/admin/patients" },
-  { label: "Messages", icon: MailIcon, to: "/admin/messages" },
-  { label: "Analytics", icon: TrafficIcon, to: "/admin/analytics" },
-  { label: "Activity", icon: ActivityIcon, to: "/admin/activity", superAdminOnly: true },
+  { label: "Dashboard", icon: DashboardIcon, to: "/admin", page: "dashboard" },
+  // Intake submissions awaiting admit/decline. Admitting one starts their
+  // chart under Patients.
+  { label: "Applicants", icon: ApplicantsIcon, to: "/admin/applicants", page: "applicants" },
+  { label: "Patients", icon: PatientsIcon, to: "/admin/patients", page: "patients" },
+  { label: "To-do", icon: TodoIcon, to: "/admin/todo", page: "todo" },
+  { label: "Messages", icon: MailIcon, to: "/admin/messages", page: "messages" },
+  { label: "Analytics", icon: TrafficIcon, to: "/admin/analytics", page: "analytics" },
+  { label: "Staff", icon: StaffIcon, to: "/admin/staff", page: "staff" },
+  { label: "Activity", icon: ActivityIcon, to: "/admin/activity", page: "activity" },
 ]
-
-const ROLE_LABELS = {
-  superAdmin: "Super admin",
-  admin: "Admin",
-}
-
-function roleLabel(role) {
-  return ROLE_LABELS[role] ?? "No role assigned"
-}
 
 // Shared by every collapsible label (nav items, the brand wordmark, footer
 // rows). display:none (what a plain `lg:hidden` toggle uses) can't be
@@ -50,21 +47,14 @@ function collapsibleLabelClass(collapsed, maxWidthClass = "lg:max-w-40") {
 }
 
 export default function Sidebar({
-  user,
   role,
-  displayName,
   messagesViewedAt = 0,
-  theme,
-  onToggleTheme,
   collapsed,
   onToggleCollapsed,
   mobileOpen,
   onCloseMobile,
-  onSignOut = signOutAdmin,
 }) {
   const location = useLocation()
-  const [confirmingSignOut, setConfirmingSignOut] = useState(false)
-  const accountLabel = displayName || user?.email || "Demo admin (preview)"
 
   // Live — useContactMessages subscribes rather than fetching once, unlike
   // every other list in this admin, so a message submitted elsewhere while
@@ -75,24 +65,12 @@ export default function Sidebar({
   // messagesViewedAt, by contrast, IS a live prop — it comes from AdminApp
   // and updates the moment the Messages page marks itself viewed, so this
   // count drops to zero without a reload either.
-  const { messages } = useContactMessages()
+  const { messages } = useContactMessages({ enabled: canOpen("messages", role) })
   const [now] = useState(() => Date.now())
   const newMessageCount = messages?.filter((message) => isNewMessage(message, now, messagesViewedAt)).length ?? 0
 
   return (
     <>
-      <ConfirmDialog
-        open={confirmingSignOut}
-        title="Sign out of Corephia Admin?"
-        description="You'll need to sign in again to view patient records."
-        confirmLabel="Sign out"
-        onConfirm={() => {
-          setConfirmingSignOut(false)
-          onSignOut()
-        }}
-        onCancel={() => setConfirmingSignOut(false)}
-      />
-
       {/* Mobile scrim. Hidden from assistive tech; the panel below owns focus. */}
       <div
         aria-hidden="true"
@@ -124,7 +102,7 @@ export default function Sidebar({
             <img src="/cp-mark.webp" alt="" className="size-7 shrink-0 object-contain" />
 
             <div className={`min-w-0 ${collapsibleLabelClass(collapsed)}`}>
-              <p className="truncate font-serif text-base leading-none text-ink-950">Corephia Admin</p>
+              <p className="truncate font-serif text-base leading-none text-ink-950">CorePhia Admin</p>
               
             </div>
           </div>
@@ -141,8 +119,10 @@ export default function Sidebar({
 
         <nav aria-label="Admin" className="flex-1 overflow-y-auto p-3">
           <ul className="space-y-1">
-            {NAV_ITEMS.filter((item) => !item.superAdminOnly || role === "superAdmin").map((item) => {
-              const current = location.pathname === item.to
+            {NAV_ITEMS.filter((item) => canOpen(item.page, role)).map((item) => {
+              // A chart (/admin/patients/:id) keeps Patients highlighted.
+              const current =
+                location.pathname === item.to || (item.to !== "/admin" && location.pathname.startsWith(`${item.to}/`))
               const count = item.to === "/admin/messages" ? newMessageCount : 0
               return (
                 <li key={item.label}>
@@ -157,8 +137,7 @@ export default function Sidebar({
                         : "text-ink-950/70 hover:bg-ink-950/5 hover:text-ink-950"
                     }`}
                   >
-                    {/* Two shapes for one count, swapped by width the same way
-                        the theme control below is: the collapsed rail has no
+                    {/* Two shapes for one count, swapped by width: the collapsed rail has no
                         room for a number beside the icon, so it degrades to a
                         dot on the icon's corner. On the active row the pill
                         inverts — an accent badge on the accent fill would be
@@ -191,84 +170,19 @@ export default function Sidebar({
           </ul>
         </nav>
 
-        <div className="border-t border-ink-950/10 p-3">
-          {/* Two controls for one setting, swapped by width rather than by
-              a JS branch: `collapsed` is a desktop-only state (the mobile
-              drawer is always full width), so the switch has to stay put
-              below lg even when collapsed is true. The collapsed rail is
-              72px wide — 24px of it usable once the paddings are taken out
-              — which no pill switch fits, so it falls back to a plain icon
-              button there, like every other row in the rail.
-
-              A <label> rather than a <button> — it wraps a real checkbox
-              (see index.css's .theme-toggle rules), and interactive content
-              like an <input> can't legally nest inside a <button>. */}
-          <label
-            htmlFor="admin-theme-toggle"
-            className={`flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-1.5 text-sm font-medium text-ink-950/70 transition-colors duration-200 hover:bg-ink-950/5 hover:text-ink-950 ${
-              collapsed ? "lg:hidden" : ""
-            }`}
-          >
-            <span className="theme-toggle shrink-0" data-mode={theme}>
-              <span className="theme-toggle__wrap">
-                <input
-                  id="admin-theme-toggle"
-                  className="theme-toggle__input"
-                  type="checkbox"
-                  role="switch"
-                  checked={theme === "dark"}
-                  onChange={onToggleTheme}
-                />
-                <span className="theme-toggle__icon" aria-hidden="true">
-                  <span className="theme-toggle__icon-part" />
-                  <span className="theme-toggle__icon-part" />
-                  <span className="theme-toggle__icon-part" />
-                  <span className="theme-toggle__icon-part" />
-                  <span className="theme-toggle__icon-part" />
-                  <span className="theme-toggle__icon-part" />
-                  <span className="theme-toggle__icon-part" />
-                  <span className="theme-toggle__icon-part" />
-                  <span className="theme-toggle__icon-part" />
-                </span>
-              </span>
-            </span>
-          
-          </label>
-
-          <button
-            type="button"
-            onClick={onToggleTheme}
-            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-            className={`hidden w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-200 hover:bg-ink-950/5 ${
-              collapsed ? "lg:flex" : ""
-            }`}
-          >
-            <span className="theme-knob shrink-0" data-mode={theme}>
-              <span className="theme-toggle__icon" aria-hidden="true">
-                <span className="theme-toggle__icon-part" />
-                <span className="theme-toggle__icon-part" />
-                <span className="theme-toggle__icon-part" />
-                <span className="theme-toggle__icon-part" />
-                <span className="theme-toggle__icon-part" />
-                <span className="theme-toggle__icon-part" />
-                <span className="theme-toggle__icon-part" />
-                <span className="theme-toggle__icon-part" />
-                <span className="theme-toggle__icon-part" />
-              </span>
-            </span>
-          </button>
-
-          {/* Collapsing is a desktop affordance (see the note above on the
-              sidebar's own width classes), so this never renders on the
-              mobile drawer. */}
+        {/* Collapsing is a desktop affordance (see the note above on the
+            sidebar's own width classes), so this row never shows on the
+            mobile drawer. The theme switch and the account (profile,
+            password, sign out) live top right: ThemeSwitch.jsx and
+            AccountMenu.jsx. */}
+        <div className="hidden border-t border-ink-950/10 p-3 lg:block">
           <button
             type="button"
             onClick={onToggleCollapsed}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             aria-expanded={!collapsed}
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className="mt-1 hidden w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink-950/70 transition-colors duration-200 hover:bg-ink-950/5 hover:text-ink-950 lg:flex"
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink-950/70 transition-colors duration-200 hover:bg-ink-950/5 hover:text-ink-950"
           >
             <ChevronLeftIcon
               className={`size-5 shrink-0 transition-transform duration-300 ease-out-smooth ${
@@ -276,37 +190,6 @@ export default function Sidebar({
               }`}
             />
             <span className={collapsibleLabelClass(collapsed, "lg:max-w-28")}>Collapse</span>
-          </button>
-
-          {/* The account row doubles as the way into this account's own
-              settings — the conventional place to look for them, and it keeps
-              a per-account page out of the main nav, which lists data
-              sections. */}
-          <Link
-            to="/admin/security"
-            onClick={onCloseMobile}
-            title={collapsed && user ? `${accountLabel} — ${roleLabel(role)}` : undefined}
-            className="mt-1 flex items-center gap-3 rounded-xl px-2 py-2 transition-colors duration-200 hover:bg-ink-950/5"
-          >
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-paper-100 text-ink-950/70">
-              <PersonIcon className="size-4" />
-            </span>
-            <div className={`min-w-0 flex-1 ${collapsibleLabelClass(collapsed)}`}>
-              <p className="truncate text-sm font-medium text-ink-950">{accountLabel}</p>
-              <p className={`truncate text-xs ${role ? "text-ink-950/50" : "text-brand-dark"}`}>
-                {roleLabel(role)}
-              </p>
-            </div>
-          </Link>
-
-          <button
-            type="button"
-            onClick={() => setConfirmingSignOut(true)}
-            title={collapsed ? "Sign out" : undefined}
-            className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink-950/70 transition-colors duration-200 hover:bg-ink-950/5 hover:text-ink-950"
-          >
-            <SignOutIcon className="size-5 shrink-0" />
-            <span className={collapsibleLabelClass(collapsed, "lg:max-w-28")}>Sign out</span>
           </button>
         </div>
       </div>

@@ -38,6 +38,40 @@ export function PatientsIcon(props) {
   )
 }
 
+// A checklist: To-do lists renewals, follow-ups and first consultations due.
+export function TodoIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="m4 6.5 1.5 1.5L8.5 5" />
+      <path d="m4 12.5 1.5 1.5 3-3" />
+      <path d="M11.5 6.5H20M11.5 12.5H20M11.5 18.5H20" />
+      <circle cx="6" cy="18.5" r="1.5" />
+    </svg>
+  )
+}
+
+// An inbox tray: Applicants is where new intake submissions arrive for review.
+export function ApplicantsIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M3.5 13.5 6 5.5h12l2.5 8V18a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 18v-4.5Z" />
+      <path d="M3.5 13.5h4.25l1.25 2.25h6l1.25-2.25h4.25" />
+    </svg>
+  )
+}
+
+// A badge with a key-shaped clip: who has access, and at what level.
+export function StaffIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="4.5" y="4" width="15" height="16.5" rx="2" />
+      <path d="M9.5 4V2.75h5V4" />
+      <circle cx="12" cy="10.5" r="2.25" />
+      <path d="M8 17c.6-2 2.1-3 4-3s3.4 1 4 3" />
+    </svg>
+  )
+}
+
 export function ActivityIcon(props) {
   return (
     <svg {...base} {...props}>

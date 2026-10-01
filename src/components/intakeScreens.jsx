@@ -2,7 +2,6 @@
 // component module, so fast refresh reloading the page when it changes is fine.
 /* oxlint-disable react/only-export-components */
 import { PLANS_SHOWN } from "../data/pricingTiers"
-import { Fragment } from "react"
 import DatePicker from "./DatePicker"
 import { CheckCircleIcon } from "./icons"
 import Select from "./Select"
@@ -77,15 +76,6 @@ const WEIGHT_LOSS_GOAL = [
   "Losing 51+ lbs",
   "Not sure, I just need to lose weight",
   { value: EXACT, label: "I have a goal weight in mind" },
-]
-
-const HIGHEST_WEIGHT = [
-  "About what I weigh now",
-  "Up to 20 lbs more",
-  "21 to 50 lbs more",
-  "More than 50 lbs more",
-  "Not sure",
-  { value: EXACT, label: "I'll enter the exact weight" },
 ]
 
 const MEALS_PER_DAY = ["1", "2", "3", "4 or more", "It varies"]
@@ -199,93 +189,93 @@ function BmiReadout({ answers }) {
   )
 }
 
+// Each row: label, value, and the screen(s) its Edit opens in the edit dialog.
+// A Yes/No gate and its follow-up open together, so switching to Yes shows
+// the follow-up box right there.
 const REVIEW_SECTIONS = [
   {
     title: "Your goal",
-    edit: "goal-weight",
     rows: (a) => [
-      ["Current weight", lbs(a.currentWeight)],
-      ["Goal", a.weightLossGoal === EXACT ? lbs(a.goalWeight) : a.weightLossGoal],
-      ["Height", a.heightFeet ? `${a.heightFeet} ft ${a.heightInches || 0} in` : ""],
-      ["Highest adult weight", a.highestWeightRange === EXACT ? lbs(a.highestWeight) : a.highestWeightRange],
-      ["Weight loss medication", labelFor(MEDICATION_INTEREST, a.medicationInterest)],
+      ["Current weight", lbs(a.currentWeight), ["goal-weight"]],
+      ["Goal", a.weightLossGoal === EXACT ? lbs(a.goalWeight) : a.weightLossGoal, ["goal-weight"]],
+      ["Height", a.heightFeet ? `${a.heightFeet} ft ${a.heightInches || 0} in` : "", ["height"]],
+      ["Highest adult weight", lbs(a.highestWeight), ["highest-weight"]],
+      ["Weight loss medication", labelFor(MEDICATION_INTEREST, a.medicationInterest), ["medication-interest"]],
     ],
   },
   {
     title: "Health",
-    edit: "conditions",
     rows: (a) => [
-      ["Conditions", joined(a.conditions)],
-      ["Medications", detail(a.hasMedications, a.medications)],
-      ["Allergies", detail(a.hasAllergies, a.allergies)],
-      ["Surgeries", detail(a.hasSurgeries, a.surgeries)],
-      ["Previous weight loss treatment", detail(a.hasPriorTreatment, a.priorWeightLossTreatment)],
-      ["Family history", joined(a.familyHistory)],
-      ["Family history detail", a.familyHistoryNotes],
+      ["Conditions", joined(a.conditions), ["conditions"]],
+      ["Medications", detail(a.hasMedications, a.medications), ["has-medications", "medications"]],
+      ["Allergies", detail(a.hasAllergies, a.allergies), ["has-allergies", "allergies"]],
+      ["Surgeries", detail(a.hasSurgeries, a.surgeries), ["surgeries"]],
+      ["Previous weight loss treatment", detail(a.hasPriorTreatment, a.priorWeightLossTreatment), ["prior-treatment"]],
+      ["Family history", joined(a.familyHistory), ["family-history"]],
+      ["Family history detail", a.familyHistoryNotes, ["family-history"]],
     ],
   },
   {
     title: "Lifestyle",
-    edit: "tobacco",
     rows: (a) => [
-      ["Tobacco", a.tobacco],
-      ["Alcohol", a.alcohol],
-      ["Water", a.waterIntake],
-      ["Exercise", a.exerciseFrequency],
-      ["Meals per day", a.mealsPerDay],
-      ["Daily calories", a.dailyCaloriesRange === EXACT ? a.dailyCalories : a.dailyCaloriesRange],
-      ["How you eat", a.dietNotes],
+      ["Tobacco", a.tobacco, ["tobacco"]],
+      ["Alcohol", a.alcohol, ["alcohol"]],
+      ["Water", a.waterIntake, ["water"]],
+      ["Exercise", a.exerciseFrequency, ["exercise"]],
+      ["Meals per day", a.mealsPerDay, ["meals"]],
+      ["Daily calories", a.dailyCaloriesRange === EXACT ? a.dailyCalories : a.dailyCaloriesRange, ["calories"]],
+      ["How you eat", a.dietNotes, ["eating"]],
     ],
   },
   {
     title: "About you",
-    edit: "about-you",
     rows: (a) => [
-      ["Name", [a.firstName, a.lastName].filter(Boolean).join(" ")],
-      ["Date of birth", a.dob],
-      ["Sex assigned at birth", labelFor(SEX_OPTIONS, a.sexAssigned)],
-      ["Phone", a.phone],
-      ["Email", a.email],
-      ["Address", [a.address, a.city, [a.state, a.zip].filter(Boolean).join(" ")].filter(Boolean).join(", ")],
+      ["Name", [a.firstName, a.lastName].filter(Boolean).join(" "), ["about-you"]],
+      ["Date of birth", a.dob, ["about-you"]],
+      ["Sex assigned at birth", labelFor(SEX_OPTIONS, a.sexAssigned), ["about-you"]],
+      ["Phone", a.phone, ["contact"]],
+      ["Email", a.email, ["contact"]],
+      ["Address", [a.address, a.city, [a.state, a.zip].filter(Boolean).join(" ")].filter(Boolean).join(", "), ["contact"]],
     ],
   },
   {
     title: "Visit",
-    edit: "emergency",
     rows: (a) => [
-      ["Emergency contact", [a.emergencyName, a.emergencyRelationship && `(${a.emergencyRelationship})`, a.emergencyPhone].filter(Boolean).join(" ")],
-      ...(PLANS_SHOWN ? [["Plan", a.plan || "Not sure yet"]] : []),
-      ["Focus", a.appointmentType],
-      ["Preferred date", a.preferredDate],
-      ["Preferred time", a.preferredTime],
-      ["Notes", a.notes],
+      ...(PLANS_SHOWN ? [["Plan", a.plan || "Not sure yet", ["visit"]]] : []),
+      ["Focus", a.appointmentType, ["visit"]],
+      ["Preferred date", a.preferredDate, ["visit"]],
+      ["Preferred time", a.preferredTime, ["visit"]],
+      ["Notes", a.notes, ["visit"]],
     ],
   },
 ]
 
-// Edit buttons carry data-goto; PatientIntakeForm handles the click at the
-// form, so no navigation callback has to be passed into render.
+// Edit buttons carry data-edit (the screen ids); PatientIntakeForm handles
+// the click at the form and opens the edit dialog, so no callback has to be
+// passed into render.
 function Review({ answers }) {
   return (
     <div className="space-y-4">
       {REVIEW_SECTIONS.map((section) => (
         <section key={section.title} className="rounded-xl border border-ink-950/10 bg-white p-5">
-          <div className="flex items-baseline justify-between gap-4">
-            <h3 className="font-serif text-lg text-ink-950">{section.title}</h3>
-            <button
-              type="button"
-              data-goto={section.edit}
-              className="text-sm font-semibold text-accent-dark underline-offset-4 hover:underline"
-            >
-              Edit<span className="sr-only"> {section.title.toLowerCase()}</span>
-            </button>
-          </div>
-          <dl className="mt-3 grid gap-x-4 gap-y-2 text-sm sm:grid-cols-[11rem_1fr]">
-            {section.rows(answers).map(([label, value]) => (
-              <Fragment key={label}>
+          <h3 className="font-serif text-lg text-ink-950">{section.title}</h3>
+          <dl className="mt-2 divide-y divide-ink-950/[0.07] text-sm">
+            {section.rows(answers).map(([label, value, screens]) => (
+              <div key={label} className="grid gap-x-4 gap-y-0.5 py-2.5 last:pb-0 sm:grid-cols-[11rem_1fr]">
                 <dt className="text-ink-950/70">{label}</dt>
-                <dd className="wrap-break-word text-ink-950">{value || "Not answered"}</dd>
-              </Fragment>
+                <dd className="flex items-start justify-between gap-3">
+                  <span className={`min-w-0 wrap-break-word ${value ? "text-ink-950" : "text-ink-950/45"}`}>
+                    {value || "Not answered"}
+                  </span>
+                  <button
+                    type="button"
+                    data-edit={screens.join(" ")}
+                    className="-my-1 -mr-2 shrink-0 cursor-pointer rounded-full px-2 py-1 font-semibold text-accent-dark underline-offset-4 transition-colors duration-200 ease-out-smooth hover:text-brand-dark hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-dark"
+                  >
+                    Edit<span className="sr-only"> {label.toLowerCase()}</span>
+                  </button>
+                </dd>
+              </div>
             ))}
           </dl>
         </section>
@@ -352,17 +342,10 @@ export const SCREENS = [
   {
     id: "highest-weight",
     question: "What's the most you've weighed as an adult?",
-    hint: "Compared with what you weigh now. It helps your provider understand your weight history.",
-    autoAdvance: "highestWeightRange",
-    render: ({ answers }) => (
-      <>
-        <ChoiceCards name="highestWeightRange" options={HIGHEST_WEIGHT} />
-        {answers.highestWeightRange === EXACT && (
-          <Field label="Highest adult weight (lbs)" required>
-            <input name="highestWeight" type="number" inputMode="numeric" min="50" max="1000" required className={inputClass} />
-          </Field>
-        )}
-      </>
+    render: () => (
+      <Field label="Highest adult weight (lbs)" required>
+        <input name="highestWeight" type="number" inputMode="numeric" min="50" max="1000" required autoFocus className={inputClass} />
+      </Field>
     ),
   },
   {
@@ -588,23 +571,6 @@ export const SCREENS = [
     ),
   },
   {
-    id: "emergency",
-    question: "Who should we contact in an emergency?",
-    render: () => (
-      <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="Full name" required>
-          <input name="emergencyName" type="text" required className={inputClass} />
-        </Field>
-        <Field label="Relationship to you" required>
-          <input name="emergencyRelationship" type="text" required className={inputClass} />
-        </Field>
-        <Field label="Phone number" required>
-          <input name="emergencyPhone" type="tel" required className={inputClass} />
-        </Field>
-      </div>
-    ),
-  },
-  {
     id: "visit",
     question: "Let's plan your first visit.",
     render: ({ selectedPlan, today }) => (
@@ -642,7 +608,7 @@ export const SCREENS = [
   {
     id: "review",
     question: "Review and sign.",
-    hint: "Check your answers. Use Edit to change anything before you sign.",
+    hint: "Check your answers. Tap Edit next to any answer to change it before you sign.",
     render: ({ answers, today }) => (
       <>
         <Review answers={answers} />

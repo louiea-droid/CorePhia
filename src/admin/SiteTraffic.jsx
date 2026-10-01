@@ -201,7 +201,7 @@ export default function SiteTraffic() {
             <StatTile label="Page views" value={metrics.views} caption={rangeLabel} />
             <StatTile label="Get started clicks" value={metrics.startClicks} caption={`${rangeLabel}, every intake button`} />
             <StatTile label="Intakes opened" value={metrics.intakesOpened} caption={rangeLabel} />
-            <StatTile label="Intakes submitted" value={submitted ?? "—"} caption={`${rangeLabel}, all patients`} />
+            <StatTile label="Intakes submitted" value={submitted ?? "—"} caption={`${rangeLabel}, all applicants`} />
           </div>
 
           <Card title={metrics.overTime.step > 1 ? "Page views per week" : "Page views per day"} hint={rangeLabel}>

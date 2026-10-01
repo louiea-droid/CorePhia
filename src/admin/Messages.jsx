@@ -7,7 +7,7 @@ import MessageModal from "./MessageModal"
 import MessagesTable from "./MessagesTable"
 import PageHeader from "./PageHeader"
 import Pagination from "./Pagination"
-import { PatientsSkeleton } from "./Skeleton"
+import { ApplicantsSkeleton } from "./Skeleton"
 import { useContactMessages } from "./useContactMessages"
 
 const PAGE_SIZE_KEY = "corephia-admin-messages-page-size"
@@ -126,7 +126,7 @@ export default function Messages({ role, messagesViewedAt = 0, onMessagesViewed 
           <p className="mt-2 text-sm text-ink-950/60">{error}</p>
         </div>
       ) : !messages ? (
-        <PatientsSkeleton />
+        <ApplicantsSkeleton />
       ) : !messages.length ? (
         <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-ink-950/10 bg-white p-8 text-center">
           <h2 className="font-serif text-2xl text-ink-950">No messages yet</h2>

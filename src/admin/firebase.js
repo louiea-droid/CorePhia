@@ -1,13 +1,16 @@
 import { initializeApp } from "firebase/app"
 import {
+  EmailAuthProvider,
   getAuth,
   getMultiFactorResolver,
   multiFactor,
   onAuthStateChanged,
+  reauthenticateWithCredential,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
   TotpMultiFactorGenerator,
+  updatePassword,
   updateProfile,
 } from "firebase/auth"
 import {
@@ -25,6 +28,7 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore"
+import { isClinicalRole } from "./roles"
 
 const config = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -47,6 +51,12 @@ export const AUDIT_ACTIONS = {
   updateIntakeStatus: "update_intake_status",
   viewMessage: "view_contact_message",
   deleteMessage: "delete_contact_message",
+  viewChart: "view_patient_chart",
+  signNote: "sign_note",
+  addAmendment: "add_note_amendment",
+  addStaff: "add_staff",
+  changeStaffRole: "change_staff_role",
+  deleteStaff: "delete_staff_account",
 }
 
 // A record with no status field yet (every one submitted before this feature
@@ -64,6 +74,10 @@ export const usingSeedData = import.meta.env.DEV && !isConfigured
 const app = isConfigured ? initializeApp(config) : null
 const auth = app ? getAuth(app) : null
 const db = app ? getFirestore(app) : null
+
+// For chartStore.js, which keeps the chart/note/staff data functions out of
+// this file. config is needed there for the Staff page's second app instance.
+export { auth, config, db }
 
 export function watchAdminUser(onChange) {
   if (!auth) {
@@ -86,6 +100,28 @@ export async function signOutAdmin() {
 export async function resetAdminPassword(email) {
   if (!auth) throw new Error("Firebase is not configured.")
   await sendPasswordResetEmail(auth, email)
+}
+
+// Changing a password needs a fresh sign-in, so the current password is
+// checked first. An account with two-step sign-in gets the same
+// multi-factor-auth-required error as at sign-in: this returns its resolver
+// (finish with completeTotpSignIn, then call updateAdminPassword) or null when
+// the password alone was enough.
+export async function reauthenticateAdmin(currentPassword) {
+  if (!auth?.currentUser) throw new Error("Firebase is not configured.")
+  try {
+    await reauthenticateWithCredential(auth.currentUser, EmailAuthProvider.credential(auth.currentUser.email, currentPassword))
+    return null
+  } catch (error) {
+    const resolver = getTotpResolver(error)
+    if (resolver) return resolver
+    throw error
+  }
+}
+
+export async function updateAdminPassword(newPassword) {
+  if (!auth?.currentUser) throw new Error("Firebase is not configured.")
+  await updatePassword(auth.currentUser, newPassword)
 }
 
 // The audit trail and "signed in as" always key off the account's email —
@@ -163,25 +199,32 @@ export async function completeTotpSignIn(resolver, code) {
 // tampered client gains nothing. A missing document, a missing db, or a
 // denied read (no document = no role assigned) all resolve the same way:
 // no access, not a thrown error.
-export async function getAdminRole(user) {
-  if (!user || !db) return null
+//
+// Also returns the name to sign with: the `name` on that same document (set
+// on the Staff page), else the account email. Never the editable display
+// name, so nobody can sign a note as someone else. firestore.rules checks
+// the same value (myName()).
+export async function getAdminAccess(user) {
+  const none = { role: null, name: null }
+  if (!user || !db) return none
   try {
     const snapshot = await getDoc(doc(db, USERS_COLLECTION, user.uid))
     if (!snapshot.exists()) {
       console.warn(`No ${USERS_COLLECTION}/${user.uid} document — this account has no role assigned yet.`)
-      return null
+      return none
     }
-    const role = snapshot.data()?.role
-    if (role !== "superAdmin" && role !== "admin") {
+    const { role, name } = snapshot.data() ?? {}
+    if (!isClinicalRole(role)) {
       console.warn(`${USERS_COLLECTION}/${user.uid} exists but its role field is`, JSON.stringify(role))
+      return none
     }
-    return role === "superAdmin" || role === "admin" ? role : null
+    return { role, name: name || user.email }
   } catch (cause) {
     // Most often permission-denied — the doc ID doesn't match this user's
     // uid (rules only allow reading your own), or the rules deploy hasn't
     // taken effect yet.
     console.error(`Role lookup for ${USERS_COLLECTION}/${user.uid} failed:`, cause.code ?? cause.message)
-    return null
+    return none
   }
 }
 

@@ -43,7 +43,7 @@ function ResetPasswordForm({ initialEmail, onBack }) {
         <button
           type="button"
           onClick={onBack}
-          className="mt-6 text-sm font-semibold text-accent-dark transition-opacity duration-200 hover:opacity-70"
+          className="mt-6 text-sm font-semibold text-accent-text transition-opacity duration-200 hover:opacity-70"
         >
           ← Back to sign in
         </button>
@@ -217,7 +217,7 @@ function SignInForm({ onForgotPassword, onSecondFactorRequired }) {
           <button
             type="button"
             onClick={() => onForgotPassword(email)}
-            className="text-xs font-medium text-accent-dark transition-opacity duration-200 hover:opacity-70"
+            className="text-xs font-medium text-accent-text transition-opacity duration-200 hover:opacity-70"
           >
             Forgot password?
           </button>
@@ -335,9 +335,9 @@ export default function Login({ notice, theme, onToggleTheme }) {
         </div>
       </div>
 
-      {/* Same compact icon button as the collapsed sidebar rail's theme
-          toggle (see Sidebar.jsx and .theme-knob in index.css) — there's no
-          sidebar to put it in yet at this point, so it floats on its own. */}
+      {/* A compact icon button (.theme-knob in index.css); signed in, the
+          theme switch sits top right beside the account menu
+          (ThemeSwitch.jsx). */}
       <button
         type="button"
         onClick={onToggleTheme}

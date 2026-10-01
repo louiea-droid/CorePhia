@@ -25,7 +25,7 @@ export default function MessageModal({ message, onClose, canDelete, onRequestDel
   const closeButtonRef = useRef(null)
   const open = Boolean(message)
 
-  // Same reasoning as PatientModal: the open is the access event, logged once
+  // Same reasoning as ApplicantModal: the open is the access event, logged once
   // per open regardless of how many times React re-runs the effect.
   const loggedMessageIdRef = useRef(null)
   useEffect(() => {

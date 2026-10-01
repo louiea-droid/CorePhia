@@ -15,7 +15,7 @@ const faqGroups = [
     items: [
       {
         q: "What is CorePhia, exactly?",
-        a: "CorePhia is a physician-built weight loss program based in Tampa, Florida. It combines three things: dietitian services built around what you actually eat, an exercise prescription matched to your fitness level, and — when a licensed provider determines it is clinically appropriate — weight loss medication. You are enrolling in a program, not buying a medication.",
+        a: "CorePhia is a physician-built weight loss program based in Tampa, Florida. It combines three things: dietitian services built around what you actually eat, an exercise prescription matched to your fitness level, and weight loss medication if a licensed provider prescribes it. You are enrolling in a program, not buying a medication.",
       },
       {
         q: "How do I get started?",
@@ -32,7 +32,7 @@ const faqGroups = [
     items: [
       {
         q: "Is medication included in the price?",
-        a: "What you pay for is the program. Medication is one part of that program, and it is prescribed only when a licensed provider determines it is clinically appropriate for you. It is never promised in advance, and it is never the whole plan. CorePhia is not a medication storefront.",
+        a: "What you pay for is the program. Medication is one part of that program, and it is prescribed only if a licensed provider decides it is right for you. It is never promised in advance, and it is never the whole plan. CorePhia is not a medication storefront.",
       },
       {
         q: "Do I have to take medication to join?",

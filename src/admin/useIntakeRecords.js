@@ -33,5 +33,11 @@ export function useIntakeRecords() {
     setRecords((current) => current?.map((record) => (record.id === id ? { ...record, ...patch } : record)) ?? current)
   }
 
-  return { records, error, removeRecord, patchRecord }
+  // For a write that already happened elsewhere (setApplicantStatus batches
+  // the status with the chart), so only local state needs to follow.
+  function patchLocal(id, patch) {
+    setRecords((current) => current?.map((record) => (record.id === id ? { ...record, ...patch } : record)) ?? current)
+  }
+
+  return { records, error, removeRecord, patchRecord, patchLocal }
 }

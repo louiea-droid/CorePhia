@@ -58,7 +58,7 @@ export default function About() {
         <title>About CorePhia | Physician-Built Weight Loss Programs in Tampa</title>
         <meta
           name="description"
-          content="CorePhia is a physician-built weight loss program based in Tampa, Florida, combining dietitian services, exercise prescriptions, and medication when clinically appropriate. Care is led by a provider board certified in internal medicine."
+          content="CorePhia is a physician-built weight loss program based in Tampa, Florida, combining dietitian services, exercise prescriptions, and medication when a licensed provider prescribes it. Care is led by a provider board certified in internal medicine."
         />
         <link rel="canonical" href="https://www.corephia.com/about" />
       </Helmet>
@@ -72,7 +72,7 @@ export default function About() {
         </h1>
         <p className="mt-6 text-lg leading-relaxed text-ink-950/70">
           CorePhia is a physician-built weight loss program based in Tampa, Florida. We combine dietitian
-          services, exercise prescriptions, and, when clinically appropriate, weight loss medication,
+          services, exercise prescriptions, and  weight loss medication,
           all guided by evidence-based medicine and a licensed provider.
         </p>
       </section>
@@ -85,15 +85,14 @@ export default function About() {
             </h2>
             <div className="mt-6 space-y-5 text-paper-100/70">
               <p className="leading-relaxed">
-                Most weight loss companies sell a subscription with a medication attached to it. What you eat,
-                whether you're moving, whether any of it is working: that's not really their concern, and if
-                the medication stops, there's nothing else behind it.
+                Many weight loss companies are built around a medication. Nutrition, exercise, and follow-up
+                get little attention, so when the medication stops, so does the support.
               </p>
               <p className="leading-relaxed">
-                CorePhia exists to be the alternative.{" "}
-                <span className="text-paper-100">Dietitian services and an exercise prescription are full parts
-                of the program</span>, not an afterthought, and medication is something a licensed provider
-                adds when it's clinically appropriate, never the whole plan on its own.
+                CorePhia is built the other way around.{" "}
+                <span className="text-paper-100">Dietitian services and a comprehensive exercise plan are core
+                parts of the program</span>, and medication, when a licensed provider prescribes it, is one
+                piece of your care rather than all of it.
               </p>
             </div>
           </Reveal>
@@ -187,7 +186,7 @@ export default function About() {
         </div>
       </section>
 
-      <section aria-labelledby="founder-heading" className="mx-auto max-w-4xl px-4 py-12 sm:px-6 sm:py-16 lg:py-20">
+      <section aria-labelledby="founder-heading" className="mx-auto max-w-4xl px-4 max-sm:overflow-x-clip py-12 sm:px-6 sm:py-16 lg:py-20">
         <Reveal className="relative">
           <div aria-hidden="true" className="absolute -inset-6 translate-x-4 translate-y-4 rounded-full bg-accent/15 blur-3xl" />
           <div className={providerCard}>

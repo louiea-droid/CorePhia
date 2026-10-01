@@ -123,7 +123,7 @@ export default function ScienceSection() {
                   absorptionVisible ? "translate-x-0 opacity-100" : "-translate-x-4 opacity-0"
                 }`}
               >
-                Builds habits through <span className="text-paper-100">personalized nutrition coaching</span>
+                Builds habits through <span className="text-paper-100">personalized dietitian services</span>
               </p>
               <div className="shrink-0">
                 <ActivityArt

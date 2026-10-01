@@ -24,6 +24,12 @@
      dark mode — unlike paper-50, this one is never redefined under .dark. */
   --color-oncolor: #eef2f9;
 
+  /* Blue used as text (links, status words, "Signed" pills). accent-dark
+     itself stays put because it is also a solid fill behind oncolor text,
+     and no one blue passes AA as both text on the dark admin and a fill
+     under light text. The admin redefines this one below. */
+  --color-accent-text: #2563eb;
+
   /* Modal/drawer backdrops. Same value as ink-950, but as its own token so
      it is NOT flipped under .dark — a scrim built from ink-950 turns into a
      50% white wash in dark mode and lightens the page instead of dimming
@@ -46,10 +52,14 @@
    lighter than the page (paper-50), so cards stay distinct. */
 #admin-portal-root:not(.dark) {
   --color-white: #f5f8fd;
+  /* #2563eb measured 4.24:1 inside the tinted pills; this is 5.5:1+. */
+  --color-accent-text: #1d4ed8;
 }
 
 .dark {
   --color-white: #131c38;
+  /* #2563eb measured ~3:1 on these surfaces; this is 6:1+. */
+  --color-accent-text: #60a5fa;
   --color-ink-950: #eef2f9;
   --color-ink-900: #c9d3e8;
   --color-paper-50: #0a0f22;
@@ -70,6 +80,18 @@
      the closed control follows the theme fine but the opened list stays a
      plain white box. */
   color-scheme: dark;
+}
+
+/* Browser autofill paints its own light fill over a saved password or email,
+   which ignores the dark theme (a pale box among dark ones). Painting the
+   field colour back on with an inset shadow is the one override Chrome and
+   Safari honour. */
+#admin-portal-root input:-webkit-autofill,
+#admin-portal-root input:-webkit-autofill:hover,
+#admin-portal-root input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--color-ink-950);
+  caret-color: var(--color-ink-950);
+  box-shadow: 0 0 0 1000px var(--color-paper-50) inset;
 }
 
 html {
@@ -314,6 +336,37 @@ body {
 .animate-view-back {
   --menu-from: -2rem;
   animation: menu-view-in 280ms var(--ease-out-smooth) both;
+}
+
+/* Intake edit dialog (PatientIntakeForm.jsx): opens in answer to a tap, so a
+   short rise is fine (the no-movement rule is for hover). The backdrop only
+   fades. */
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    translate: 0 1rem;
+  }
+}
+
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.animate-sheet-in {
+  animation: sheet-in 260ms var(--ease-out-smooth) both;
+}
+
+.animate-sheet-in::backdrop {
+  animation: backdrop-in 260ms var(--ease-out-smooth) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-sheet-in,
+  .animate-sheet-in::backdrop {
+    animation: none;
+  }
 }
 
 /* Intake splash (PatientIntakeForm.jsx): each piece surfaces out of a soft

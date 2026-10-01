@@ -164,4 +164,7 @@ function buildSeedRecords(count) {
   return records.sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))
 }
 
-export const seedRecords = buildSeedRecords(48)
+// Six admitted, so demo mode has patient charts (seedCharts.js) to show.
+export const seedRecords = buildSeedRecords(48).map((record, index) =>
+  index % 8 === 1 ? { ...record, status: "admitted" } : record,
+)

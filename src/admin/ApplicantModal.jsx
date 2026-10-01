@@ -18,7 +18,7 @@ const STATUS_OPTIONS = [
 ]
 
 const STATUS_BADGE = {
-  admitted: "bg-accent-dark/10 text-accent-dark",
+  admitted: "bg-accent-dark/10 text-accent-text",
   pending: "bg-ink-950/10 text-ink-950/60",
   declined: "bg-red-600/10 text-red-600",
 }
@@ -63,7 +63,7 @@ function Section({ title, children }) {
   )
 }
 
-export default function PatientModal({
+export default function ApplicantModal({
   record,
   onClose,
   canDelete,
@@ -109,7 +109,7 @@ export default function PatientModal({
     try {
       await onUpdateStatus(record, nextStatus)
     } catch (cause) {
-      setReviewError(cause.code ?? cause.message ?? "Could not update this patient's status.")
+      setReviewError(cause.code ?? cause.message ?? "Could not update this applicant's status.")
     } finally {
       setStatusSaving(false)
     }
@@ -172,7 +172,7 @@ export default function PatientModal({
 
   const { demographics, emergencyContact, insurance, vitals, medicalHistory } = record
   const { familyHistory, socialHistory, nutrition, visit, consent } = record
-  const fullName = [demographics?.firstName, demographics?.lastName].filter(Boolean).join(" ") || "Patient"
+  const fullName = [demographics?.firstName, demographics?.lastName].filter(Boolean).join(" ") || "Applicant"
   const address = demographics?.address ?? {}
   const cityState = [address.city, address.state].filter(Boolean).join(", ")
 
@@ -297,7 +297,7 @@ export default function PatientModal({
                       value={note}
                       onChange={(event) => setNote(event.target.value)}
                       rows={3}
-                      placeholder="Notes for the care team — not visible to the patient."
+                      placeholder="Notes for the care team — not visible to the applicant."
                       className="w-full resize-none rounded-lg border border-ink-950/15 bg-white px-3 py-2 text-sm text-ink-950 outline-none transition-colors duration-200 placeholder:text-ink-950/40 focus:border-ink-950/40"
                     />
                     <div className="mt-2 flex justify-end">

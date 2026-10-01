@@ -1,8 +1,11 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { CalendarIcon, ChevronDownIcon } from "./icons"
+import { SET_VALUE_EVENT } from "./Select"
 
+// Padding lives in the triggerClassName prop (default below), same as
+// Select, so a compact caller isn't fighting a baked-in px/py.
 const triggerClass =
-  "flex w-full items-center justify-between gap-2 rounded-2xl border border-ink-950/15 bg-paper-50 px-4 py-3.5 text-left text-ink-950 outline-none transition-colors duration-200 ease-out-smooth focus:border-ink-950/40"
+  "flex w-full items-center justify-between gap-2 rounded-2xl border border-ink-950/15 bg-paper-50 text-left text-ink-950 outline-none transition-colors duration-200 ease-out-smooth focus:border-ink-950/40"
 
 const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
 const MONTH_LABELS = Array.from({ length: 12 }, (_, index) =>
@@ -58,7 +61,7 @@ function GridCell({ label, selected, isNow, onClick }) {
       type="button"
       onClick={onClick}
       className={`rounded-xl py-2 text-sm transition-colors duration-150 ease-out-smooth ${
-        selected ? "bg-accent-dark font-semibold text-paper-50" : "text-ink-950 hover:bg-paper-100"
+        selected ? "bg-accent-dark font-semibold text-oncolor" : "text-ink-950 hover:bg-paper-100"
       } ${isNow && !selected ? "ring-1 ring-accent-dark/50" : ""}`}
     >
       {label}
@@ -66,15 +69,48 @@ function GridCell({ label, selected, isNow, onClick }) {
   )
 }
 
-export default function DatePicker({ name, defaultValue = "", required = false, min }) {
-  const [value, setValue] = useState(defaultValue)
+// value/onChange make it controlled (the admin's note editor), same as
+// Select; without them it keeps its own state (the intake form).
+export default function DatePicker({
+  name,
+  defaultValue = "",
+  required = false,
+  min,
+  value: controlledValue,
+  onChange,
+  triggerClassName = "px-4 py-3.5",
+  ariaLabel,
+}) {
+  const isControlled = controlledValue !== undefined
+  const [internalValue, setInternalValue] = useState(defaultValue)
+  const value = isControlled ? controlledValue : internalValue
+  const setValue = (next) => {
+    if (!isControlled) setInternalValue(next)
+    onChange?.(next)
+  }
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState("days") // "days" | "months" | "years"
   const [viewDate, setViewDate] = useState(() => fromIso(defaultValue) ?? new Date())
   const [yearBlockStart, setYearBlockStart] = useState(() => yearBlockStartFor(viewDate.getFullYear()))
   const rootRef = useRef(null)
+  const inputRef = useRef(null)
   const minDate = min ? fromIso(min) : null
   const today = new Date()
+
+  // Same outside-set hook as Select (see SET_VALUE_EVENT there).
+  useLayoutEffect(() => {
+    const input = inputRef.current
+    const onSet = (event) => setInternalValue(event.detail)
+    input.addEventListener(SET_VALUE_EVENT, onSet)
+    return () => input.removeEventListener(SET_VALUE_EVENT, onSet)
+  }, [])
+
+  // Opened near the bottom of a scrolling panel (the admin note editor's last
+  // field), the calendar would sit below the fold; bring it into view.
+  const popupRef = useRef(null)
+  useEffect(() => {
+    if (open) popupRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" })
+  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -120,6 +156,7 @@ export default function DatePicker({ name, defaultValue = "", required = false, 
           FormData(form) and the browser's own required-validation both still
           see it — the popup below is purely the visible replacement. */}
       <input
+        ref={inputRef}
         type="date"
         name={name}
         required={required}
@@ -140,13 +177,15 @@ export default function DatePicker({ name, defaultValue = "", required = false, 
         }}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className={triggerClass}
+        aria-label={ariaLabel ? `${ariaLabel}: ${formatDisplay(value) ?? "not set"}` : undefined}
+        className={`${triggerClass} ${triggerClassName}`}
       >
         <span className={value ? "" : "text-ink-950/40"}>{formatDisplay(value) ?? "mm/dd/yyyy"}</span>
         <CalendarIcon className="size-4 shrink-0 text-ink-950/40" />
       </button>
 
       <div
+        ref={popupRef}
         role="dialog"
         aria-label="Choose a date"
         className={`absolute top-full z-20 mt-2 w-64 origin-top rounded-2xl bg-white p-3 shadow-xl ring-1 ring-ink-950/10 transition-[opacity,transform] duration-150 ease-out-smooth ${
@@ -239,7 +278,7 @@ export default function DatePicker({ name, defaultValue = "", required = false, 
                     disabled={disabled}
                     className={`mx-auto flex size-7 items-center justify-center rounded-full transition-colors duration-150 ease-out-smooth ${
                       isSelected
-                        ? "bg-accent-dark font-semibold text-paper-50"
+                        ? "bg-accent-dark font-semibold text-oncolor"
                         : disabled
                           ? "text-ink-950/20"
                           : inMonth
@@ -301,7 +340,7 @@ export default function DatePicker({ name, defaultValue = "", required = false, 
             <button
               type="button"
               onClick={() => pick(today)}
-              className="text-accent-dark transition-opacity duration-150 hover:opacity-70"
+              className="text-accent-text transition-opacity duration-150 hover:opacity-70"
             >
               Today
             </button>

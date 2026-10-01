@@ -1,23 +1,18 @@
-import { useMemo, useState } from "react"
-import Select from "../components/Select"
-import ConfirmDialog from "./ConfirmDialog"
+import { useEffect, useMemo, useState } from "react"
+import { useNavigate } from "react-router-dom"
+import { ageFrom, asDate } from "./chartMath"
+import { loadCharts, setApplicantStatus } from "./chartStore"
+import { useIntakeRecords } from "./useIntakeRecords"
 import { PAGE_SIZE_OPTIONS } from "./constants"
-import { AUDIT_ACTIONS, INTAKE_COLLECTION, recordAuditEvent } from "./firebase"
 import PageHeader from "./PageHeader"
 import Pagination from "./Pagination"
-import PatientModal from "./PatientModal"
-import PatientsTable from "./PatientsTable"
-import { PatientsSkeleton } from "./Skeleton"
-import { TEMP_FAKE_RECORDS } from "./tempFakeRecords"
-import { useIntakeRecords } from "./useIntakeRecords"
+import { ApplicantsSkeleton } from "./Skeleton"
 
-const PAGE_SIZE_KEY = "corephia-admin-patients-page-size"
-const PLAN_OPTIONS = ["Core", "Core+", "Core Complete"]
-const STATUS_FILTER_OPTIONS = [
-  { value: "pending", label: "Pending" },
-  { value: "admitted", label: "Admitted" },
-  { value: "declined", label: "Declined" },
-]
+const PAGE_SIZE_KEY = "corephia-admin-charts-page-size"
+const NOTE_TYPE_LABELS = { consultation: "Consultation", progress: "Progress" }
+
+const formatDate = (value) =>
+  asDate(value)?.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) ?? "—"
 
 function readStoredPageSize() {
   try {
@@ -28,87 +23,63 @@ function readStoredPageSize() {
   }
 }
 
-export default function Patients({ role }) {
-  const { records, error, removeRecord, patchRecord } = useIntakeRecords()
-  const [selectedRecord, setSelectedRecord] = useState(null)
-  const [pendingDelete, setPendingDelete] = useState(null)
-  const [deleting, setDeleting] = useState(false)
-  const [deleteError, setDeleteError] = useState(null)
-  const [pageSize, setPageSize] = useState(readStoredPageSize)
-  const [page, setPage] = useState(1)
-  const [search, setSearch] = useState("")
-  const [planFilter, setPlanFilter] = useState("")
-  const [statusFilter, setStatusFilter] = useState("")
+// Admitted applicants only: their charts, newest admission first. A chart
+// marked inactive (the applicant was moved off admitted) is kept, never
+// deleted, and shows under "Inactive".
+export default function Patients({ actor }) {
+  const navigate = useNavigate()
+  const [charts, setCharts] = useState(null)
+  const [error, setError] = useState(null)
+  const { records } = useIntakeRecords()
+  const [starting, setStarting] = useState(false)
+  const [startError, setStartError] = useState(null)
 
-  const usingSampleFallback = records && records.length === 0
-  const baseRecords = usingSampleFallback ? TEMP_FAKE_RECORDS : records
-  // Sample fallback rows aren't real Firestore documents — deleting one would
-  // either no-op against a nonexistent id or (worse) collide with an unrelated
-  // real id, so the option is hidden rather than wired to something misleading.
-  const canDelete = role === "superAdmin" && !usingSampleFallback
-  // Admitting/declining isn't destructive, so both admin tiers can do it —
-  // just not against the sample fallback rows, same reasoning as canDelete.
-  const canReview = Boolean(role) && !usingSampleFallback
+  // Applicants admitted before charts existed (2026-10-01) have no chart, and
+  // pressing Admit again does nothing for someone already admitted. Offer to
+  // start them, through the same admission batch as the Applicants page.
+  const unchartered =
+    charts && records ? records.filter((record) => record.status === "admitted" && !charts.some((chart) => chart.id === record.id)) : []
 
-  const updateStatus = async (record, status) => {
-    await patchRecord(record.id, { status })
-    recordAuditEvent({
-      action: AUDIT_ACTIONS.updateIntakeStatus,
-      targetCollection: INTAKE_COLLECTION,
-      targetId: record.id,
-      targetLabel: [record.demographics?.firstName, record.demographics?.lastName].filter(Boolean).join(" "),
-    })
-    setSelectedRecord((current) => (current?.id === record.id ? { ...current, status } : current))
-  }
-
-  const saveNote = async (record, adminNote) => {
-    await patchRecord(record.id, { adminNote })
-    setSelectedRecord((current) => (current?.id === record.id ? { ...current, adminNote } : current))
-  }
-
-  const confirmDelete = async () => {
-    if (!pendingDelete) return
-    setDeleting(true)
-    setDeleteError(null)
+  const startMissingCharts = async () => {
+    setStarting(true)
+    setStartError(null)
     try {
-      await removeRecord(pendingDelete.id)
-      // Logged after the delete succeeds, not before: an attempt that Firestore
-      // refused isn't a deletion, and recording it as one would misrepresent
-      // what actually happened to the record.
-      recordAuditEvent({
-        action: AUDIT_ACTIONS.deleteIntake,
-        targetCollection: INTAKE_COLLECTION,
-        targetId: pendingDelete.id,
-        targetLabel: [pendingDelete.demographics?.firstName, pendingDelete.demographics?.lastName]
-          .filter(Boolean)
-          .join(" "),
-      })
-      setPendingDelete(null)
-      setSelectedRecord(null)
+      for (const record of unchartered) await setApplicantStatus(record, "admitted", actor)
+      setCharts(await loadCharts())
     } catch (cause) {
-      setDeleteError(cause.code ?? cause.message ?? "Something went wrong deleting this record.")
+      setStartError(cause?.code === "permission-denied" ? "Your role can't do this." : "Couldn't start every chart. Try again.")
     } finally {
-      setDeleting(false)
+      setStarting(false)
     }
   }
+  const [search, setSearch] = useState("")
+  const [showInactive, setShowInactive] = useState(false)
+  const [pageSize, setPageSize] = useState(readStoredPageSize)
+  const [page, setPage] = useState(1)
 
-  const filteredRecords = useMemo(() => {
-    if (!baseRecords) return null
+  useEffect(() => {
+    let active = true
+    loadCharts()
+      .then((result) => active && setCharts(result))
+      .catch((cause) => active && setError(cause.code ?? cause.message))
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const filtered = useMemo(() => {
+    if (!charts) return null
     const query = search.trim().toLowerCase()
-    return baseRecords.filter((record) => {
-      if (planFilter && record.visit?.membershipPlan !== planFilter) return false
-      if (statusFilter && (record.status ?? "pending") !== statusFilter) return false
-      if (!query) return true
-      const name = `${record.demographics?.firstName ?? ""} ${record.demographics?.lastName ?? ""}`.toLowerCase()
-      return name.includes(query)
-    })
-  }, [baseRecords, search, planFilter, statusFilter])
+    return charts
+      .filter((chart) => (chart.status === "inactive") === showInactive)
+      .filter((chart) => !query || `${chart.firstName} ${chart.lastName}`.toLowerCase().includes(query))
+      .sort((a, b) => (asDate(b.admittedAt)?.getTime() ?? 0) - (asDate(a.admittedAt)?.getTime() ?? 0))
+  }, [charts, search, showInactive])
 
-  const totalPages = filteredRecords ? Math.max(1, Math.ceil(filteredRecords.length / pageSize)) : 1
-  // Clamped at render time rather than synced back into state via an effect
-  // — e.g. after switching to a larger page size, or if a filter narrows the
-  // result set, this always reflects a valid page without a render lag.
+  const inactiveCount = charts?.filter((chart) => chart.status === "inactive").length ?? 0
+  const totalPages = filtered ? Math.max(1, Math.ceil(filtered.length / pageSize)) : 1
   const currentPage = Math.min(page, totalPages)
+  const pageCharts = filtered ? filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize) : []
 
   const changePageSize = (nextSize) => {
     setPageSize(nextSize)
@@ -120,45 +91,42 @@ export default function Patients({ role }) {
     }
   }
 
-  const updateSearch = (value) => {
-    setSearch(value)
-    setPage(1)
-  }
-
-  const updatePlanFilter = (value) => {
-    setPlanFilter(value)
-    setPage(1)
-  }
-
-  const updateStatusFilter = (value) => {
-    setStatusFilter(value)
-    setPage(1)
-  }
-
-  const pageRecords = filteredRecords
-    ? filteredRecords.slice((currentPage - 1) * pageSize, currentPage * pageSize)
-    : []
+  const open = (chart) => navigate(`/admin/patients/${chart.id}`)
 
   return (
-    // h-full: <main> in AdminChrome is the flex-sized scroll container: this
-    // page fills exactly that space rather than growing past it, so only
-    // the table rows below get their own scrollbar — the page itself, the
-    // header, the search/filter row and pagination never move.
     <div className="flex h-full flex-col">
-      <PageHeader title="Patients" description="Everyone who has submitted the intake form." />
+      <PageHeader title="Patients" description="Admitted applicants and their charts." />
+
+      {unchartered.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-accent-dark/25 bg-white px-5 py-4">
+          <p className="text-sm text-ink-950/75">
+            {unchartered.length === 1 ? "1 applicant was" : `${unchartered.length} applicants were`} admitted before
+            charts existed, so they don't have one yet.
+            {startError && <span className="ml-1 text-brand-dark">{startError}</span>}
+          </p>
+          <button
+            type="button"
+            onClick={startMissingCharts}
+            disabled={starting}
+            className="cursor-pointer rounded-lg bg-ink-950 px-3.5 py-2 text-sm font-semibold whitespace-nowrap text-paper-50 transition-colors duration-200 hover:bg-brand-dark disabled:opacity-50"
+          >
+            {starting ? "Starting…" : unchartered.length === 1 ? "Start their chart" : "Start their charts"}
+          </button>
+        </div>
+      )}
 
       {error ? (
         <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-ink-950/10 bg-white p-6 text-center">
-          <h2 className="font-semibold text-ink-950">Could not load intake records</h2>
+          <h2 className="font-semibold text-ink-950">Could not load patients</h2>
           <p className="mt-2 text-sm text-ink-950/60">{error}</p>
         </div>
-      ) : !records ? (
-        <PatientsSkeleton />
-      ) : !baseRecords.length ? (
+      ) : !charts ? (
+        <ApplicantsSkeleton />
+      ) : !charts.length ? (
         <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-ink-950/10 bg-white p-8 text-center">
-          <h2 className="font-serif text-2xl text-ink-950">No intakes yet</h2>
+          <h2 className="font-serif text-2xl text-ink-950">No patients yet</h2>
           <p className="mx-auto mt-3 max-w-md text-sm text-ink-950/60">
-            Completed patient intake forms will appear here.
+            Admitting an applicant starts their chart, and they appear here.
           </p>
         </div>
       ) : (
@@ -167,54 +135,102 @@ export default function Patients({ role }) {
             <input
               type="search"
               value={search}
-              onChange={(event) => updateSearch(event.target.value)}
+              onChange={(event) => {
+                setSearch(event.target.value)
+                setPage(1)
+              }}
               placeholder="Search by patient name…"
               className="min-w-0 flex-1 rounded-lg border border-ink-950/15 bg-paper-50 px-3 py-2 text-sm text-ink-950 outline-none transition-colors duration-200 placeholder:text-ink-950/40 focus:border-ink-950/40"
             />
-            <div className="w-40 shrink-0">
-              <Select
-                value={planFilter}
-                onChange={updatePlanFilter}
-                options={[{ value: "", label: "All plans" }, ...PLAN_OPTIONS.map((plan) => ({ value: plan, label: plan }))]}
-                triggerClassName="px-3 py-2 text-sm"
-              />
-            </div>
-            <div className="w-44 shrink-0">
-              <Select
-                value={statusFilter}
-                onChange={updateStatusFilter}
-                options={[{ value: "", label: "All statuses" }, ...STATUS_FILTER_OPTIONS]}
-                triggerClassName="px-3 py-2 text-sm"
-              />
+            <div role="group" aria-label="Chart status" className="flex shrink-0 rounded-lg bg-paper-100 p-0.5">
+              {[
+                [false, "Active"],
+                [true, `Inactive${inactiveCount ? ` (${inactiveCount})` : ""}`],
+              ].map(([value, label]) => (
+                <button
+                  key={label}
+                  type="button"
+                  aria-pressed={showInactive === value}
+                  onClick={() => {
+                    setShowInactive(value)
+                    setPage(1)
+                  }}
+                  className={`cursor-pointer rounded-md px-3 py-1.5 text-sm font-medium transition-colors duration-200 ${
+                    showInactive === value ? "bg-white text-ink-950 shadow-sm" : "text-ink-950/55 hover:text-ink-950"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
 
-          {!filteredRecords.length ? (
+          {!filtered.length ? (
             <div className="flex flex-1 flex-col items-center justify-center p-8 text-center">
-              <p className="font-medium text-ink-950">No patients match your search</p>
-              <p className="mt-1 text-sm text-ink-950/50">Try a different name or plan filter.</p>
+              <p className="font-medium text-ink-950">
+                {search ? "No patients match your search" : showInactive ? "No inactive charts" : "No active patients"}
+              </p>
             </div>
           ) : (
-            // px-4: PatientsTable's own wrapper uses a -mx-4/px-4 bleed
-            // trick for its horizontal scroll edge, which needs a padded
-            // parent to cancel against — without it, the negative margin
-            // pokes past this section's rounded, overflow-hidden edge.
-            // pt-3: breathing room above the (sticky) column headers, so
-            // they don't sit flush against the search/filter row's border
-            // — sticky respects an ancestor's padding-top as its stick
-            // offset, so this gap holds even once the header is pinned.
             <div className="scrollbar-thin flex-1 overflow-y-auto px-4 pt-3">
-              {/* Fixed at the default page size (10) — the common case,
-                  kept stable so a short last page doesn't shrink the row
-                  area. A deliberately larger "Show" is the person opting
-                  into more content, so those sizes just size to whatever
-                  actually renders instead of padding to 100 blank rows. */}
-              <PatientsTable
-                records={pageRecords}
-                onSelect={setSelectedRecord}
-                minRows={pageSize === 10 ? 10 : 0}
-                rankOffset={(currentPage - 1) * pageSize}
-              />
+              <div className="scrollbar-thin -mx-4 overflow-x-auto px-4">
+                <table className="w-full min-w-xl table-fixed text-left text-sm">
+                  <colgroup>
+                    <col className="w-[34%]" />
+                    <col className="w-[12%]" />
+                    <col className="w-[22%]" />
+                    <col className="w-[32%]" />
+                  </colgroup>
+                  <thead>
+                    <tr className="sticky top-0 z-10 border-b border-ink-950/10 bg-white text-xs tracking-wide text-ink-950/45 uppercase">
+                      <th scope="col" className="pb-2 font-medium">
+                        Patient
+                      </th>
+                      <th scope="col" className="pb-2 font-medium">
+                        Age
+                      </th>
+                      <th scope="col" className="pb-2 font-medium">
+                        Admitted
+                      </th>
+                      <th scope="col" className="pb-2 font-medium">
+                        Last note
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-ink-950/5">
+                    {pageCharts.map((chart) => {
+                      const name = `${chart.firstName} ${chart.lastName}`.trim() || "Unnamed patient"
+                      return (
+                        <tr
+                          key={chart.id}
+                          onClick={() => open(chart)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault()
+                              open(chart)
+                            }
+                          }}
+                          tabIndex={0}
+                          role="link"
+                          aria-label={`Open ${name}'s chart`}
+                          className="cursor-pointer outline-none transition-colors duration-150 hover:bg-paper-50 focus-visible:bg-paper-100"
+                        >
+                          <td className="truncate py-4 font-medium text-ink-950">{name}</td>
+                          <td className="py-4 tabular-nums text-ink-950/60">{ageFrom(chart.dateOfBirth) ?? "—"}</td>
+                          <td className="truncate py-4 whitespace-nowrap text-ink-950/60">
+                            {formatDate(chart.admittedAt)}
+                          </td>
+                          <td className="truncate py-4 text-ink-950/60">
+                            {chart.lastNote
+                              ? `${NOTE_TYPE_LABELS[chart.lastNote.type] ?? "Note"}, ${formatDate(chart.lastNote.signedAt)}`
+                              : "No notes yet"}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
@@ -225,41 +241,11 @@ export default function Patients({ role }) {
               onPageChange={setPage}
               pageSize={pageSize}
               onPageSizeChange={changePageSize}
-              totalRecords={filteredRecords.length}
+              totalRecords={filtered.length}
             />
           </div>
         </section>
       )}
-
-      <PatientModal
-        record={selectedRecord}
-        onClose={() => setSelectedRecord(null)}
-        canDelete={canDelete}
-        onRequestDelete={setPendingDelete}
-        canReview={canReview}
-        onUpdateStatus={updateStatus}
-        onSaveNote={saveNote}
-        // Sample fallback rows aren't real records, so opening one isn't a
-        // real access event — keeping them out stops the audit trail filling
-        // with entries that point at documents that never existed.
-        audit={!usingSampleFallback}
-      />
-
-      <ConfirmDialog
-        open={Boolean(pendingDelete)}
-        title="Delete this intake record?"
-        description={
-          deleteError ??
-          `This permanently deletes ${pendingDelete ? `${pendingDelete.demographics?.firstName ?? "this patient"}'s` : "this"} intake record. This cannot be undone.`
-        }
-        confirmLabel={deleting ? "Deleting…" : "Delete"}
-        confirmDisabled={deleting}
-        onConfirm={confirmDelete}
-        onCancel={() => {
-          setPendingDelete(null)
-          setDeleteError(null)
-        }}
-      />
     </div>
   )
 }

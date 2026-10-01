@@ -11,7 +11,7 @@ export default function Home() {
         <title>CorePhia</title>
         <meta
           name="description"
-          content="CorePhia builds personalized weight loss programs around real nutrition coaching, structured exercise, and physician-guided medical support when appropriate. Start your program today."
+          content="CorePhia builds personalized weight loss programs around real dietitian services, structured exercise, and physician-guided medical care. Start your program today."
         />
         <link rel="canonical" href="https://www.corephia.com/" />
       </Helmet>

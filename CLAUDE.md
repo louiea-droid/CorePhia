@@ -169,6 +169,58 @@ program pages carry no pricing block. Plans and features are still placeholders 
 client; flagged: the Core tier lists "Prescription medication" as a feature, and the badges under the
 cards include "Medication Available" and "Proven Results".
 
+## Admin: applicants, patient charts, staff (2026-10-01)
+
+Spec: `docs/superpowers/specs/2026-10-01-patient-charts-notes-staff-design.md`.
+
+- **Applicants** (`/admin/applicants`, was "Patients"): intake submissions; admit or decline.
+  Admitting creates a chart (`chartStore.setApplicantStatus`, one batch with the status).
+- **Patients** (`/admin/patients`, `/admin/patients/:chartId`): charts for admitted applicants.
+  Collection `patients/{intakeId}`, with `notes` and `notes/*/amendments` subcollections.
+  Notes are consultation or progress; draft (author-only) → signed (locked forever) → addenda.
+  Prescriptions are structured entries (start / renew / stop) inside notes;
+  `chartMath.currentPrescriptions()` derives what's current (`npm run check` self-test).
+- **Roles:** `provider`, `coAdmin` ("Co-admin"), `admin` (Dr. Antonious only), `superAdmin`
+  (Hyacinth). Page access in `admin/roles.js`; `firestore.rules` has `isClinical()` (all four) and
+  `isStaff()` (co-admin and up). On the **Staff** page (`/admin/staff`) admin and co-admins grant
+  provider or co-admin; the admin can change or delete providers, co-admins and no-access
+  accounts, a co-admin only providers and no-access accounts. Only a super admin grants admin or
+  touches the admin, and super admins are hidden from everyone else. Nobody edits or deletes
+  their own account. Several test accounts are `admin` for now (Louie, 2026-10-01).
+  Deleting removes the `user/{uid}` staff record only; the Firebase Auth login can only be
+  deleted from the console (no server). Signed notes keep the signer's name on the note.
+- The public login's sign-up record moved to `patientAccounts/{uid}`. The old `patients/{uid}`
+  sign-up docs can be deleted in the console.
+- **The new rules must be deployed** (`firebase deploy --only firestore:rules`) before any of this
+  works against the live project. Run `npm run test:rules` first; it needs Java 21+ for the
+  emulator and has not been run yet.
+
+## Admin additions (2026-10-01)
+
+The new-intake email was built and then removed for now (Louie, 2026-10-01); the draft and
+how to build it are in `docs/client-portal.md`. Recipient when it returns: `info@corephia.com`,
+later Dr. Antonious too.
+
+**To-do** (`/admin/todo`, all clinical roles): renewals and follow-ups due within 7 days or
+overdue, plus admitted patients with no signed note, from `chartMath.dueTasks()` (checked by
+`npm run check`). No "mark done": signing the note that handles an item clears it. Reads every
+active chart's notes on open (fine for a few hundred patients).
+
+**Account menu** (`AccountMenu.jsx`, top right, with the theme switch to its left):
+Profile opens `/admin/security` (titled "Profile": display name, password, two-step
+sign-in); Sign out asks first. Password change re-checks the current password, plus the
+authenticator code when two-step is on.
+
+Admin dark mode: blue *text* uses `accent-text` (light #1d4ed8, dark #60a5fa), not
+`accent-dark`, which stays for solid fills under `oncolor` text.
+
+## Client portal (parked 2026-10-01)
+
+Planned on top of the existing patient login (`/account`), with Elation set aside per Louie.
+Nothing built yet. Dr. Antonious's asks, the recommendation (invite-only accounts), the four
+sections, constraints and the notification email draft are in `docs/client-portal.md`. Resume
+from its "Open decision".
+
 ## Site analytics (2026-09-30)
 
 Cookie-free, consent-first counts (meeting items 14 and 15). Google Analytics is deliberately

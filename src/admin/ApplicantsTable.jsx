@@ -6,17 +6,17 @@ function formatDate(iso) {
 }
 
 const STATUS_BADGE = {
-  admitted: "bg-accent-dark/10 text-accent-dark",
+  admitted: "bg-accent-dark/10 text-accent-text",
   pending: "bg-ink-950/10 text-ink-950/60",
   declined: "bg-red-600/10 text-red-600",
 }
 
-// Mirrors PatientsTable's own row order: the 10 most recent submissions overall
+// Mirrors ApplicantsTable's own row order: the 10 most recent submissions overall
 // (not just on the visible page) read as "how long ago", so a chart that just
 // came in visibly reads as new. rankOffset is how many rows are ahead of this
 // page in the full sorted list — 0 on page 1, pageSize on page 2, and so on —
 // so the cutoff is correct regardless of which page is showing.
-export default function PatientsTable({ records, onSelect, minRows = 0, rankOffset = 0 }) {
+export default function ApplicantsTable({ records, onSelect, minRows = 0, rankOffset = 0 }) {
   const fillerRowCount = Math.max(0, minRows - records.length)
   const anyRecentOnPage = records.some((_, index) => rankOffset + index < 10)
   const now = useRelativeTimeClock(anyRecentOnPage)
@@ -35,7 +35,7 @@ export default function PatientsTable({ records, onSelect, minRows = 0, rankOffs
         <thead>
           <tr className="sticky top-0 z-10 border-b border-ink-950/10 bg-white text-xs tracking-wide text-ink-950/45 uppercase">
             <th scope="col" className="pb-2 font-medium">
-              Patient
+              Applicant
             </th>
             <th scope="col" className="pb-2 font-medium">
               Submitted
@@ -70,7 +70,7 @@ export default function PatientsTable({ records, onSelect, minRows = 0, rankOffs
                 }}
                 tabIndex={0}
                 role="button"
-                aria-label={`View intake details for ${name || "this patient"}`}
+                aria-label={`View intake details for ${name || "this applicant"}`}
                 className="cursor-pointer outline-none transition-colors duration-150 hover:bg-paper-50 focus-visible:bg-paper-100"
               >
                 <td className="truncate py-4 font-medium text-ink-950">{name || "—"}</td>

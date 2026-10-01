@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react"
 import { deleteContactMessage, watchContactMessages } from "./firebase"
 
-export function useContactMessages() {
+// enabled=false skips the subscription: a provider can't read messages (rules),
+// so the sidebar badge mustn't open a listener that is only ever refused.
+export function useContactMessages({ enabled = true } = {}) {
   const [messages, setMessages] = useState(null)
   const [error, setError] = useState(null)
 
   useEffect(() => {
+    if (!enabled) return
     return watchContactMessages(setMessages, (cause) => setError(cause.message))
-  }, [])
+  }, [enabled])
 
   async function removeMessage(id) {
     await deleteContactMessage(id)

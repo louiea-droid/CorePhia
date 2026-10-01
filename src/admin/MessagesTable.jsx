@@ -5,7 +5,7 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
 }
 
-// Mirrors PatientsTable.jsx: same fixed-width columns, same whole-row click
+// Mirrors ApplicantsTable.jsx: same fixed-width columns, same whole-row click
 // target, same filler-row padding trick for a short last page, same
 // relative-time-for-the-newest-10 treatment on the Time column.
 export default function MessagesTable({ messages, onSelect, minRows = 0, rankOffset = 0, viewedAt = 0 }) {

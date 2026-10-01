@@ -17,10 +17,10 @@ export const programs = [
     name: "Medical care",
     title: "Medical Care | CorePhia Weight Loss Program in Tampa",
     description:
-      "Physician-guided medical care as part of CorePhia's weight loss program in Tampa: one licensed provider, a review of your full health history, and medication only when clinically appropriate.",
+      "Physician-guided medical care as part of CorePhia's weight loss program in Tampa: a licensed provider, a review of your full health history, and medication only if your provider prescribes it.",
     headline: "Medical care from a provider who knows your whole plan.",
     intro:
-      "Your provider reviews your health history, follows your progress, and decides with you whether weight loss medication is appropriate. If it is, it becomes one part of your program, alongside your nutrition and exercise plans.",
+      "Your provider reviews your health history, follows your progress, and decides with you whether weight loss medication belongs in your plan. If it does, it becomes one part of your program, alongside your nutrition and exercise plans.",
     whatWeDo: [
       "Before anything else, your provider reads your intake: your goal, your health history, the medications you take, and what you've tried before. That shapes your whole plan, including your nutrition and exercise.",
       "Your history stays with your care, so whoever reviews your progress starts from everything you've already shared.",
@@ -28,7 +28,7 @@ export const programs = [
     whatYouGet: [
       "A provider review of your intake and health history",
       "Medical care planned alongside your nutrition and exercise",
-      "Medication only if your provider finds it clinically appropriate",
+      "Medication only if your provider prescribes it",
       "Provider check-ins as your plan progresses",
     ],
     steps: [

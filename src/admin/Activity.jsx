@@ -4,7 +4,7 @@ import { PAGE_SIZE_OPTIONS } from "./constants"
 import { AUDIT_ACTIONS } from "./firebase"
 import PageHeader from "./PageHeader"
 import Pagination from "./Pagination"
-import { PatientsSkeleton } from "./Skeleton"
+import { ApplicantsSkeleton } from "./Skeleton"
 import { useAuditLog } from "./useAuditLog"
 
 const PAGE_SIZE_KEY = "corephia-admin-activity-page-size"
@@ -12,13 +12,20 @@ const PAGE_SIZE_KEY = "corephia-admin-activity-page-size"
 // Stored actions are machine-readable strings; these are what a person
 // reviewing the trail actually reads.
 const ACTION_LABELS = {
-  [AUDIT_ACTIONS.viewIntake]: "Opened patient record",
-  [AUDIT_ACTIONS.deleteIntake]: "Deleted patient record",
+  [AUDIT_ACTIONS.viewIntake]: "Opened intake record",
+  [AUDIT_ACTIONS.deleteIntake]: "Deleted intake record",
+  [AUDIT_ACTIONS.updateIntakeStatus]: "Changed applicant status",
   [AUDIT_ACTIONS.viewMessage]: "Opened message",
   [AUDIT_ACTIONS.deleteMessage]: "Deleted message",
+  [AUDIT_ACTIONS.viewChart]: "Opened patient chart",
+  [AUDIT_ACTIONS.signNote]: "Signed a note",
+  [AUDIT_ACTIONS.addAmendment]: "Added an addendum",
+  [AUDIT_ACTIONS.addStaff]: "Added staff",
+  [AUDIT_ACTIONS.changeStaffRole]: "Changed a staff role",
+  [AUDIT_ACTIONS.deleteStaff]: "Deleted a staff account",
 }
 
-const DESTRUCTIVE_ACTIONS = new Set([AUDIT_ACTIONS.deleteIntake, AUDIT_ACTIONS.deleteMessage])
+const DESTRUCTIVE_ACTIONS = new Set([AUDIT_ACTIONS.deleteIntake, AUDIT_ACTIONS.deleteMessage, AUDIT_ACTIONS.deleteStaff])
 
 function formatTimestamp(iso) {
   const date = new Date(iso)
@@ -101,12 +108,12 @@ export default function Activity({ role }) {
           <p className="mt-2 text-sm text-ink-950/60">{error}</p>
         </div>
       ) : !entries ? (
-        <PatientsSkeleton />
+        <ApplicantsSkeleton />
       ) : !entries.length ? (
         <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-ink-950/10 bg-white p-8 text-center">
           <h2 className="font-serif text-2xl text-ink-950">No activity yet</h2>
           <p className="mx-auto mt-3 max-w-md text-sm text-ink-950/60">
-            Opening or deleting a patient record will be recorded here.
+            Opening or deleting an intake record will be recorded here.
           </p>
         </div>
       ) : (

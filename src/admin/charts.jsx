@@ -63,7 +63,7 @@ export function BarList({ data, total, emptyLabel = "No data yet", onSelect }) {
               },
               tabIndex: 0,
               role: "button",
-              "aria-label": `See patients who reported ${item.label}`,
+              "aria-label": `See applicants who reported ${item.label}`,
             }
           : {}
         return (
@@ -87,7 +87,7 @@ export function BarList({ data, total, emptyLabel = "No data yet", onSelect }) {
               />
             </div>
             <span className="pointer-events-none absolute -top-1 right-0 z-10 rounded-lg bg-ink-950 px-2 py-1 text-xs whitespace-nowrap text-paper-50 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-              {item.value} of {total} patients ({share}%)
+              {item.value} of {total} applicants ({share}%)
             </span>
           </li>
         )
@@ -157,7 +157,7 @@ export function RankedList({ data, total, emptyLabel = "No data yet", onSelect }
               },
               tabIndex: 0,
               role: "button",
-              "aria-label": `See patients reporting ${item.label}`,
+              "aria-label": `See applicants reporting ${item.label}`,
             }
           : {}
         return (
@@ -214,7 +214,7 @@ export function Histogram({ data, unit, onSelect }) {
                 },
                 tabIndex: 0,
                 role: "button",
-                "aria-label": `See patients in the ${item.label} range`,
+                "aria-label": `See applicants in the ${item.label} range`,
               }
             : {}
           return (
@@ -226,7 +226,7 @@ export function Histogram({ data, unit, onSelect }) {
               } ${onSelect ? "cursor-pointer" : ""}`}
             >
               <span className="pointer-events-none absolute -top-1 left-1/2 z-10 -translate-x-1/2 rounded-lg bg-ink-950 px-2 py-1 text-xs whitespace-nowrap text-paper-50 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-                {item.value} patient{item.value === 1 ? "" : "s"} in the {item.label} range
+                {item.value} applicant{item.value === 1 ? "" : "s"} in the {item.label} range
               </span>
               <div
                 className="w-full bg-accent-dark/70 transition-[height] duration-500 ease-out-smooth group-hover:bg-accent-dark"
@@ -290,7 +290,7 @@ export function TagCloud({ data, emptyLabel = "No data yet", onSelect }) {
               },
               tabIndex: 0,
               role: "button",
-              "aria-label": `See patients who reported ${item.label}`,
+              "aria-label": `See applicants who reported ${item.label}`,
             }
           : {}
         return (

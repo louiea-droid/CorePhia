@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { ChevronDownIcon } from "./icons"
 
 // Padding/text-size lives outside this base string (as the triggerClassName
@@ -7,6 +7,10 @@ import { ChevronDownIcon } from "./icons"
 // px-*/py-* utility that may or may not win.
 const baseTriggerClass =
   "flex w-full items-center justify-between gap-2 rounded-2xl border border-ink-950/15 bg-paper-50 text-left text-ink-950 outline-none transition-colors duration-200 ease-out-smooth focus:border-ink-950/40"
+
+// Dispatched on the hidden <select> (or DatePicker's hidden input) with the
+// new value as detail. See setFieldValue in PatientIntakeForm.
+export const SET_VALUE_EVENT = "field:set-value"
 
 function optionValue(option) {
   return typeof option === "string" ? option : option.value
@@ -34,12 +38,26 @@ export default function Select({
   placeholder = "Select one",
   required = false,
   triggerClassName = "px-4 py-3.5",
+  // For a Select with no wrapping <label> giving it a name (e.g. one per
+  // table row): read before the selected value, "Role for Sam: Provider".
+  ariaLabel,
 }) {
   const isControlled = controlledValue !== undefined
   const [internalValue, setInternalValue] = useState(defaultValue)
   const value = isControlled ? controlledValue : internalValue
   const [open, setOpen] = useState(false)
   const rootRef = useRef(null)
+  const selectRef = useRef(null)
+
+  // Lets a form set this value from outside (the intake's edit dialog copies
+  // answers in and out), which a plain .value write can't: React state owns it.
+  // A layout effect so it's listening before a parent's layout effect sends.
+  useLayoutEffect(() => {
+    const select = selectRef.current
+    const onSet = (event) => setInternalValue(event.detail)
+    select.addEventListener(SET_VALUE_EVENT, onSet)
+    return () => select.removeEventListener(SET_VALUE_EVENT, onSet)
+  }, [])
 
   useEffect(() => {
     if (!open) return
@@ -62,6 +80,7 @@ export default function Select({
   return (
     <div ref={rootRef} className="relative">
       <select
+        ref={selectRef}
         name={name}
         required={required}
         value={value}
@@ -85,6 +104,7 @@ export default function Select({
         onClick={() => setOpen((previous) => !previous)}
         aria-haspopup="listbox"
         aria-expanded={open}
+        aria-label={ariaLabel ? `${ariaLabel}: ${selectedLabel ? optionLabel(selectedLabel) : placeholder}` : undefined}
         className={`${baseTriggerClass} ${triggerClassName}`}
       >
         <span className={selectedLabel ? "" : "text-ink-950/40"}>

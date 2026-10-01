@@ -11,16 +11,18 @@ import {
 } from "./icons"
 
 const included = [
-   { label: "Medical support", detail: "Medication when a provider says it's appropriate", icon: PillBottleIcon },
+   { label: "Medical care", detail: "Medication when a provider prescribes it", icon: PillBottleIcon },
   { label: "Dietitian services", detail: "A meal plan built around how you actually eat", icon: LeafIcon },
-  { label: "Exercise prescriptions", detail: "Training matched to your level and your goal", icon: ClipboardCheckIcon },
+  { label: "Comprehensive Exercise Plan", detail: "Training matched to your level and your goal", icon: ClipboardCheckIcon },
  
 ]
 
+// Each tile hovers to its own blue, bright to deep left to right. Every stop
+// keeps white text at WCAG AA or better.
 const quickLinks = [
-  { label: "Explore our", highlight: "weight loss programs", icon: LeafIcon, href: "/#programs" },
-  { label: "Learn about", highlight: "membership", icon: ClipboardCheckIcon, to: "/membership" },
-  { label: "Read", highlight: "about our provider", icon: StethoscopeIcon, to: "/about" },
+  { label: "Explore our", highlight: "weight loss programs", icon: LeafIcon, href: "/#programs", fill: "from-accent-dark to-brand" },
+  { label: "Learn about", highlight: "membership", icon: ClipboardCheckIcon, to: "/membership", fill: "from-brand to-brand-dark" },
+  { label: "Read", highlight: "about our provider", icon: StethoscopeIcon, to: "/about", fill: "from-ink-700 to-ink-950" },
 ]
 
 const trustPoints = [
@@ -51,7 +53,7 @@ export default function Hero() {
             headlineIn ? "translate-y-0 opacity-100" : "translate-y-5 opacity-0"
           }`}
         >
-          The weight loss care you deserve
+          Weight loss built around you
         </h1>
 
         <ul
@@ -177,7 +179,7 @@ export default function Hero() {
             quickLinksIn ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
           }`}
         >
-          {quickLinks.map(({ label, highlight, icon: Icon, href, to }) => {
+          {quickLinks.map(({ label, highlight, icon: Icon, href, to, fill }) => {
             const LinkTag = to ? Link : "a"
             const linkProps = to ? { to } : { href }
             return (
@@ -186,13 +188,13 @@ export default function Hero() {
                   {...linkProps}
                   className="group relative isolate flex items-center justify-between gap-3 overflow-hidden rounded-2xl bg-paper-100 py-4 pr-4 pl-5"
                 >
-                  {/* Hims-style hover: the tile fills with brand blue (a layer
+                  {/* Hims-style hover: the tile fills with its own blue (a layer
                       that fades in, since gradients can't transition) and the
                       icon slowly zooms. Colour and zoom only, never movement
                       (no "shake"). Also on keyboard focus. */}
                   <span
                     aria-hidden="true"
-                    className="absolute inset-0 -z-10 bg-linear-to-br from-brand to-brand-dark opacity-0 transition-opacity duration-300 ease-out-smooth group-hover:opacity-100 group-focus-visible:opacity-100"
+                    className={`absolute inset-0 -z-10 bg-linear-to-br ${fill} opacity-0 transition-opacity duration-300 ease-out-smooth group-hover:opacity-100 group-focus-visible:opacity-100`}
                   />
                   <span className="text-base text-ink-950 transition-colors duration-300 ease-out-smooth group-hover:text-paper-50 group-focus-visible:text-paper-50">
                     {label}{" "}

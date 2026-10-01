@@ -32,7 +32,22 @@ service cloud.firestore {
     }
 
     function isStaff() {
-      return role() == 'admin' || role() == 'superAdmin';
+      return role() in ['coAdmin', 'admin', 'superAdmin'];
+    }
+
+    // Everyone who works with patients: providers plus both admin tiers.
+    // Gates intake records, charts and notes. isStaff() stays the gate for
+    // messages, site analytics and the staff list, which providers don't see.
+    function isClinical() {
+      return role() in ['provider', 'coAdmin', 'admin', 'superAdmin'];
+    }
+
+    // The name a person signs with: the `name` on their staff record (set on
+    // the Staff page), else their account email. Never the display name they
+    // can edit themselves, so a note can't be signed as someone else.
+    // Mirrors getAdminAccess() in src/admin/firebase.js.
+    function myName() {
+      return get(/databases/$(database)/documents/user/$(request.auth.uid)).data.get('name', request.auth.token.email);
     }
 
     // Anyone can post to an open endpoint, so this is the only thing standing
@@ -58,13 +73,55 @@ service cloud.firestore {
         && data.consent.hipaaAcknowledged == true;
     }
 
-    // A signed-in person may read only their OWN role document — never
-    // another user's, and never write it themselves. Role assignment only
-    // ever happens by hand in the Console, which authenticates via GCP IAM
-    // and bypasses these rules entirely.
+    // Staff roles (Louie, 2026-10-01). admin is Dr. Antonious; coAdmin is
+    // anyone he adds at that level. A signed-in person reads their own role
+    // doc. A super admin reads everyone's; an admin or co-admin reads
+    // everyone's except super admins', which stay hidden from them. Nobody
+    // writes or deletes their own doc, so nobody can promote or remove
+    // themselves.
+    //   super admin: may set any role, and change or delete anyone.
+    //   admin: grants provider or co-admin; changes or deletes providers,
+    //     co-admins and no-access accounts.
+    //   co-admin: grants provider or co-admin; changes or deletes only
+    //     providers and no-access accounts.
+    // So only a super admin can grant admin or touch the admin, and a
+    // co-admin can never remove the admin or another co-admin.
+    // Role "" means access removed. Deleting the doc takes the person off the
+    // Staff list; their Firebase Auth login itself can only be deleted from
+    // the Console (no server here), and signed notes keep the signer's name
+    // on the note. The Console, via GCP IAM, bypasses all of this, for the
+    // first super admin.
+    function canActOn(previousRole) {
+      return role() == 'superAdmin'
+        || (role() == 'admin' && previousRole in ['', 'provider', 'coAdmin'])
+        || (role() == 'coAdmin' && previousRole in ['', 'provider']);
+    }
+
+    function isRoleChange(uid) {
+      let next = request.resource.data;
+      let previous = resource == null ? '' : resource.data.get('role', '');
+      // What this write sets: every field on a new doc, only the changed ones
+      // on an existing doc, so a later role change keeps the original adder.
+      let changed = resource == null ? next.keys() : next.diff(resource.data).affectedKeys();
+      return request.auth.uid != uid
+        && (!('addedBy' in changed)
+            || (next.addedBy.keys().hasOnly(['uid', 'name']) && next.addedBy.uid == request.auth.uid))
+        && (!('addedAt' in changed) || next.addedAt == request.time)
+        && next.keys().hasOnly(['role', 'name', 'email', 'addedBy', 'addedAt'])
+        && next.role in ['', 'provider', 'coAdmin', 'admin', 'superAdmin']
+        && canActOn(previous)
+        && (role() == 'superAdmin' || next.role in ['', 'provider', 'coAdmin']);
+    }
+
     match /user/{uid} {
-      allow read: if request.auth != null && request.auth.uid == uid;
-      allow write: if false;
+      allow read: if request.auth != null
+        && (request.auth.uid == uid
+            || role() == 'superAdmin'
+            || (role() in ['admin', 'coAdmin'] && resource.data.get('role', '') != 'superAdmin'));
+      allow create, update: if request.auth != null && isRoleChange(uid);
+      allow delete: if request.auth != null
+        && request.auth.uid != uid
+        && canActOn(resource.data.get('role', ''));
     }
 
     // HIPAA audit controls: a record of who opened or deleted which patient
@@ -89,7 +146,9 @@ service cloud.firestore {
 
     match /auditLog/{entryId} {
       allow read: if role() == 'superAdmin';
-      allow create: if isStaff() && isOwnAuditEntry();
+      // isClinical, not isStaff: a provider opening a chart or signing a note
+      // has to land in the trail too.
+      allow create: if isClinical() && isOwnAuditEntry();
       allow update, delete: if false;
     }
 
@@ -162,17 +221,19 @@ service cloud.firestore {
     }
 
     match /intakeRecords/{recordId} {
-      allow read: if isStaff();
+      allow read: if isClinical();
       allow create: if isWellFormedIntake();
-      allow update: if isStaff() && isStatusUpdate();
+      allow update: if isClinical() && isStatusUpdate();
       // Deletion is the one destructive action here, so it stays on the
       // superAdmin tier rather than every admin — matching the split already
       // described above.
       allow delete: if role() == 'superAdmin';
     }
 
-    // One doc per patient account, written once at sign-up (src/lib/patientAuth.js)
-    // to record the email against the Auth uid. This is account/contact data, not
+    // One doc per patient login account, written once at sign-up
+    // (src/lib/patientAuth.js) to record the email against the Auth uid. Named
+    // patientAccounts so it can't be confused with patients/{chartId}, the
+    // clinical charts. This is account/contact data, not
     // a clinical record — it holds none of the intake's medical history, so it
     // does not carry the same BAA requirement intakeRecords does. A patient may
     // create only their own doc, only with the email their token already proves
@@ -182,7 +243,7 @@ service cloud.firestore {
     // app currently reads this doc back as the patient (patientAuth.js only
     // ever writes it; Account.jsx gets the email from the Auth object itself,
     // not Firestore), so there is no self-read left to preserve.
-    match /patients/{uid} {
+    match /patientAccounts/{uid} {
       allow read: if isStaff();
       allow create: if request.auth != null
         && request.auth.uid == uid
@@ -190,6 +251,116 @@ service cloud.firestore {
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.createdAt == request.time;
       allow update, delete: if false;
+    }
+
+    // --- Patient charts ------------------------------------------------------
+    // One chart per admitted applicant, id = the intake record's id. PHI: the
+    // same BAA requirement as intakeRecords. A medical record, so nothing
+    // under it is ever deleted: a chart goes inactive, a signed note gets
+    // addenda. Every timestamp that proves when something happened is
+    // request.time, so a client can't backdate it.
+    function isNewChart(chartId) {
+      let data = request.resource.data;
+      return data.keys().hasOnly([
+            'intakeRecordId', 'firstName', 'lastName', 'dateOfBirth', 'sexAssignedAtBirth',
+            'status', 'admittedAt', 'admittedBy', 'updatedAt', 'lastNote'
+          ])
+        && data.intakeRecordId == chartId
+        && data.status == 'active'
+        && data.admittedAt == request.time
+        && data.updatedAt == request.time
+        && data.admittedBy.uid == request.auth.uid
+        && data.admittedBy.name == myName()
+        && data.lastNote == null
+        // Only for an intake that is admitted once this batch lands.
+        && getAfter(/databases/$(database)/documents/intakeRecords/$(chartId)).data.status == 'admitted';
+    }
+
+    function isNoteShape(data) {
+      return data.keys().hasOnly([
+            'type', 'status', 'authorUid', 'authorName', 'authorRole', 'createdAt', 'updatedAt',
+            'visitDate', 'sections', 'vitals', 'prescriptions', 'nextFollowUp', 'signedAt', 'signedBy'
+          ])
+        && data.type in ['consultation', 'progress']
+        && data.sections is map
+        && data.vitals is map
+        && data.prescriptions is list && data.prescriptions.size() <= 30;
+    }
+
+    match /patients/{chartId} {
+      allow read: if isClinical();
+      allow create: if isClinical() && isNewChart(chartId);
+      // lastNote (the list's "Last note" column) is only ever written by a
+      // signing, so it must look like one: a note type and the server's time.
+      allow update: if isClinical()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt', 'lastNote'])
+        && request.resource.data.status in ['active', 'inactive']
+        && request.resource.data.updatedAt == request.time
+        && (!('lastNote' in request.resource.data.diff(resource.data).affectedKeys())
+            || (request.resource.data.lastNote.keys().hasOnly(['type', 'signedAt'])
+                && request.resource.data.lastNote.type in ['consultation', 'progress']
+                && request.resource.data.lastNote.signedAt == request.time));
+      allow delete: if false;
+
+      // Drafts are visible only to their author; signed notes to every
+      // clinician. A note is created as a draft by its own author, edited only
+      // by that author while it's a draft, and signed exactly once with the
+      // server's time and the signer's real identity. After that it never
+      // changes again.
+      match /notes/{noteId} {
+        allow read: if isClinical()
+          && (resource.data.status == 'signed' || resource.data.authorUid == request.auth.uid);
+        allow create: if isClinical()
+          && isNoteShape(request.resource.data)
+          && request.resource.data.status == 'draft'
+          && request.resource.data.authorUid == request.auth.uid
+          && request.resource.data.authorName == myName()
+          && request.resource.data.authorRole == role()
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.signedAt == null
+          && request.resource.data.signedBy == null
+          && get(/databases/$(database)/documents/patients/$(chartId)).data.status == 'active';
+        allow update: if isClinical()
+          && resource.data.status == 'draft'
+          && resource.data.authorUid == request.auth.uid
+          && isNoteShape(request.resource.data)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+               'visitDate', 'sections', 'vitals', 'prescriptions', 'nextFollowUp',
+               'updatedAt', 'status', 'signedAt', 'signedBy'
+             ])
+          && request.resource.data.updatedAt == request.time
+          && (
+            (request.resource.data.status == 'draft'
+              && request.resource.data.signedAt == null
+              && request.resource.data.signedBy == null)
+            || (request.resource.data.status == 'signed'
+              && request.resource.data.signedAt == request.time
+              && request.resource.data.signedBy.keys().hasOnly(['uid', 'name', 'role'])
+              && request.resource.data.signedBy.uid == request.auth.uid
+              && request.resource.data.signedBy.name == myName()
+              && request.resource.data.signedBy.role == role())
+          );
+        allow delete: if isClinical()
+          && resource.data.status == 'draft'
+          && resource.data.authorUid == request.auth.uid;
+
+        // Addenda: the only way to change a signed note. Each is attributed
+        // to whoever writes it, stamped with the server's time, and permanent.
+        match /amendments/{amendmentId} {
+          allow read: if isClinical();
+          allow create: if isClinical()
+            && request.resource.data.keys().hasOnly(['text', 'authorUid', 'authorName', 'authorRole', 'at'])
+            && request.resource.data.text is string
+            && request.resource.data.text.size() > 0
+            && request.resource.data.text.size() <= 5000
+            && request.resource.data.authorUid == request.auth.uid
+            && request.resource.data.authorName == myName()
+            && request.resource.data.authorRole == role()
+            && request.resource.data.at == request.time
+            && get(/databases/$(database)/documents/patients/$(chartId)/notes/$(noteId)).data.status == 'signed';
+          allow update, delete: if false;
+        }
+      }
     }
 
     match /{document=**} {

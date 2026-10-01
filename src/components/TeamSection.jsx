@@ -56,7 +56,7 @@ export default function TeamSection() {
   return (
     <section
       aria-labelledby="team-heading"
-      className="bg-linear-to-br from-paper-50 via-paper-100 to-accent/15 py-12 sm:py-16 lg:py-24"
+      className="overflow-x-clip bg-linear-to-br from-paper-50 via-paper-100 to-accent/15 py-12 sm:py-16 lg:py-24"
     >
       <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-[1.1fr_1fr] lg:gap-16">
         <div>

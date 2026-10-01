@@ -7,12 +7,12 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
 }
 
-// A lightweight list — name + submitted date, click through to PatientModal
-// for the full record — rather than reusing PatientsTable here. The table's
+// A lightweight list — name + submitted date, click through to ApplicantModal
+// for the full record — rather than reusing ApplicantsTable here. The table's
 // four fixed columns (plan, reason, submitted) are about triage across all
 // patients; this is a narrow "who matched" result for one condition, where
 // only the name and a way to open the full chart matter.
-export default function PatientListModal({ title, subtitle, records, onSelectPatient, onClose }) {
+export default function ApplicantListModal({ title, subtitle, records, onSelectPatient, onClose }) {
   const closeButtonRef = useRef(null)
   const open = Boolean(title)
 
@@ -66,7 +66,7 @@ export default function PatientListModal({ title, subtitle, records, onSelectPat
           </div>
 
           {records.length === 0 ? (
-            <p className="px-6 py-8 text-center text-sm text-ink-950/45">No matching patients.</p>
+            <p className="px-6 py-8 text-center text-sm text-ink-950/45">No matching applicants.</p>
           ) : (
             <ul className="divide-y divide-ink-950/5 overflow-y-auto px-2 py-2">
               {records.map((record) => {

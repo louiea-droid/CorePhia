@@ -32,7 +32,7 @@ const app = isConfigured ? (getApps().length ? getApp() : initializeApp(config))
 const auth = app ? getAuth(app) : null
 const db = app ? getFirestore(app) : null
 
-// Writes the one-time patients/{uid} doc (see firestore.rules) recording the
+// Writes the one-time patientAccounts/{uid} doc (see firestore.rules) recording the
 // account's email. Only ever called right after account creation — the rules
 // reject a second write to the same doc, and re-calling this on every sign-in
 // would just fail silently for returning users, so callers only invoke it
@@ -40,7 +40,8 @@ const db = app ? getFirestore(app) : null
 async function recordNewPatient(user) {
   if (!db || !user) return
   try {
-    await setDoc(doc(db, "patients", user.uid), { email: user.email, createdAt: serverTimestamp() })
+    // patientAccounts, not patients: `patients` holds the admin's clinical charts.
+    await setDoc(doc(db, "patientAccounts", user.uid), { email: user.email, createdAt: serverTimestamp() })
   } catch (cause) {
     // Non-fatal: the Auth account already exists and is fully usable even if
     // this mirror write fails (e.g. rules mismatch, offline).

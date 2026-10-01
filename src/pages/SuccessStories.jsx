@@ -66,7 +66,7 @@ export default function SuccessStories() {
         <title>Success Stories | CorePhia Weight Loss Program</title>
         <meta
           name="description"
-          content="Stories from CorePhia patients in their own words: what changed with nutrition coaching, an exercise plan, and physician-guided care."
+          content="Stories from CorePhia patients in their own words: what changed with dietitian services, an exercise plan, and physician-guided care."
         />
         <link rel="canonical" href="https://www.corephia.com/success-stories" />
         {/* Kept out of search until real stories exist: an empty page is thin
@@ -81,8 +81,7 @@ export default function SuccessStories() {
         </h1>
         <p className="mt-6 max-w-2xl text-lg leading-relaxed text-ink-950/70">
           Every story here comes from a real CorePhia patient who chose to share it. Each one did it through the
-          whole program: a nutrition plan, an exercise plan, and medical care when their provider found it
-          appropriate.
+          whole program: dietitian services, an exercise plan, and medical care from their provider.
         </p>
       </section>
 
@@ -96,8 +95,8 @@ export default function SuccessStories() {
             </div>
             <p className="mt-8 max-w-3xl text-xs leading-relaxed text-ink-950/70">
               Results shown are from real CorePhia patients who gave written permission to share them. Individual
-              results vary and are not typical. The CorePhia program includes nutrition coaching, an exercise plan,
-              and medication only when a provider finds it appropriate.
+              results vary and are not typical. The CorePhia program includes dietitian services, an exercise plan,
+              and medication only if a provider prescribes it.
             </p>
           </>
         ) : (

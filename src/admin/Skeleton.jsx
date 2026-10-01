@@ -1,5 +1,5 @@
 // Every skeleton here reuses the exact wrapper classNames from charts.jsx /
-// PatientsTable.jsx (border-radius, padding, grid columns, row heights) —
+// ApplicantsTable.jsx (border-radius, padding, grid columns, row heights) —
 // only the text/values inside are swapped for pulsing bars. That's what
 // makes this "placement-accurate": the loaded content drops into identical
 // boxes rather than the page reflowing once real data arrives.
@@ -94,7 +94,7 @@ export function StackedBarSkeleton({ className = "", segments = 3 }) {
 }
 
 // Shared by Dashboard's "Most recent intakes" preview and the full Patients
-// list loading states — matches PatientsTable's real table-fixed + colgroup
+// list loading states — matches ApplicantsTable's real table-fixed + colgroup
 // widths and py-4 row height exactly.
 // The dashboard's recent-patients table and the Patients page's table have
 // different column counts, so the shape is a parameter rather than baked in —
@@ -106,7 +106,7 @@ const DASHBOARD_TABLE_COLS = [
   { col: "w-[38%]", head: "w-14", cell: "w-32" },
 ]
 
-// Mirrors PatientsTable.jsx's own colgroup.
+// Mirrors ApplicantsTable.jsx's own colgroup.
 const PATIENTS_TABLE_COLS = [
   { col: "w-[20%]", head: "w-16", cell: "w-28" },
   { col: "w-[14%]", head: "w-20", cell: "w-20" },
@@ -199,7 +199,7 @@ export function DashboardSkeleton() {
 // Mirrors Patients.jsx's populated layout: the bordered section with the
 // search/filter toolbar (shrink-0), the table, and the pagination footer
 // (shrink-0) — same structure, so nothing shifts when real data lands.
-export function PatientsSkeleton() {
+export function ApplicantsSkeleton() {
   return (
     <section className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-ink-950/10 bg-white">
       <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-ink-950/10 p-4">
