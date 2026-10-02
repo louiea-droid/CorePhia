@@ -50,6 +50,13 @@ export default function Select({
   const rootRef = useRef(null)
   const listRef = useRef(null)
   const up = usePopupPlacement(open, rootRef, listRef)
+  // Open with the chosen option in the middle of the list, not at the top,
+  // so a long list (times, years) starts where the person already is.
+  useLayoutEffect(() => {
+    const list = listRef.current
+    const chosen = open && list?.querySelector('[aria-selected="true"]')
+    if (chosen) list.scrollTop = chosen.offsetTop - list.clientHeight / 2 + chosen.offsetHeight / 2
+  }, [open])
   const selectRef = useRef(null)
 
   // Lets a form set this value from outside (the intake's edit dialog copies

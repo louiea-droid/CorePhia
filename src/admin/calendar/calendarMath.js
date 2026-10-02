@@ -77,6 +77,33 @@ export const LAST_SLOT = 21 * 60
 const hhmm = (minutes) => `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`
 export const slotTime = (minutes) => hhmm(Math.min(LAST_SLOT, Math.max(FIRST_SLOT, Math.floor(minutes / 15) * 15)))
 
+const minutesOf = (time) => {
+  const [hours, minutes] = time.split(":").map(Number)
+  return hours * 60 + minutes
+}
+const clampSlot = (minutes) => Math.min(LAST_SLOT, Math.max(FIRST_SLOT, minutes))
+
+export const periodOf = (time) => (minutesOf(time) < 12 * 60 ? "AM" : "PM")
+
+// The bookable times in one half of the day, labelled without AM/PM (the
+// switch beside the list says which half): AM 6:00 to 11:45, PM 12:00 to 9:00.
+export function timesIn(period) {
+  const [from, to] = period === "AM" ? [FIRST_SLOT, 12 * 60 - 15] : [12 * 60, LAST_SLOT]
+  const times = []
+  for (let minutes = from; minutes <= to; minutes += 15) {
+    const hour = Math.floor(minutes / 60) % 12 || 12
+    times.push({ value: hhmm(minutes), label: `${hour}:${String(minutes % 60).padStart(2, "0")}` })
+  }
+  return times
+}
+
+// Same clock time in the other half of the day, or the nearest bookable one.
+export function switchPeriod(time, period) {
+  if (periodOf(time) === period) return time
+  const shifted = minutesOf(time) + (period === "PM" ? 12 * 60 : -12 * 60)
+  return hhmm(clampSlot(shifted))
+}
+
 const startMs = (appointment) => asDate(appointment.start)?.getTime() ?? 0
 const endMs = (appointment) => startMs(appointment) + appointment.minutes * 60000
 

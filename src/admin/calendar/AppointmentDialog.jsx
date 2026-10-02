@@ -3,7 +3,7 @@ import { createPortal } from "react-dom"
 import DatePicker from "../../components/DatePicker"
 import Select from "../../components/Select"
 import { bookAppointment, changeAppointment, loadAppointments, loadChanges } from "./appointmentStore"
-import { addDays, changeFor, fromTampa, overlaps, tampaParts, todayInTampa } from "./calendarMath"
+import { addDays, changeFor, fromTampa, overlaps, periodOf, switchPeriod, tampaParts, timesIn, todayInTampa } from "./calendarMath"
 import { loadStaff } from "../patients/chartStore"
 import { AUDIT_ACTIONS, loadIntakeRecords, recordAuditEvent } from "../lib/firebase"
 import { CloseIcon } from "../ui/icons"
@@ -339,13 +339,43 @@ export default function AppointmentDialog({ appointment, prefill = {}, actor, on
               <h3 id="appointment-when" className="text-sm font-semibold text-ink-950">
                 When <span className="font-normal text-ink-950/50">(Tampa time)</span>
               </h3>
-              <div className="grid gap-3 sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,0.9fr)]">
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,1.15fr)_minmax(0,1.55fr)_minmax(0,0.9fr)]">
                 <Field label="Date">
                   <DatePicker ariaLabel="Date" value={form.day} onChange={(day) => set({ day })} triggerClassName={COMPACT} />
                 </Field>
-                <div className="grid grid-cols-2 gap-3 sm:contents">
+                <div className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] gap-3 sm:contents">
                   <Field label="Time">
-                    <Select ariaLabel="Time" options={TIMES} value={form.time} onChange={(time) => set({ time })} triggerClassName={COMPACT} />
+                    {/* A short list for one half of the day, and AM/PM beside it,
+                        instead of one 61-item list (Louie, 2026-10-02). */}
+                    <div className="flex gap-1.5">
+                      <div className="min-w-0 flex-1">
+                        <Select
+                          ariaLabel="Time"
+                          options={timesIn(periodOf(form.time))}
+                          value={form.time}
+                          onChange={(time) => set({ time })}
+                          triggerClassName={COMPACT}
+                        />
+                      </div>
+                      <div role="group" aria-label="Morning or afternoon" className="flex shrink-0 gap-0.5 rounded-2xl border border-ink-950/15 bg-paper-50 p-0.5">
+                        {["AM", "PM"].map((period) => {
+                          const active = periodOf(form.time) === period
+                          return (
+                            <button
+                              key={period}
+                              type="button"
+                              aria-pressed={active}
+                              onClick={() => set({ time: switchPeriod(form.time, period) })}
+                              className={`cursor-pointer rounded-xl px-2.5 text-xs font-semibold transition-colors duration-200 ${
+                                active ? "bg-accent-dark text-oncolor" : "text-ink-950/60 hover:bg-ink-950/5 hover:text-ink-950"
+                              }`}
+                            >
+                              {period}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
                   </Field>
                   <Field label="Length">
                     <Select
