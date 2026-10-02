@@ -1,7 +1,16 @@
 // Self-check for roles.js: `npm run check`. Plain node:assert, like
 // chartMath.check.js.
 import assert from "node:assert/strict"
-import { canAdmit, canAmend, canManageMember, canOpen, canWriteNote, grantableRoles, isClinicalRole } from "./roles.js"
+import {
+  canAdmit,
+  canAmend,
+  canManageMember,
+  canOpen,
+  canSeeAppointmentHistory,
+  canWriteNote,
+  grantableRoles,
+  isClinicalRole,
+} from "./roles.js"
 
 // The dietitian is clinical: opens charts, To-do, Calendar; not Messages or Staff.
 assert.equal(isClinicalRole("dietitian"), true)
@@ -36,5 +45,9 @@ assert.ok(grantableRoles("superAdmin").includes("dietitian"))
 assert.equal(canManageMember({ uid: "a", role: "coAdmin" }, { uid: "d", role: "dietitian" }), true)
 assert.equal(canManageMember({ uid: "a", role: "admin" }, { uid: "d", role: "dietitian" }), true)
 assert.equal(canManageMember({ uid: "d", role: "dietitian" }, { uid: "p", role: "provider" }), false)
+
+// Appointment history: co-admin, admin, super admin.
+for (const role of ["coAdmin", "admin", "superAdmin"]) assert.equal(canSeeAppointmentHistory(role), true, role)
+for (const role of ["provider", "dietitian", ""]) assert.equal(canSeeAppointmentHistory(role), false, role)
 
 console.log("roles: all checks passed")

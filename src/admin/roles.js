@@ -52,6 +52,10 @@ export const canAdmit = (role) => PRESCRIBERS.includes(role)
 // to a medical record. Everyone else clinical: any signed note.
 export const canAmend = (noteType, role) => isClinicalRole(role) && (role !== "dietitian" || noteType === "dietitian")
 
+// Who sees an appointment's move and cancel history (Louie, 2026-10-02).
+// Mirrors the changes read rule (isStaff) in firestore.rules.
+export const canSeeAppointmentHistory = (role) => STAFF_ROLES.includes(role)
+
 // The roles a signed-in person may hand out on the Staff page. Only a super
 // admin grants admin or super admin.
 export const grantableRoles = (role) =>
