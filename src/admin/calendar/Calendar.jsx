@@ -6,7 +6,6 @@ import { nextFollowUps } from "../patients/chartMath"
 import { loadActiveChartNotes, loadStaff } from "../patients/chartStore"
 import { DISCIPLINE_LABELS } from "../patients/noteUi"
 import PageHeader from "../layout/PageHeader"
-import { CloseIcon } from "../ui/icons"
 import { isClinicalRole, staffDisplayName } from "../staff/roles"
 
 const HOUR_PX = 48
@@ -266,25 +265,15 @@ function MonthView({ days, month, today, selected, appointments, markers, onOpen
 
 // Everything on the selected day: appointments, follow-ups still to book,
 // and booking on that day.
-function DayPanel({ day, today, appointments, markers, onOpen, onBook, onNew, onClose }) {
+function DayPanel({ day, today, appointments, markers, onOpen, onBook, onNew }) {
   const booked = appointments.filter(sameDay(day))
   const due = markers.filter((marker) => marker.date === day)
   return (
     <aside aria-label="Selected day" className="rounded-2xl border border-ink-950/10 bg-white p-4 lg:sticky lg:top-20 lg:self-start">
-      <div className="flex items-start justify-between gap-3">
-        <h2 className="font-serif text-lg text-ink-950">
-          {dayLabel(day, { weekday: "long", month: "long", day: "numeric" })}
-          {day === today && <span className="ml-2 align-middle font-sans text-xs font-semibold text-accent-text">Today</span>}
-        </h2>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close this day"
-          className="-mt-0.5 -mr-1 cursor-pointer rounded-lg p-1 text-ink-950/50 transition-colors duration-200 hover:bg-ink-950/5 hover:text-ink-950"
-        >
-          <CloseIcon className="size-4" />
-        </button>
-      </div>
+      <h2 className="font-serif text-lg text-ink-950">
+        {dayLabel(day, { weekday: "long", month: "long", day: "numeric" })}
+        {day === today && <span className="ml-2 align-middle font-sans text-xs font-semibold text-accent-text">Today</span>}
+      </h2>
       <p className="mt-0.5 text-xs text-ink-950/55">
         {booked.length === 0 ? "Nothing booked" : `${booked.length} ${booked.length === 1 ? "appointment" : "appointments"}`}
         {due.length > 0 && `, ${due.length} follow-up${due.length === 1 ? "" : "s"} to book`}
@@ -352,10 +341,9 @@ export default function Calendar({ actor }) {
   const today = todayInTampa()
   const [view, setView] = useState(() => (isPhone() ? "agenda" : "week"))
   const [cursor, setCursor] = useState(today)
-  // The month view's clicked day; null until one is clicked, so the month
-  // opens full width and the day panel only appears on a click.
-  const [selected, setSelected] = useState(null)
-  const selectDay = (day) => setSelected((current) => (current === day ? null : day))
+  // The month view's chosen day. The day panel beside the month always shows
+  // it (Louie, 2026-10-02): today to start, and a click on a date switches it.
+  const [selected, setSelected] = useState(today)
   const [who, setWho] = useState("mine") // "mine" | "all" | a staff uid
   const [showCancelled, setShowCancelled] = useState(false)
   const [staff, setStaff] = useState([])
@@ -420,16 +408,16 @@ export default function Calendar({ actor }) {
     : []
 
   // Month and Agenda step a month at a time, Week a week. Moving to another
-  // month closes the day panel.
+  // month selects today if it's in that month, else its 1st.
   const step = (direction) => {
     if (view === "week") return setCursor((day) => addDays(day, direction * 7))
     const next = `${new Date(Date.UTC(+cursor.slice(0, 4), +cursor.slice(5, 7) - 1 + direction, 1)).toISOString().slice(0, 7)}-01`
     setCursor(next)
-    setSelected(null)
+    setSelected(next.slice(0, 7) === today.slice(0, 7) ? today : next)
   }
   const goToday = () => {
     setCursor(today)
-    setSelected(null)
+    setSelected(today)
   }
   const title =
     view === "month" || view === "agenda"
@@ -472,7 +460,7 @@ export default function Calendar({ actor }) {
         </div>
         <button
           type="button"
-          onClick={() => setDialog({ prefill: { day: view === "month" && selected && selected >= today ? selected : cursor < today ? today : cursor } })}
+          onClick={() => setDialog({ prefill: { day: view === "month" && selected >= today ? selected : cursor < today ? today : cursor } })}
           className="cursor-pointer rounded-full bg-ink-950 px-4 py-2 text-sm font-semibold text-paper-50 transition-colors duration-200 hover:bg-brand-dark"
         >
           New appointment
@@ -519,7 +507,7 @@ export default function Calendar({ actor }) {
           onSlot={(day, time) => setDialog({ prefill: { day, time } })}
         />
       ) : view === "month" ? (
-        <div className={`grid gap-4 ${selected ? "lg:grid-cols-[minmax(0,1fr)_20rem]" : ""}`}>
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <MonthView
             days={range.days}
             month={cursor.slice(0, 7)}
@@ -529,20 +517,17 @@ export default function Calendar({ actor }) {
             markers={markers}
             onOpen={open}
             onBook={book}
-            onSelect={selectDay}
+            onSelect={setSelected}
           />
-          {selected && (
-            <DayPanel
-              day={selected}
-              today={today}
-              appointments={shown}
-              markers={markers}
-              onOpen={open}
-              onBook={book}
-              onNew={(day) => setDialog({ prefill: { day } })}
-              onClose={() => setSelected(null)}
-            />
-          )}
+          <DayPanel
+            day={selected}
+            today={today}
+            appointments={shown}
+            markers={markers}
+            onOpen={open}
+            onBook={book}
+            onNew={(day) => setDialog({ prefill: { day } })}
+          />
         </div>
       ) : (
         <AgendaView days={range.days} today={today} appointments={shown} markers={markers} onOpen={open} onBook={book} />
