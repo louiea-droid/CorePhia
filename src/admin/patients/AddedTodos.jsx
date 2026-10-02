@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import DatePicker from "../../components/DatePicker"
+import PatientPicker from "../ui/PatientPicker"
 import { VisibilityChoice } from "./AddTodo"
 import { formatDay, inputClass } from "./noteUi"
 import { groupTodos } from "./todoMath"
@@ -19,6 +20,7 @@ function EditRow({ todo, onSaved, onCancel }) {
   const [text, setText] = useState(todo.text)
   const [due, setDue] = useState(todo.due)
   const [visibility, setVisibility] = useState(todo.visibility)
+  const [patient, setPatient] = useState({ intakeId: todo.intakeId, patientName: todo.patientName, patientKind: "" })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
 
@@ -28,7 +30,7 @@ function EditRow({ todo, onSaved, onCancel }) {
     setBusy(true)
     setError(null)
     try {
-      onSaved(await editTodo(todo, { text, intakeId: todo.intakeId, patientName: todo.patientName, due, visibility }))
+      onSaved(await editTodo(todo, { text, intakeId: patient.intakeId, patientName: patient.patientName, due, visibility }))
     } catch (cause) {
       console.error("Editing a to-do failed:", cause.code ?? cause.message)
       setError("Couldn't save. Try again.")
@@ -39,6 +41,7 @@ function EditRow({ todo, onSaved, onCancel }) {
   return (
     <form onSubmit={save} className="space-y-3 rounded-xl bg-paper-100 p-3">
       <input value={text} onChange={(event) => setText(event.target.value)} maxLength={500} aria-label="To-do" className={inputClass} />
+      <PatientPicker value={patient} onChange={setPatient} label="Patient" optional />
       <div className="flex flex-wrap items-center gap-3">
         <div className="w-44">
           <DatePicker ariaLabel="Due date" value={due} onChange={setDue} triggerClassName={COMPACT} />

@@ -28,6 +28,9 @@ export default function PatientPicker({ value, onChange, label = "Patient or app
     return records.filter((record) => nameOf(record).toLowerCase().includes(needle)).slice(0, 8)
   }, [records, search])
 
+  const pick = (record) =>
+    onChange({ intakeId: record.id, patientName: nameOf(record), patientKind: record.status === "admitted" ? "patient" : "applicant" })
+
   if (value.intakeId)
     return (
       <div className="flex items-center justify-between gap-3 rounded-lg border border-ink-950/10 bg-white px-3 py-2">
@@ -66,6 +69,13 @@ export default function PatientPicker({ value, onChange, label = "Patient or app
           }}
           placeholder={records || !search ? "Search by name" : "Loading…"}
           autoComplete="off"
+          // Enter picks the first match. It never submits a form the picker
+          // sits in (the To-do form), which would save without the patient.
+          onKeyDown={(event) => {
+            if (event.key !== "Enter") return
+            event.preventDefault()
+            if (matches[0]) pick(matches[0])
+          }}
           className={inputClass}
         />
       </label>
@@ -81,7 +91,7 @@ export default function PatientPicker({ value, onChange, label = "Patient or app
                 <li key={record.id}>
                   <button
                     type="button"
-                    onClick={() => onChange({ intakeId: record.id, patientName: name, patientKind: kind })}
+                    onClick={() => pick(record)}
                     className="flex w-full cursor-pointer items-baseline justify-between gap-3 px-3 py-2 text-left text-sm text-ink-950 transition-colors duration-150 hover:bg-accent-dark/10 focus-visible:bg-accent-dark/10 focus-visible:outline-none"
                   >
                     <span className="truncate">{name || "Unnamed"}</span>
