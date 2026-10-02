@@ -211,7 +211,7 @@ export default function AppointmentDialog({ appointment, prefill = {}, actor, on
   return createPortal(
     // The overlay scrolls, not the dialog: the form is short, and an open
     // calendar or list then extends past the dialog instead of being clipped.
-    <div className="fixed inset-0 z-50 overflow-y-auto" role="presentation">
+    <div className="fixed inset-0 z-50 overflow-y-auto [scrollbar-gutter:stable_both-edges]" role="presentation">
       <div aria-hidden="true" onClick={() => !busy && onClose()} className="fixed inset-0 bg-scrim/50" />
       <div className="relative flex min-h-full items-end justify-center sm:items-center sm:p-4">
         <div

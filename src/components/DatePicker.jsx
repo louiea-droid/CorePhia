@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { CalendarIcon, ChevronDownIcon } from "./icons"
 import { SET_VALUE_EVENT } from "./Select"
+import { usePopupPlacement } from "./usePopupPlacement"
 
 // Padding lives in the triggerClassName prop (default below), same as
 // Select, so a compact caller isn't fighting a baked-in px/py.
@@ -108,6 +109,7 @@ export default function DatePicker({
   // Opened near the bottom of a scrolling panel (the admin note editor's last
   // field), the calendar would sit below the fold; bring it into view.
   const popupRef = useRef(null)
+  const up = usePopupPlacement(open, rootRef, popupRef)
   useEffect(() => {
     if (open) popupRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" })
   }, [open])
@@ -192,7 +194,7 @@ export default function DatePicker({
         ref={popupRef}
         role="dialog"
         aria-label="Choose a date"
-        className={`absolute top-full z-20 mt-2 w-64 origin-top rounded-2xl bg-white p-3 shadow-xl ring-1 ring-ink-950/10 transition-[opacity,transform,display] transition-discrete duration-150 ease-out-smooth ${
+        className={`absolute z-20 w-64 rounded-2xl ${up ? "bottom-full mb-2 origin-bottom" : "top-full mt-2 origin-top"} bg-white p-3 shadow-xl ring-1 ring-ink-950/10 transition-[opacity,transform,display] transition-discrete duration-150 ease-out-smooth ${
           open ? "block scale-100 opacity-100 starting:scale-95 starting:opacity-0" : "hidden scale-95 opacity-0"
         }`}
       >

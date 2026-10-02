@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { ChevronDownIcon } from "./icons"
+import { usePopupPlacement } from "./usePopupPlacement"
 
 // Padding/text-size lives outside this base string (as the triggerClassName
 // default below) rather than baked in, so a caller overriding it isn't
@@ -47,6 +48,8 @@ export default function Select({
   const value = isControlled ? controlledValue : internalValue
   const [open, setOpen] = useState(false)
   const rootRef = useRef(null)
+  const listRef = useRef(null)
+  const up = usePopupPlacement(open, rootRef, listRef)
   const selectRef = useRef(null)
 
   // Lets a form set this value from outside (the intake's edit dialog copies
@@ -122,8 +125,9 @@ export default function Select({
       </button>
 
       <ul
+        ref={listRef}
         role="listbox"
-        className={`absolute inset-x-0 top-full z-20 mt-2 max-h-56 origin-top overflow-y-auto rounded-2xl bg-white p-1.5 shadow-xl ring-1 ring-ink-950/10 transition-[opacity,transform,display] transition-discrete duration-150 ease-out-smooth ${
+        className={`absolute inset-x-0 z-20 max-h-56 overflow-y-auto rounded-2xl ${up ? "bottom-full mb-2 origin-bottom" : "top-full mt-2 origin-top"} bg-white p-1.5 shadow-xl ring-1 ring-ink-950/10 transition-[opacity,transform,display] transition-discrete duration-150 ease-out-smooth ${
           open ? "block scale-100 opacity-100 starting:scale-95 starting:opacity-0" : "hidden scale-95 opacity-0"
         }`}
       >
