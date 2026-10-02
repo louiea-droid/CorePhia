@@ -5,7 +5,7 @@ import AccountMenu from "./layout/AccountMenu"
 import Activity from "./staff/Activity"
 import Calendar from "./calendar/Calendar"
 import Dashboard from "./dashboard/Dashboard"
-import { getAdminAccess, isConfigured, signOutAdmin, usingSeedData, watchAdminUser } from "./lib/firebase"
+import { getAdminAccess, isConfigured, recordSignIn, signOutAdmin, usingSeedData, watchAdminUser } from "./lib/firebase"
 import IdleWarningModal from "./layout/IdleWarningModal"
 import { MenuIcon } from "./ui/icons"
 import Loader from "./ui/Loader"
@@ -263,6 +263,7 @@ export default function AdminApp() {
       setUser(nextUser)
       setDisplayName(nextUser?.displayName ?? null)
       const access = nextUser ? await getAdminAccess(nextUser) : { role: null, name: null }
+      if (nextUser && access.role) recordSignIn(nextUser.uid)
       setRole(access.role)
       setSignerName(access.name)
       setCheckingAuth(false)

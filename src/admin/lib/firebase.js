@@ -25,6 +25,7 @@ import {
   onSnapshot,
   orderBy,
   query,
+  serverTimestamp,
   updateDoc,
   where,
 } from "firebase/firestore"
@@ -208,6 +209,15 @@ export async function completeTotpSignIn(resolver, code) {
 // on the Staff page), else the account email. Never the editable display
 // name, so nobody can sign a note as someone else. firestore.rules checks
 // the same value (myName()).
+// Stamps the signed-in person's staff record (Staff page "Last sign in").
+// Fire and forget: a failed stamp is logged and never blocks signing in.
+export function recordSignIn(uid) {
+  if (!db || usingSeedData) return
+  updateDoc(doc(db, USERS_COLLECTION, uid), { lastSignInAt: serverTimestamp() }).catch((cause) =>
+    console.warn("Couldn't record the sign-in time:", cause.code ?? cause.message),
+  )
+}
+
 export async function getAdminAccess(user) {
   const none = { role: null, name: null }
   if (!user || !db) return none
