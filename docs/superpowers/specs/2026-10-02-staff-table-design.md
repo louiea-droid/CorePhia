@@ -20,8 +20,11 @@ users table. Replaces the layout of `src/admin/staff/Staff.jsx`; permissions are
   non-super viewers, as today). Sorted by name.
 - Actions per row, only where `canManageMember(actor, member)` (unchanged):
   **Edit** (✎) opens a small dialog to change the role (`grantableRoles`, plus "No access");
-  **⋯** opens Remove access / Delete account, each confirmed as today. Your own row shows no
-  actions.
+  **⋯** opens Remove access / Delete account, each confirmed as today.
+- **Your own row** (Louie, 2026-10-02) keeps actions, without the role change: **Edit** opens
+  your Profile (`/admin/security`: display name, password, two-step sign-in); **⋯** offers
+  Profile and Sign out. Changing your own role, removing your own access and deleting your own
+  account are never offered (the rules refuse them, and they would lock you out).
 - Footer: "Showing a–b of n", page size (shared `PAGE_SIZE_OPTIONS`), `Pagination`.
 - Phone (< 640px): rows become stacked cards (name, email, role badge, status, last sign in,
   actions); no sideways page scroll.
