@@ -8,6 +8,7 @@ import {
   lanes,
   matchingAppointment,
   monthGrid,
+  slotTime,
   overlaps,
   tampaParts,
   todayInTampa,
@@ -109,5 +110,13 @@ assert.equal(weekDays("2026-10-05")[0], "2026-10-05")
   assert.equal(changeFor(appointment, { note: "Bring food log" }).kind, "noteEdited")
   assert.equal(changeFor(appointment, { staffUid: "q", staffName: "Q" }).kind, "moved")
 }
+
+// A click in the week grid becomes a 15-minute slot inside the booking
+// dialog's time list (6:00 AM to 9:00 PM), never a time the list can't show.
+assert.equal(slotTime(9 * 60 + 7), "09:00")
+assert.equal(slotTime(9 * 60 + 52), "09:45")
+assert.equal(slotTime(22 * 60 + 10), "21:00")
+assert.equal(slotTime(5 * 60), "06:00")
+assert.equal(slotTime(21 * 60), "21:00")
 
 console.log("calendarMath: all checks passed")

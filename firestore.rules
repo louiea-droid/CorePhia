@@ -132,7 +132,7 @@ service cloud.firestore {
       allow read: if request.auth != null
         && (request.auth.uid == uid
             || role() == 'superAdmin'
-            || (isClinical() && resource.data.get('role', '') != 'superAdmin'));
+            || (isClinical() && resource.data.role in ['', 'provider', 'dietitian', 'coAdmin', 'admin']));
       allow create, update: if request.auth != null && isRoleChange(uid);
       allow delete: if request.auth != null
         && request.auth.uid != uid
@@ -418,7 +418,6 @@ service cloud.firestore {
             'status', 'note', 'addedBy', 'addedAt', 'updatedAt', 'lastChangeId'
           ])
         && data.intakeId is string
-        && exists(/databases/$(database)/documents/intakeRecords/$(data.intakeId))
         && data.patientName is string && data.patientName.size() > 0 && data.patientName.size() <= 200
         && data.staffUid is string && data.staffUid.size() > 0 && data.staffUid.size() <= 200
         && data.staffName is string && data.staffName.size() <= 200
@@ -442,6 +441,9 @@ service cloud.firestore {
       allow create: if isClinical()
         && isAppointmentShape(request.resource.data)
         && !('lastChangeId' in request.resource.data)
+        // Checked on create only: intakeId never changes afterwards, and a
+        // deleted intake record mustn't freeze its appointments forever.
+        && exists(/databases/$(database)/documents/intakeRecords/$(request.resource.data.intakeId))
         && request.resource.data.status == 'scheduled'
         && isMe(request.resource.data.addedBy)
         && request.resource.data.addedAt == request.time

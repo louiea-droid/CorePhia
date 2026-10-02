@@ -5,11 +5,11 @@ import { loadCharts, setApplicantStatus } from "./chartStore"
 import { useIntakeRecords } from "./useIntakeRecords"
 import { PAGE_SIZE_OPTIONS } from "./constants"
 import PageHeader from "./PageHeader"
+import { NOTE_TYPE_LABELS } from "./noteUi"
 import Pagination from "./Pagination"
 import { ApplicantsSkeleton } from "./Skeleton"
 
 const PAGE_SIZE_KEY = "corephia-admin-charts-page-size"
-const NOTE_TYPE_LABELS = { consultation: "Consultation", progress: "Progress" }
 
 const formatDate = (value) =>
   asDate(value)?.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) ?? "—"

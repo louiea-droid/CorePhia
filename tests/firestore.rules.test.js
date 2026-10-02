@@ -316,6 +316,12 @@ describe("dietitian and exercise notes", () => {
     )
     await assertFails(updateDoc(doc(as("provider"), "patients/chart1/notes/old"), sign("provider", "provider")))
   })
+  test("a draft whose author's role changed can still be discarded", async () => {
+    await env.withSecurityRulesDisabled((c) =>
+      setDoc(doc(c.firestore(), "patients/chart1/notes/stuck"), draft("provider", "provider", { type: "dietitian" })),
+    )
+    await assertSucceeds(deleteDoc(doc(as("provider"), "patients/chart1/notes/stuck")))
+  })
   test("a dietitian signs their own dietitian note", async () => {
     await env.withSecurityRulesDisabled((c) =>
       setDoc(doc(c.firestore(), "patients/chart1/notes/mine"), draft("dietitian", "dietitian", { type: "dietitian" })),
@@ -439,6 +445,16 @@ describe("appointments", () => {
     await seed()
     await assertSucceeds(move(as("provider"), "provider", "provider", "c1", { status: "cancelled" }, change("provider", "provider", { kind: "cancelled", from: { status: "scheduled" }, to: { status: "cancelled" } })))
     await assertFails(move(as("admin"), "admin", "admin", "c2"))
+  })
+  test("an appointment can still be cancelled after its intake record is deleted", async () => {
+    await seed()
+    await env.withSecurityRulesDisabled((c) => deleteDoc(doc(c.firestore(), "intakeRecords", "pending1")))
+    await assertSucceeds(
+      move(as("provider"), "provider", "provider", "c1", { status: "cancelled" }, change("provider", "provider", { kind: "cancelled", from: { status: "scheduled" }, to: { status: "cancelled" } })),
+    )
+  })
+  test("a new booking still needs an existing intake record", async () => {
+    await assertFails(setDoc(doc(as("provider"), "appointments", "n9"), booking("provider", "provider", { intakeId: "gone" })))
   })
   test("appointments are never deleted", async () => {
     await seed()

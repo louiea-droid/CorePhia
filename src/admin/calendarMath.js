@@ -70,6 +70,13 @@ export function monthRange(day) {
   return { days, start: fromTampa(days[0]), end: fromTampa(addDays(days[41], 1)) }
 }
 
+// The booking dialog offers 6:00 AM to 9:00 PM in 15-minute steps; a click
+// anywhere in the 24-hour week grid lands on the nearest of those.
+export const FIRST_SLOT = 6 * 60
+export const LAST_SLOT = 21 * 60
+const hhmm = (minutes) => `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`
+export const slotTime = (minutes) => hhmm(Math.min(LAST_SLOT, Math.max(FIRST_SLOT, Math.floor(minutes / 15) * 15)))
+
 const startMs = (appointment) => asDate(appointment.start)?.getTime() ?? 0
 const endMs = (appointment) => startMs(appointment) + appointment.minutes * 60000
 

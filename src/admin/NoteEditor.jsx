@@ -9,6 +9,7 @@ import { AUDIT_ACTIONS, recordAuditEvent } from "./firebase"
 import { CloseIcon } from "./icons"
 import { INTENSITIES, NOTE_TYPES, NOTE_TYPE_LABELS, SECTION_FIELDS, inputClass, labelClass, prescriptionLine } from "./noteUi"
 import { getAdminPortalRoot } from "./portalRoot"
+import { canWriteNote } from "./roles"
 
 const AUTOSAVE_MS = 1500
 const RENEWAL_PICKS = [30, 60, 90]
@@ -26,12 +27,14 @@ const intOrNull = (value, max) => (value == null ? null : Math.min(max, Math.max
 const DAY_OPTIONS = Array.from({ length: 8 }, (_, days) => ({ value: String(days), label: String(days) }))
 const INTENSITY_OPTIONS = INTENSITIES.map(([value, label]) => ({ value, label }))
 
-// Only the author ever opens a draft, and only with a clinical role, so a
-// refused write here means the draft changed somewhere else (signed or
-// discarded in another tab), not that their role lacks permission.
+// Only the author ever opens a draft. A refused write means either the draft
+// changed somewhere else (signed or discarded in another tab), or the
+// author's role no longer writes this note type (canWriteType in the rules).
 const STALE_DRAFT =
   "This draft was signed or discarded somewhere else, so it can't be changed here. Close it to see the latest version."
-const errorText = (cause, fallback) => (cause?.code === "permission-denied" ? STALE_DRAFT : fallback)
+const ROLE_CHANGED = "Your role can't edit this note any more. Close it, or ask an admin if your role should allow it."
+const errorText = (cause, fallback, roleCanEdit) =>
+  cause?.code === "permission-denied" ? (roleCanEdit ? STALE_DRAFT : ROLE_CHANGED) : fallback
 
 // The rules cap a note at 30 prescription entries (isNoteShape).
 const MAX_PRESCRIPTIONS = 30
@@ -250,6 +253,10 @@ export default function NoteEditor({
     ...(note.exercisePlan && { exercisePlan: note.exercisePlan }),
   }))
   const config = NOTE_TYPES[note.type]
+  const roleCanEdit = canWriteNote(note.type, actor.role)
+  // After a save the rules refused, a second Close leaves without saving:
+  // that text can never be saved, so it must not trap the editor open.
+  const closeAnyway = useRef(false)
   const [saveState, setSaveState] = useState("saved") // saved | pending | saving | error
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
@@ -300,14 +307,18 @@ export default function NoteEditor({
   // editor stays open with the text and the error, so nothing typed is lost.
   const close = useCallback(async () => {
     if (busy) return
-    if (version.current !== savedVersion.current && !(await save())) {
+    if (roleCanEdit && !closeAnyway.current && version.current !== savedVersion.current && !(await save())) {
+      const refused = lastSaveError.current?.code === "permission-denied"
+      closeAnyway.current = refused
       setError(
-        errorText(lastSaveError.current, "Couldn't save your draft, so it's still open. Check your connection and try again."),
+        refused
+          ? `${errorText(lastSaveError.current, "", roleCanEdit)} Closing again leaves without saving.`
+          : "Couldn't save your draft, so it's still open. Check your connection and try again.",
       )
       return
     }
     onClose()
-  }, [busy, save, onClose])
+  }, [busy, save, onClose, roleCanEdit])
 
   useEffect(() => {
     closeRef.current?.focus()
@@ -341,7 +352,7 @@ export default function NoteEditor({
       onSigned()
     } catch (cause) {
       setConfirm(null)
-      setError(errorText(cause, "Couldn't sign this note. Nothing was changed. Try again."))
+      setError(errorText(cause, "Couldn't sign this note. Nothing was changed. Try again.", roleCanEdit))
     } finally {
       setBusy(false)
     }
@@ -355,7 +366,7 @@ export default function NoteEditor({
       onDiscarded()
     } catch (cause) {
       setConfirm(null)
-      setError(errorText(cause, "Couldn't discard this draft. Try again."))
+      setError(errorText(cause, "Couldn't discard this draft. Try again.", roleCanEdit))
     } finally {
       setBusy(false)
     }
@@ -415,6 +426,11 @@ export default function NoteEditor({
           </div>
 
           <div className="scrollbar-thin flex-1 space-y-7 overflow-y-auto px-5 py-6 sm:px-7">
+            {!roleCanEdit && (
+              <p role="alert" className="rounded-lg bg-paper-100 px-3 py-2 text-sm text-ink-950/75">
+                {ROLE_CHANGED} Changes here can't be saved.
+              </p>
+            )}
             <div className="grid gap-4 sm:grid-cols-2">
               <DateField label="Visit date" value={fields.visitDate} onChange={(visitDate) => update({ visitDate })} />
             </div>
@@ -580,7 +596,7 @@ export default function NoteEditor({
               <button
                 type="button"
                 onClick={() => setConfirm("sign")}
-                disabled={busy || Boolean(problem)}
+                disabled={busy || Boolean(problem) || !roleCanEdit}
                 className="cursor-pointer rounded-full bg-ink-950 px-6 py-2.5 text-sm font-semibold text-paper-50 shadow-lg shadow-ink-950/15 transition-colors duration-200 hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Sign note

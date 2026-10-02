@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import AppointmentDialog from "./AppointmentDialog"
 import { loadAppointments } from "./appointmentStore"
-import { addDays, fromTampa, lanes, monthRange, tampaParts, todayInTampa, unbookedFollowUps, weekRange } from "./calendarMath"
+import { addDays, fromTampa, lanes, monthRange, slotTime, tampaParts, todayInTampa, unbookedFollowUps, weekRange } from "./calendarMath"
 import { nextFollowUps } from "./chartMath"
 import { loadActiveChartNotes, loadStaff } from "./chartStore"
 import { DISCIPLINE_LABELS } from "./noteUi"
@@ -108,8 +108,7 @@ function WeekView({ days, today, appointments, markers, onOpen, onBook, onSlot }
                   className="relative border-l border-ink-950/5 bg-[linear-gradient(to_bottom,transparent_47px,rgb(13_26_61/0.06)_47px)] bg-size-[100%_48px]"
                   onClick={(event) => {
                     if (event.target !== event.currentTarget) return
-                    const minutes = Math.floor(((event.nativeEvent.offsetY / HOUR_PX) * 60) / 15) * 15
-                    onSlot(day, `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`)
+                    onSlot(day, slotTime((event.nativeEvent.offsetY / HOUR_PX) * 60))
                   }}
                 >
                   {items.map(({ appointment, id, startMin }) => {

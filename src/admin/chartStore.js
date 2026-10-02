@@ -318,6 +318,8 @@ export async function addAmendment(chartId, noteId, text, actor) {
 
 // Super admins are hidden from admins. The rules refuse an admin any read of
 // a super admin's doc, so an admin's query has to rule them out itself.
+// Must match the role list in the user read rule (firestore.rules), so the
+// rules can prove this query.
 const VISIBLE_TO_ADMIN = ["", "provider", "dietitian", "coAdmin", "admin"]
 
 export async function loadStaff(viewerRole) {
