@@ -117,14 +117,18 @@ export default function DatePicker({
     const onPointerDown = (event) => {
       if (!rootRef.current?.contains(event.target)) setOpen(false)
     }
+    // Capture phase, and marked handled: Escape closes this popup only, not
+    // a dialog the picker sits in (those skip a defaultPrevented Escape).
     const onKeyDown = (event) => {
-      if (event.key === "Escape") setOpen(false)
+      if (event.key !== "Escape") return
+      event.preventDefault()
+      setOpen(false)
     }
     document.addEventListener("mousedown", onPointerDown)
-    document.addEventListener("keydown", onKeyDown)
+    document.addEventListener("keydown", onKeyDown, true)
     return () => {
       document.removeEventListener("mousedown", onPointerDown)
-      document.removeEventListener("keydown", onKeyDown)
+      document.removeEventListener("keydown", onKeyDown, true)
     }
   }, [open])
 
@@ -188,8 +192,8 @@ export default function DatePicker({
         ref={popupRef}
         role="dialog"
         aria-label="Choose a date"
-        className={`absolute top-full z-20 mt-2 w-64 origin-top rounded-2xl bg-white p-3 shadow-xl ring-1 ring-ink-950/10 transition-[opacity,transform] duration-150 ease-out-smooth ${
-          open ? "scale-100 opacity-100" : "pointer-events-none scale-95 opacity-0"
+        className={`absolute top-full z-20 mt-2 w-64 origin-top rounded-2xl bg-white p-3 shadow-xl ring-1 ring-ink-950/10 transition-[opacity,transform,display] transition-discrete duration-150 ease-out-smooth ${
+          open ? "block scale-100 opacity-100 starting:scale-95 starting:opacity-0" : "hidden scale-95 opacity-0"
         }`}
       >
         <div className="flex items-center justify-between px-1">

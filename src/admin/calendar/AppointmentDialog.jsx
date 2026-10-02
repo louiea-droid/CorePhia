@@ -25,6 +25,7 @@ const TIMES = Array.from({ length: 61 }, (_, index) => {
   })
   return { value, label }
 })
+const TIME_LABELS = Object.fromEntries(TIMES.map(({ value, label }) => [value, label]))
 const STATUS_LABELS = { scheduled: "Scheduled", completed: "Completed", cancelled: "Cancelled", noShow: "No-show" }
 const STALE = "This appointment changed somewhere else. Close it to see the latest."
 
@@ -74,6 +75,7 @@ export default function AppointmentDialog({ appointment, prefill = {}, actor, on
   const [form, setForm] = useState(() => ({
     intakeId: appointment?.intakeId ?? prefill.intakeId ?? "",
     patientName: appointment?.patientName ?? prefill.patientName ?? "",
+    patientKind: "",
     staffUid: appointment?.staffUid ?? (isClinicalRole(actor.role) && actor.role !== "superAdmin" ? actor.uid : ""),
     staffName: appointment?.staffName ?? (isClinicalRole(actor.role) && actor.role !== "superAdmin" ? actor.name : ""),
     discipline: appointment?.discipline ?? prefill.discipline ?? (actor.role === "dietitian" ? "dietitian" : "medical"),
@@ -124,7 +126,7 @@ export default function AppointmentDialog({ appointment, prefill = {}, actor, on
 
   useEffect(() => {
     const onKeyDown = (event) => {
-      if (event.key === "Escape" && !busy) onClose()
+      if (event.key === "Escape" && !event.defaultPrevented && !busy) onClose()
     }
     document.addEventListener("keydown", onKeyDown)
     return () => document.removeEventListener("keydown", onKeyDown)
@@ -207,14 +209,16 @@ export default function AppointmentDialog({ appointment, prefill = {}, actor, on
   }))
 
   return createPortal(
-    <div className="fixed inset-0 z-50" role="presentation">
-      <div aria-hidden="true" onClick={() => !busy && onClose()} className="absolute inset-0 bg-scrim/50" />
-      <div className="flex h-full items-end justify-center sm:items-center sm:p-4">
+    // The overlay scrolls, not the dialog: the form is short, and an open
+    // calendar or list then extends past the dialog instead of being clipped.
+    <div className="fixed inset-0 z-50 overflow-y-auto" role="presentation">
+      <div aria-hidden="true" onClick={() => !busy && onClose()} className="fixed inset-0 bg-scrim/50" />
+      <div className="relative flex min-h-full items-end justify-center sm:items-center sm:p-4">
         <div
           role="dialog"
           aria-modal="true"
           aria-label={isNew ? "Book appointment" : `Appointment for ${appointment.patientName}`}
-          className="relative flex max-h-[96dvh] w-full max-w-xl flex-col rounded-t-3xl bg-paper-50 shadow-2xl sm:max-h-[90vh] sm:rounded-3xl"
+          className="relative w-full max-w-xl rounded-t-3xl bg-paper-50 shadow-2xl sm:rounded-3xl"
         >
           <div className="flex shrink-0 items-start justify-between gap-4 border-b border-ink-950/10 px-5 py-4 sm:px-7">
             <div className="min-w-0">
@@ -237,98 +241,133 @@ export default function AppointmentDialog({ appointment, prefill = {}, actor, on
             </button>
           </div>
 
-          <div className="scrollbar-thin flex-1 space-y-4 overflow-y-auto px-5 py-5 sm:px-7">
-            {isNew && !prefill.intakeId ? (
-              <div>
-                <label className="block">
-                  <span className={labelClass}>Patient or applicant</span>
-                  <input
-                    value={form.intakeId ? form.patientName : search}
-                    onChange={(event) => {
-                      set({ intakeId: "", patientName: "" })
-                      setSearch(event.target.value)
+          <div className="space-y-6 px-5 py-5 sm:px-7">
+            <section aria-labelledby="appointment-who" className="space-y-3">
+              <h3 id="appointment-who" className="text-sm font-semibold text-ink-950">
+                Who
+              </h3>
+              {isNew && !prefill.intakeId && !form.intakeId ? (
+                <div>
+                  <label className="block">
+                    <span className={labelClass}>Patient or applicant</span>
+                    <input
+                      value={search}
+                      onChange={(event) => setSearch(event.target.value)}
+                      placeholder={patients ? "Search by name" : "Loading…"}
+                      autoComplete="off"
+                      className={inputClass}
+                    />
+                  </label>
+                  {search.trim() && patients && (
+                    <ul className="mt-1.5 overflow-hidden rounded-lg border border-ink-950/10 bg-white">
+                      {matches.length === 0 ? (
+                        <li className="px-3 py-2 text-sm text-ink-950/55">No patient or applicant matches "{search.trim()}".</li>
+                      ) : (
+                        matches.map((record) => {
+                          const name = `${record.demographics?.firstName ?? ""} ${record.demographics?.lastName ?? ""}`.trim()
+                          const kind = record.status === "admitted" ? "patient" : "applicant"
+                          return (
+                            <li key={record.id}>
+                              <button
+                                type="button"
+                                onClick={() => set({ intakeId: record.id, patientName: name, patientKind: kind })}
+                                className="flex w-full cursor-pointer items-baseline justify-between gap-3 px-3 py-2 text-left text-sm text-ink-950 transition-colors duration-150 hover:bg-accent-dark/10 focus-visible:bg-accent-dark/10 focus-visible:outline-none"
+                              >
+                                <span className="truncate">{name || "Unnamed"}</span>
+                                <span className="shrink-0 text-xs text-ink-950/50 capitalize">{kind}</span>
+                              </button>
+                            </li>
+                          )
+                        })
+                      )}
+                    </ul>
+                  )}
+                </div>
+              ) : (
+                isNew && (
+                  <div className="flex items-center justify-between gap-3 rounded-lg border border-ink-950/10 bg-white px-3 py-2">
+                    <p className="min-w-0 truncate text-sm text-ink-950">
+                      <span className="font-medium">{form.patientName || "Unnamed"}</span>
+                      {form.patientKind && <span className="text-ink-950/50">, {form.patientKind}</span>}
+                    </p>
+                    {!prefill.intakeId && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          set({ intakeId: "", patientName: "", patientKind: "" })
+                          setSearch("")
+                        }}
+                        className="shrink-0 cursor-pointer text-xs font-semibold text-accent-text hover:underline"
+                      >
+                        Change
+                      </button>
+                    )}
+                  </div>
+                )
+              )}
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="With">
+                  <Select
+                    ariaLabel="With"
+                    options={staffOptions}
+                    value={form.staffUid}
+                    onChange={(uid) => {
+                      const member = staff.find((entry) => entry.uid === uid)
+                      set({ staffUid: uid, staffName: member?.name || member?.email || "" })
                     }}
-                    placeholder={patients ? "Search by name" : "Loading…"}
-                    className={inputClass}
-                  />
-                </label>
-                {!form.intakeId && matches.length > 0 && (
-                  <ul className="mt-1 divide-y divide-ink-950/5 rounded-lg border border-ink-950/10 bg-white">
-                    {matches.map((record) => {
-                      const name = `${record.demographics?.firstName ?? ""} ${record.demographics?.lastName ?? ""}`.trim()
-                      return (
-                        <li key={record.id}>
-                          <button
-                            type="button"
-                            onClick={() => set({ intakeId: record.id, patientName: name })}
-                            className="block w-full cursor-pointer px-3 py-2 text-left text-sm text-ink-950 transition-colors duration-150 hover:bg-paper-100"
-                          >
-                            {name || "Unnamed"}{" "}
-                            <span className="text-ink-950/50">{record.status === "admitted" ? "patient" : "applicant"}</span>
-                          </button>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                )}
-              </div>
-            ) : (
-              isNew && <p className="text-sm text-ink-950">For {form.patientName}</p>
-            )}
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="With">
-                <Select
-                  ariaLabel="With"
-                  options={staffOptions}
-                  value={form.staffUid}
-                  onChange={(uid) => {
-                    const member = staff.find((entry) => entry.uid === uid)
-                    set({ staffUid: uid, staffName: member?.name || member?.email || "" })
-                  }}
-                  placeholder="Choose"
-                  triggerClassName={COMPACT}
-                />
-              </Field>
-              <Field label="Kind of visit">
-                {isNew ? (
-                  <Select
-                    ariaLabel="Kind of visit"
-                    options={DISCIPLINE_OPTIONS}
-                    value={form.discipline}
-                    onChange={(discipline) => set({ discipline })}
-                    triggerClassName={COMPACT}
-                  />
-                ) : (
-                  <p className="py-2 text-sm text-ink-950">{DISCIPLINE_LABELS[form.discipline]}</p>
-                )}
-              </Field>
-              <Field label="Date">
-                <DatePicker ariaLabel="Date" value={form.day} onChange={(day) => set({ day })} triggerClassName={COMPACT} />
-              </Field>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Time">
-                  <Select ariaLabel="Time" options={TIMES} value={form.time} onChange={(time) => set({ time })} triggerClassName={COMPACT} />
-                </Field>
-                <Field label="Length">
-                  <Select
-                    ariaLabel="Length"
-                    options={LENGTHS}
-                    value={String(form.minutes)}
-                    onChange={(minutes) => set({ minutes: Number(minutes) })}
+                    placeholder="Choose someone"
                     triggerClassName={COMPACT}
                   />
                 </Field>
+                <Field label="Kind of visit">
+                  {isNew ? (
+                    <Select
+                      ariaLabel="Kind of visit"
+                      options={DISCIPLINE_OPTIONS}
+                      value={form.discipline}
+                      onChange={(discipline) => set({ discipline })}
+                      triggerClassName={COMPACT}
+                    />
+                  ) : (
+                    <p className="py-2 text-sm text-ink-950">{DISCIPLINE_LABELS[form.discipline]}</p>
+                  )}
+                </Field>
               </div>
-            </div>
-            <p className="text-xs text-ink-950/50">Times are Tampa time.</p>
+            </section>
 
-            {clashes.length > 0 && editable && (
-              <p className="rounded-lg bg-paper-100 px-3 py-2 text-sm text-ink-950/75">
-                {form.staffName || "This person"} already has {clashes.map((other) => `${other.patientName} at ${tampaParts(other.start).time}`).join(", ")} then.
-                You can still book it.
-              </p>
-            )}
+            <section aria-labelledby="appointment-when" className="space-y-3">
+              <h3 id="appointment-when" className="text-sm font-semibold text-ink-950">
+                When <span className="font-normal text-ink-950/50">(Tampa time)</span>
+              </h3>
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,0.9fr)]">
+                <Field label="Date">
+                  <DatePicker ariaLabel="Date" value={form.day} onChange={(day) => set({ day })} triggerClassName={COMPACT} />
+                </Field>
+                <div className="grid grid-cols-2 gap-3 sm:contents">
+                  <Field label="Time">
+                    <Select ariaLabel="Time" options={TIMES} value={form.time} onChange={(time) => set({ time })} triggerClassName={COMPACT} />
+                  </Field>
+                  <Field label="Length">
+                    <Select
+                      ariaLabel="Length"
+                      options={LENGTHS}
+                      value={String(form.minutes)}
+                      onChange={(minutes) => set({ minutes: Number(minutes) })}
+                      triggerClassName={COMPACT}
+                    />
+                  </Field>
+                </div>
+              </div>
+              {clashes.length > 0 && editable && (
+                <p className="rounded-lg bg-paper-100 px-3 py-2 text-sm text-ink-950/75">
+                  {form.staffName || "This person"} already has{" "}
+                  {clashes
+                    .map((other) => `${other.patientName} at ${TIME_LABELS[tampaParts(other.start).time] ?? tampaParts(other.start).time}`)
+                    .join(", ")}{" "}
+                  then. You can still book it.
+                </p>
+              )}
+            </section>
 
             <label className="block">
               <span className={labelClass}>Note (optional, no clinical details)</span>
@@ -344,7 +383,7 @@ export default function AppointmentDialog({ appointment, prefill = {}, actor, on
 
             {history && (
               <section>
-                <h3 className="text-xs font-semibold tracking-wide text-ink-950/50 uppercase">History</h3>
+                <h3 className="text-sm font-semibold text-ink-950">History</h3>
                 {history.length === 0 ? (
                   <p className="mt-1 text-sm text-ink-950/55">No changes since it was added.</p>
                 ) : (

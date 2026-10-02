@@ -331,7 +331,7 @@ export default function NoteEditor({
 
   useEffect(() => {
     const onKeyDown = (event) => {
-      if (event.key === "Escape" && !confirm) close()
+      if (event.key === "Escape" && !event.defaultPrevented && !confirm) close()
     }
     document.addEventListener("keydown", onKeyDown)
     return () => document.removeEventListener("keydown", onKeyDown)
