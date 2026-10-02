@@ -67,7 +67,7 @@ function AdminRoutes({ role, signerName, user, displayName, onDisplayNameChange,
       <Route path="/admin/todo" element={guard("todo", <Todo actor={actor} />)} />
       <Route path="/admin/calendar" element={guard("calendar", <Calendar actor={actor} />)} />
       <Route
-        path="/admin/messages"
+        path="/admin/queries"
         element={guard(
           "messages",
           <Messages role={role} messagesViewedAt={messagesViewedAt} onMessagesViewed={onMessagesViewed} />,
@@ -75,6 +75,8 @@ function AdminRoutes({ role, signerName, user, displayName, onDisplayNameChange,
       />
       <Route path="/admin/analytics" element={guard("analytics", <SiteTraffic />)} />
       <Route path="/admin/traffic" element={<Navigate to="/admin/analytics" replace />} />
+      {/* Messages were renamed Queries (Louie, 2026-10-02); old links still work. */}
+      <Route path="/admin/messages" element={<Navigate to="/admin/queries" replace />} />
       <Route path="/admin/staff" element={guard("staff", <Staff actor={actor} />)} />
       <Route path="/admin/activity" element={guard("activity", <Activity role={role} />)} />
       <Route

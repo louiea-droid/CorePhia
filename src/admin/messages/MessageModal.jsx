@@ -73,7 +73,7 @@ export default function MessageModal({ message, onClose, canDelete, onRequestDel
         <div
           role="dialog"
           aria-modal="true"
-          aria-label={`Message from ${message.name || "this visitor"}`}
+          aria-label={`Query from ${message.name || "this visitor"}`}
           className="relative flex max-h-[80vh] w-full max-w-lg flex-col rounded-3xl bg-white shadow-2xl"
         >
           <div className="flex items-start justify-between gap-4 border-b border-ink-950/10 px-6 py-5 sm:px-8">
@@ -86,7 +86,7 @@ export default function MessageModal({ message, onClose, canDelete, onRequestDel
                 <button
                   type="button"
                   onClick={() => onRequestDelete(message)}
-                  aria-label="Delete this message"
+                  aria-label="Delete this query"
                   className="rounded-lg p-1.5 text-ink-950/50 transition-colors duration-200 hover:bg-brand-dark/10 hover:text-brand-dark"
                 >
                   <TrashIcon className="size-5" />
@@ -111,7 +111,7 @@ export default function MessageModal({ message, onClose, canDelete, onRequestDel
               <Field label="Topic" value={message.interest} />
             </div>
             <div>
-              <p className="text-xs font-medium tracking-wide text-ink-950/45 uppercase">Message</p>
+              <p className="text-xs font-medium tracking-wide text-ink-950/45 uppercase">Query</p>
               <p className="mt-1 text-sm leading-relaxed wrap-break-word whitespace-pre-wrap text-ink-950">
                 {message.message || "No additional message."}
               </p>

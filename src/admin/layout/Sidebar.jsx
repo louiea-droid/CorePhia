@@ -29,7 +29,7 @@ const NAV_ITEMS = [
   { label: "Patients", icon: PatientsIcon, to: "/admin/patients", page: "patients" },
   { label: "To-do", icon: TodoIcon, to: "/admin/todo", page: "todo" },
   { label: "Calendar", icon: CalendarIcon, to: "/admin/calendar", page: "calendar" },
-  { label: "Messages", icon: MailIcon, to: "/admin/messages", page: "messages" },
+  { label: "Queries", icon: MailIcon, to: "/admin/queries", page: "messages" },
   { label: "Analytics", icon: TrafficIcon, to: "/admin/analytics", page: "analytics" },
   { label: "Staff", icon: StaffIcon, to: "/admin/staff", page: "staff" },
   { label: "Activity", icon: ActivityIcon, to: "/admin/activity", page: "activity" },
@@ -125,7 +125,7 @@ export default function Sidebar({
               // A chart (/admin/patients/:id) keeps Patients highlighted.
               const current =
                 location.pathname === item.to || (item.to !== "/admin" && location.pathname.startsWith(`${item.to}/`))
-              const count = item.to === "/admin/messages" ? newMessageCount : 0
+              const count = item.to === "/admin/queries" ? newMessageCount : 0
               return (
                 <li key={item.label}>
                   <Link

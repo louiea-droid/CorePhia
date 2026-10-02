@@ -118,20 +118,20 @@ export default function Messages({ role, messagesViewedAt = 0, onMessagesViewed 
 
   return (
     <div className="flex h-full flex-col">
-      <PageHeader title="Messages" description="Everyone who has reached out through the contact form." />
+      <PageHeader title="Queries" description="Everyone who has reached out through the contact form." />
 
       {error ? (
         <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-ink-950/10 bg-white p-6 text-center">
-          <h2 className="font-semibold text-ink-950">Could not load messages</h2>
+          <h2 className="font-semibold text-ink-950">Could not load queries</h2>
           <p className="mt-2 text-sm text-ink-950/60">{error}</p>
         </div>
       ) : !messages ? (
         <ApplicantsSkeleton />
       ) : !messages.length ? (
         <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-ink-950/10 bg-white p-8 text-center">
-          <h2 className="font-serif text-2xl text-ink-950">No messages yet</h2>
+          <h2 className="font-serif text-2xl text-ink-950">No queries yet</h2>
           <p className="mx-auto mt-3 max-w-md text-sm text-ink-950/60">
-            Messages sent through the contact form will appear here.
+            Queries sent through the contact form will appear here.
           </p>
         </div>
       ) : (
@@ -156,7 +156,7 @@ export default function Messages({ role, messagesViewedAt = 0, onMessagesViewed 
 
           {!filteredMessages.length ? (
             <div className="flex flex-1 flex-col items-center justify-center p-8 text-center">
-              <p className="font-medium text-ink-950">No messages match your search</p>
+              <p className="font-medium text-ink-950">No queries match your search</p>
               <p className="mt-1 text-sm text-ink-950/50">Try a different name, email or topic filter.</p>
             </div>
           ) : (
@@ -193,10 +193,10 @@ export default function Messages({ role, messagesViewedAt = 0, onMessagesViewed 
 
       <ConfirmDialog
         open={Boolean(pendingDelete)}
-        title="Delete this message?"
+        title="Delete this query?"
         description={
           deleteError ??
-          `This permanently deletes the message from ${pendingDelete?.name || "this visitor"}. This cannot be undone.`
+          `This permanently deletes the query from ${pendingDelete?.name || "this visitor"}. This cannot be undone.`
         }
         confirmLabel={deleting ? "Deleting…" : "Delete"}
         confirmDisabled={deleting}
