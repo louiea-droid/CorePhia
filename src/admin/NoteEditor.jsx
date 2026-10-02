@@ -436,8 +436,9 @@ export default function NoteEditor({
             )}
 
             <section>
-              <h3 className="text-sm font-semibold text-ink-950">{config.fullVitals ? "Vitals" : "Weight"}</h3>
-              <div className={`mt-3 grid gap-3 ${config.fullVitals ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2"}`}>
+              {/* Weight-only notes skip the heading: the field's own label says it. */}
+              {config.fullVitals && <h3 className="mb-3 text-sm font-semibold text-ink-950">Vitals</h3>}
+              <div className={`grid gap-3 ${config.fullVitals ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2"}`}>
                 <NumberField label="Weight" suffix="lbs" value={fields.vitals.weightLb} onChange={(v) => setVital("weightLb", v)} />
                 {config.fullVitals && (
                   <>
