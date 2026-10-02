@@ -3,6 +3,7 @@ import { Helmet } from "react-helmet-async"
 import { Navigate, Route, Routes } from "react-router-dom"
 import AccountMenu from "./AccountMenu"
 import Activity from "./Activity"
+import Calendar from "./Calendar"
 import Dashboard from "./Dashboard"
 import { getAdminAccess, isConfigured, signOutAdmin, usingSeedData, watchAdminUser } from "./firebase"
 import IdleWarningModal from "./IdleWarningModal"
@@ -61,6 +62,7 @@ function AdminRoutes({ role, signerName, user, displayName, onDisplayNameChange,
       <Route path="/admin/patients" element={guard("patients", <Patients actor={actor} />)} />
       <Route path="/admin/patients/:chartId" element={guard("patients", <PatientChart actor={actor} />)} />
       <Route path="/admin/todo" element={guard("todo", <Todo actor={actor} />)} />
+      <Route path="/admin/calendar" element={guard("calendar", <Calendar actor={actor} />)} />
       <Route
         path="/admin/messages"
         element={guard(

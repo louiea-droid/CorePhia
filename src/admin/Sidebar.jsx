@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom"
 import {
   ActivityIcon,
   ApplicantsIcon,
+  CalendarIcon,
   ChevronLeftIcon,
   CloseIcon,
   DashboardIcon,
@@ -27,6 +28,7 @@ const NAV_ITEMS = [
   { label: "Applicants", icon: ApplicantsIcon, to: "/admin/applicants", page: "applicants" },
   { label: "Patients", icon: PatientsIcon, to: "/admin/patients", page: "patients" },
   { label: "To-do", icon: TodoIcon, to: "/admin/todo", page: "todo" },
+  { label: "Calendar", icon: CalendarIcon, to: "/admin/calendar", page: "calendar" },
   { label: "Messages", icon: MailIcon, to: "/admin/messages", page: "messages" },
   { label: "Analytics", icon: TrafficIcon, to: "/admin/analytics", page: "analytics" },
   { label: "Staff", icon: StaffIcon, to: "/admin/staff", page: "staff" },
