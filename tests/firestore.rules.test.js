@@ -552,3 +552,25 @@ describe("todos", () => {
     await assertFails(deleteDoc(doc(as("super"), "todos", "private")))
   })
 })
+
+describe("last sign in", () => {
+  test("anyone stamps their own sign-in at server time", async () => {
+    await assertSucceeds(updateDoc(doc(as("provider"), "user", "provider"), { lastSignInAt: serverTimestamp() }))
+  })
+  test("a client-chosen time is refused", async () => {
+    await assertFails(updateDoc(doc(as("provider"), "user", "provider"), { lastSignInAt: new Date("2020-01-01") }))
+  })
+  test("you can't stamp someone else", async () => {
+    await assertFails(updateDoc(doc(as("admin"), "user", "provider"), { lastSignInAt: serverTimestamp() }))
+  })
+  test("you can't change your role alongside your stamp", async () => {
+    await assertFails(updateDoc(doc(as("provider"), "user", "provider"), { lastSignInAt: serverTimestamp(), role: "admin" }))
+  })
+  test("role change still works on a stamped record", async () => {
+    await env.withSecurityRulesDisabled((c) => updateDoc(doc(c.firestore(), "user", "provider"), { lastSignInAt: new Date() }))
+    await assertSucceeds(updateDoc(doc(as("admin"), "user", "provider"), { role: "coAdmin" }))
+  })
+  test("an admin can't set someone's sign-in time", async () => {
+    await assertFails(setDoc(doc(as("admin"), "user", "newbie"), { role: "provider", name: "N", lastSignInAt: serverTimestamp() }))
+  })
+})

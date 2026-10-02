@@ -120,10 +120,20 @@ service cloud.firestore {
         && (!('addedBy' in changed)
             || (next.addedBy.keys().hasOnly(['uid', 'name']) && next.addedBy.uid == request.auth.uid))
         && (!('addedAt' in changed) || next.addedAt == request.time)
-        && next.keys().hasOnly(['role', 'name', 'email', 'addedBy', 'addedAt'])
+        && next.keys().hasOnly(['role', 'name', 'email', 'addedBy', 'addedAt', 'lastSignInAt'])
+        // Only the person themselves stamps their sign-in (isOwnSignInStamp).
+        && !('lastSignInAt' in changed)
         && next.role in ['', 'provider', 'dietitian', 'coAdmin', 'admin', 'superAdmin']
         && canActOn(previous)
         && (role() == 'superAdmin' || next.role in ['', 'provider', 'dietitian', 'coAdmin']);
+    }
+
+    // Each admin sign-in stamps the person's own record with the server's
+    // time (Staff page "Last sign in"). Only that one field, only their own.
+    function isOwnSignInStamp(uid) {
+      return request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastSignInAt'])
+        && request.resource.data.lastSignInAt == request.time;
     }
 
     match /user/{uid} {
@@ -133,7 +143,8 @@ service cloud.firestore {
         && (request.auth.uid == uid
             || role() == 'superAdmin'
             || (isClinical() && resource.data.role in ['', 'provider', 'dietitian', 'coAdmin', 'admin']));
-      allow create, update: if request.auth != null && isRoleChange(uid);
+      allow create: if request.auth != null && isRoleChange(uid);
+      allow update: if request.auth != null && (isRoleChange(uid) || isOwnSignInStamp(uid));
       allow delete: if request.auth != null
         && request.auth.uid != uid
         && canActOn(resource.data.get('role', ''));
