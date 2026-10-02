@@ -147,6 +147,15 @@ export async function loadChart(chartId) {
   return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null
 }
 
+// Every active chart with its notes, for the pages that look across all
+// patients (To-do, Calendar).
+// ponytail: one notes read per chart, fine for a few hundred patients; past
+// that, store the next due dates on the chart when a note is signed.
+export async function loadActiveChartNotes(uid) {
+  const charts = (await loadCharts()).filter((chart) => chart.status === "active")
+  return Promise.all(charts.map(async (chart) => ({ chart, notes: await loadNotes(chart.id, uid) })))
+}
+
 export async function loadIntakeRecord(id) {
   if (usingSeedData) {
     const { seedRecords } = await import("./seedRecords")

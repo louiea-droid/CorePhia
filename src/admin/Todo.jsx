@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { asDate, dueTasks } from "./chartMath"
-import { loadCharts, loadNotes } from "./chartStore"
-import { formatDay } from "./noteUi"
+import { loadActiveChartNotes } from "./chartStore"
+import { DISCIPLINE_LABELS, formatDay } from "./noteUi"
 import PageHeader from "./PageHeader"
 import { ApplicantsSkeleton } from "./Skeleton"
 
@@ -26,7 +26,13 @@ function whenLabel(task) {
 }
 
 const taskLabel = (task) =>
-  task.kind === "renewal" ? `Renew ${task.medication || "prescription"}` : task.kind === "followUp" ? "Follow-up visit" : "First consultation"
+  task.kind === "renewal"
+    ? `Renew ${task.medication || "prescription"}`
+    : task.kind === "followUp"
+      ? task.discipline === "medical"
+        ? "Follow-up visit"
+        : `${DISCIPLINE_LABELS[task.discipline]} follow-up`
+      : "First consultation"
 
 // Today as a local calendar day, YYYY-MM-DD (en-CA formats it that way).
 const localToday = () => new Date().toLocaleDateString("en-CA")
@@ -34,45 +40,36 @@ const localToday = () => new Date().toLocaleDateString("en-CA")
 // Renewals, follow-ups and first consultations due, worked out from signed
 // notes (chartMath.dueTasks). Nothing is ticked off here: signing the note
 // that renews or follows up is what clears an item, so this can't drift from
-// the charts.
-// ponytail: reads every active chart's notes on open, fine for a few hundred
-// patients; past that, store the next due date on the chart when a note is signed.
+// the charts. The dietitian sees dietitian follow-ups first, with a switch
+// to everything.
 export default function Todo({ actor }) {
   const [tasks, setTasks] = useState(null)
   const [error, setError] = useState(null)
+  const [showAll, setShowAll] = useState(actor.role !== "dietitian")
 
   useEffect(() => {
     let active = true
     const today = localToday()
-    loadCharts()
-      .then((charts) =>
-        Promise.all(
-          charts
-            .filter((chart) => chart.status === "active")
-            .map(async (chart) => {
-              const name = `${chart.firstName} ${chart.lastName}`.trim() || "Unnamed patient"
-              const admittedAt = asDate(chart.admittedAt)
-              return dueTasks(await loadNotes(chart.id, actor.uid), today).map((task, index) => ({
-                ...task,
-                id: `${chart.id}-${index}`,
-                chartId: chart.id,
-                name,
-                admittedAt,
-              }))
-            }),
-        ),
+    loadActiveChartNotes(actor.uid)
+      .then((perChart) =>
+        perChart.flatMap(({ chart, notes }) => {
+          const name = `${chart.firstName} ${chart.lastName}`.trim() || "Unnamed patient"
+          const admittedAt = asDate(chart.admittedAt)
+          return dueTasks(notes, today).map((task, index) => ({ ...task, id: `${chart.id}-${index}`, chartId: chart.id, name, admittedAt }))
+        }),
       )
-      .then((perChart) => active && setTasks(perChart.flat()))
+      .then((all) => active && setTasks(all))
       .catch((cause) => active && setError(cause.code ?? cause.message))
     return () => {
       active = false
     }
   }, [actor.uid])
 
-  const groups = tasks
+  const visible = tasks && (showAll ? tasks : tasks.filter((task) => task.discipline === "dietitian"))
+  const groups = visible
     ? GROUPS.map((group) => ({
         ...group,
-        tasks: tasks
+        tasks: visible
           .filter(group.test)
           .sort((a, b) =>
             group.key === "first" ? (a.admittedAt?.getTime() ?? 0) - (b.admittedAt?.getTime() ?? 0) : a.days - b.days,
@@ -83,6 +80,27 @@ export default function Todo({ actor }) {
   return (
     <div className="flex h-full flex-col">
       <PageHeader title="To-do" />
+
+      {actor.role === "dietitian" && (
+        <div role="group" aria-label="Show tasks" className="mb-4 flex gap-1.5">
+          {[
+            [false, "Dietitian"],
+            [true, "Everything"],
+          ].map(([value, label]) => (
+            <button
+              key={label}
+              type="button"
+              aria-pressed={showAll === value}
+              onClick={() => setShowAll(value)}
+              className={`cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors duration-200 ${
+                showAll === value ? "bg-accent-dark text-oncolor" : "bg-paper-100 text-ink-950/70 hover:bg-ink-950/10"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {error ? (
         <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-ink-950/10 bg-white p-6 text-center">
