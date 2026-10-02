@@ -479,6 +479,52 @@ service cloud.firestore {
       }
     }
 
+    // --- Staff to-dos ----------------------------------------------------------
+    // Added on the To-do page (Louie, 2026-10-02). "me" items are only ever
+    // readable by their author; "everyone" items by any clinician. Only the
+    // author edits the content; anyone who can see an item ticks it, as
+    // themselves, or un-ticks it. Never deleted. Items may name a patient: PHI,
+    // same BAA requirement as intakeRecords.
+    function isTodoContent(data) {
+      return data.text is string && data.text.size() > 0 && data.text.size() <= 500
+        && data.intakeId is string && data.intakeId.size() <= 200
+        && data.patientName is string && data.patientName.size() <= 200
+        && data.due is string && (data.due == '' || data.due.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'))
+        && data.visibility in ['me', 'everyone'];
+    }
+
+    match /todos/{todoId} {
+      allow read: if isClinical()
+        && (resource.data.visibility == 'everyone' || resource.data.ownerUid == request.auth.uid);
+      allow create: if isClinical()
+        && request.resource.data.keys().hasOnly([
+             'text', 'intakeId', 'patientName', 'due', 'visibility',
+             'ownerUid', 'ownerName', 'createdAt', 'updatedAt', 'done'
+           ])
+        && isTodoContent(request.resource.data)
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerName == myName()
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.done == null;
+      allow update: if isClinical()
+        && (resource.data.visibility == 'everyone' || resource.data.ownerUid == request.auth.uid)
+        && request.resource.data.updatedAt == request.time
+        && (
+          (resource.data.ownerUid == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['text', 'intakeId', 'patientName', 'due', 'visibility', 'updatedAt'])
+            && isTodoContent(request.resource.data))
+          || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['done', 'updatedAt'])
+            && (request.resource.data.done == null
+                || (request.resource.data.done.keys().hasOnly(['uid', 'name', 'at'])
+                    && request.resource.data.done.uid == request.auth.uid
+                    && request.resource.data.done.name == myName()
+                    && request.resource.data.done.at == request.time)))
+        );
+      allow delete: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

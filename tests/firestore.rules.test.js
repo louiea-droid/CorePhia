@@ -480,3 +480,75 @@ describe("appointments", () => {
     await assertSucceeds(getDocs(query(collection(db, "user"), where("role", "in", ["", "provider", "dietitian", "coAdmin", "admin"]))))
   })
 })
+
+describe("todos", () => {
+  const todo = (uid, overrides = {}) => ({
+    text: "Call the pharmacy",
+    intakeId: "",
+    patientName: "",
+    due: "",
+    visibility: "me",
+    ownerUid: uid,
+    ownerName: uid,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    done: null,
+    ...overrides,
+  })
+  const seed = (id, data) =>
+    env.withSecurityRulesDisabled((c) => setDoc(doc(c.firestore(), "todos", id), { ...data, createdAt: new Date(), updatedAt: new Date() }))
+  const tick = (uid) => ({ done: { uid, name: uid, at: serverTimestamp() }, updatedAt: serverTimestamp() })
+
+  test("anyone clinical adds a to-do as themselves", async () => {
+    await assertSucceeds(setDoc(doc(as("provider"), "todos", "t1"), todo("provider")))
+    await assertSucceeds(setDoc(doc(as("dietitian"), "todos", "t2"), todo("dietitian", { visibility: "everyone", due: "2026-10-09" })))
+  })
+  test("a to-do can't claim someone else, a past time, or come pre-ticked", async () => {
+    const db = as("provider")
+    await assertFails(setDoc(doc(db, "todos", "t1"), todo("admin")))
+    await assertFails(setDoc(doc(db, "todos", "t2"), todo("provider", { createdAt: new Date("2020-01-01") })))
+    await assertFails(setDoc(doc(db, "todos", "t3"), todo("provider", { done: { uid: "provider", name: "provider", at: serverTimestamp() } })))
+  })
+  test("empty text, a bad date or visibility, and extra fields are refused", async () => {
+    const db = as("provider")
+    await assertFails(setDoc(doc(db, "todos", "t1"), todo("provider", { text: "" })))
+    await assertFails(setDoc(doc(db, "todos", "t2"), todo("provider", { due: "next week" })))
+    await assertFails(setDoc(doc(db, "todos", "t3"), todo("provider", { visibility: "team" })))
+    await assertFails(setDoc(doc(db, "todos", "t4"), todo("provider", { extra: 1 })))
+  })
+  test("someone with no role can't add or read", async () => {
+    await seed("shared", todo("provider", { visibility: "everyone" }))
+    await assertFails(setDoc(doc(as("nobody"), "todos", "t1"), todo("nobody")))
+    await assertFails(getDoc(doc(as("nobody"), "todos", "shared")))
+  })
+  test("private items stay private; shared items are readable by any clinician", async () => {
+    await seed("private", todo("provider"))
+    await seed("shared", todo("provider", { visibility: "everyone" }))
+    await assertSucceeds(getDoc(doc(as("provider"), "todos", "private")))
+    await assertFails(getDoc(doc(as("provider2"), "todos", "private")))
+    await assertSucceeds(getDoc(doc(as("dietitian"), "todos", "shared")))
+    await assertSucceeds(getDocs(query(collection(as("provider2"), "todos"), where("visibility", "==", "everyone"))))
+    await assertSucceeds(getDocs(query(collection(as("provider2"), "todos"), where("ownerUid", "==", "provider2"))))
+  })
+  test("only the author edits the text", async () => {
+    await seed("shared", todo("provider", { visibility: "everyone" }))
+    await assertSucceeds(updateDoc(doc(as("provider"), "todos", "shared"), { text: "Call them back", updatedAt: serverTimestamp() }))
+    await assertFails(updateDoc(doc(as("provider2"), "todos", "shared"), { text: "Changed", updatedAt: serverTimestamp() }))
+    await assertFails(updateDoc(doc(as("provider"), "todos", "shared"), { ownerUid: "provider2", updatedAt: serverTimestamp() }))
+  })
+  test("anyone can tick a shared item, only as themselves, and Undo it", async () => {
+    await seed("shared", todo("provider", { visibility: "everyone" }))
+    await assertFails(updateDoc(doc(as("provider2"), "todos", "shared"), { done: { uid: "admin", name: "admin", at: serverTimestamp() }, updatedAt: serverTimestamp() }))
+    await assertSucceeds(updateDoc(doc(as("provider2"), "todos", "shared"), tick("provider2")))
+    await assertSucceeds(updateDoc(doc(as("dietitian"), "todos", "shared"), { done: null, updatedAt: serverTimestamp() }))
+  })
+  test("can't tick someone else's private item", async () => {
+    await seed("private", todo("provider"))
+    await assertFails(updateDoc(doc(as("provider2"), "todos", "private"), tick("provider2")))
+  })
+  test("to-dos are never deleted", async () => {
+    await seed("private", todo("provider"))
+    await assertFails(deleteDoc(doc(as("provider"), "todos", "private")))
+    await assertFails(deleteDoc(doc(as("super"), "todos", "private")))
+  })
+})
