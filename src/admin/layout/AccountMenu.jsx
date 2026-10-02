@@ -29,7 +29,7 @@ export default function AccountMenu({ user, role, displayName, onSignOut = signO
   // ("jordan.lee@…" → "Jordan Lee").
   const buttonName = displayName || (user ? nameFromEmail(user.email) : "Demo admin (preview)")
   const name = buttonName || user?.email
-  // Under the name on the button only (Louie, 2026-10-02), not in the menu.
+  // Under the name, on the button and in the menu (Louie, 2026-10-02).
   const roleLabel = ROLE_LABELS[role] ?? ""
 
   useEffect(() => {
@@ -87,6 +87,7 @@ export default function AccountMenu({ user, role, displayName, onSignOut = signO
       >
         <div className="border-b border-ink-950/10 px-3 pt-2 pb-3">
           <p className="truncate text-sm font-semibold text-ink-950">{name}</p>
+          {roleLabel && <p className="mt-0.5 text-[10px] font-semibold tracking-wider text-ink-950/50 uppercase">{roleLabel}</p>}
         </div>
         <div className="pt-1.5">
           <Link to="/admin/security" onClick={() => setOpen(false)} className={itemClass}>
