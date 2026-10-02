@@ -243,5 +243,15 @@ export function buildDemoStore(records) {
     { uid: "demo-dietitian", name: "Sam Rivera, RD", email: "sam@corephia.example", role: "dietitian", addedAt: new Date(now - 5 * DAY) },
   ]
 
-  return { charts, notes, amendments, staff, appointments, appointmentChanges }
+  // Staff to-dos for the To-do page: private and shared, one with a patient,
+  // one overdue, one done.
+  const firstChart = charts.values().next().value
+  const todos = [
+    { id: "demo-todo-1", text: "Call the pharmacy about the refill", intakeId: firstChart?.id ?? "", patientName: firstChart ? `${firstChart.firstName} ${firstChart.lastName}` : "", due: isoDay(now - DAY), visibility: "me", ownerUid: PROVIDER.uid, ownerName: PROVIDER.name, createdAt: new Date(now - 3 * DAY), updatedAt: new Date(now - 3 * DAY), done: null },
+    { id: "demo-todo-2", text: "Order more scales for the clinic", intakeId: "", patientName: "", due: "", visibility: "everyone", ownerUid: "demo-super", ownerName: "Hyacinth team", createdAt: new Date(now - 5 * DAY), updatedAt: new Date(now - 5 * DAY), done: null },
+    { id: "demo-todo-3", text: "Review this week's meal plans", intakeId: "", patientName: "", due: isoDay(now + 3 * DAY), visibility: "everyone", ownerUid: DIETITIAN.uid, ownerName: DIETITIAN.name, createdAt: new Date(now - DAY), updatedAt: new Date(now - DAY), done: null },
+    { id: "demo-todo-4", text: "Confirm the new intake time slots", intakeId: "", patientName: "", due: "", visibility: "everyone", ownerUid: PROVIDER.uid, ownerName: PROVIDER.name, createdAt: new Date(now - 6 * DAY), updatedAt: new Date(now - 2 * DAY), done: { uid: "demo-provider", name: "Jordan Lee, NP", at: new Date(now - 2 * DAY) } },
+  ]
+
+  return { charts, notes, amendments, staff, appointments, appointmentChanges, todos }
 }
