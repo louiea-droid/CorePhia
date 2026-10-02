@@ -67,14 +67,14 @@ const requireDb = () => {
 // --- Demo store --------------------------------------------------------------
 
 let demoStore = null
-async function demo() {
+export async function getDemoStore() {
   if (!demoStore) {
     const [{ buildDemoStore }, { seedRecords }] = await Promise.all([import("./seedCharts"), import("./seedRecords")])
     demoStore = buildDemoStore(seedRecords)
   }
   return demoStore
 }
-const demoId = () => `demo-${Math.random().toString(36).slice(2, 10)}`
+export const demoId = () => `demo-${Math.random().toString(36).slice(2, 10)}`
 
 // --- Admission ---------------------------------------------------------------
 
@@ -97,7 +97,7 @@ const chartFromRecord = (record, actor, timestamp) => ({
 // The chart id is the intake record's id, so one intake can't get two charts.
 export async function setApplicantStatus(record, status, actor) {
   if (usingSeedData) {
-    const store = await demo()
+    const store = await getDemoStore()
     const chart = store.charts.get(record.id)
     if (status === "admitted") {
       if (!chart) {
@@ -128,7 +128,7 @@ export async function setApplicantStatus(record, status, actor) {
 // --- Charts ------------------------------------------------------------------
 
 export async function loadCharts() {
-  if (usingSeedData) return [...(await demo()).charts.values()].map((chart) => ({ ...chart }))
+  if (usingSeedData) return [...(await getDemoStore()).charts.values()].map((chart) => ({ ...chart }))
   // Only real charts: old patient-login docs left in this collection (before
   // they moved to patientAccounts) have no status and must not show up as
   // patients.
@@ -140,7 +140,7 @@ export async function loadCharts() {
 
 export async function loadChart(chartId) {
   if (usingSeedData) {
-    const chart = (await demo()).charts.get(chartId)
+    const chart = (await getDemoStore()).charts.get(chartId)
     return chart ? { ...chart } : null
   }
   const snapshot = await getDoc(doc(requireDb(), PATIENTS_COLLECTION, chartId))
@@ -172,7 +172,7 @@ export async function loadIntakeRecord(id) {
 export async function loadNotes(chartId, uid) {
   let notes
   if (usingSeedData) {
-    notes = ((await demo()).notes.get(chartId) ?? [])
+    notes = ((await getDemoStore()).notes.get(chartId) ?? [])
       .filter((note) => note.status === "signed" || note.authorUid === uid)
       .map((note) => ({ ...note }))
   } else {
@@ -205,7 +205,7 @@ export async function createDraftNote(chartId, type, actor, prefill = {}) {
   }
   if (usingSeedData) {
     const note = { id: demoId(), ...base, createdAt: new Date(), updatedAt: new Date() }
-    ;(await demo()).notes.get(chartId)?.push(note)
+    ;(await getDemoStore()).notes.get(chartId)?.push(note)
     return { ...note }
   }
   const ref = await addDoc(collection(requireDb(), PATIENTS_COLLECTION, chartId, NOTES), {
@@ -216,7 +216,7 @@ export async function createDraftNote(chartId, type, actor, prefill = {}) {
   return { id: ref.id, ...base, createdAt: new Date(), updatedAt: new Date() }
 }
 
-const findDemoNote = async (chartId, noteId) => (await demo()).notes.get(chartId)?.find((note) => note.id === noteId)
+const findDemoNote = async (chartId, noteId) => (await getDemoStore()).notes.get(chartId)?.find((note) => note.id === noteId)
 
 export async function saveDraftNote(chartId, noteId, fields) {
   if (usingSeedData) {
@@ -231,7 +231,7 @@ export async function saveDraftNote(chartId, noteId, fields) {
 
 export async function discardDraftNote(chartId, noteId) {
   if (usingSeedData) {
-    const list = (await demo()).notes.get(chartId) ?? []
+    const list = (await getDemoStore()).notes.get(chartId) ?? []
     const index = list.findIndex((note) => note.id === noteId)
     if (index >= 0) list.splice(index, 1)
     return
@@ -246,7 +246,7 @@ export async function discardDraftNote(chartId, noteId) {
 export async function signNote(chartId, noteId, type, fields, actor) {
   const signedBy = { uid: actor.uid, name: actor.name, role: actor.role }
   if (usingSeedData) {
-    const store = await demo()
+    const store = await getDemoStore()
     const signedAt = new Date()
     Object.assign(await findDemoNote(chartId, noteId), pickNoteFields(fields), {
       status: "signed",
@@ -274,7 +274,7 @@ export async function signNote(chartId, noteId, type, fields, actor) {
 }
 
 export async function loadAmendments(chartId, noteId) {
-  if (usingSeedData) return [...((await demo()).amendments.get(noteId) ?? [])]
+  if (usingSeedData) return [...((await getDemoStore()).amendments.get(noteId) ?? [])]
   const snapshot = await getDocs(
     query(collection(requireDb(), PATIENTS_COLLECTION, chartId, NOTES, noteId, AMENDMENTS), orderBy("at", "asc")),
   )
@@ -285,7 +285,7 @@ export async function loadAmendments(chartId, noteId) {
 // query per note, so the addenda themselves aren't downloaded. { noteId: n }
 export async function countAmendments(chartId, noteIds) {
   if (usingSeedData) {
-    const store = await demo()
+    const store = await getDemoStore()
     return Object.fromEntries(noteIds.map((id) => [id, store.amendments.get(id)?.length ?? 0]))
   }
   const database = requireDb()
@@ -302,7 +302,7 @@ export async function countAmendments(chartId, noteIds) {
 export async function addAmendment(chartId, noteId, text, actor) {
   const base = { text, authorUid: actor.uid, authorName: actor.name, authorRole: actor.role }
   if (usingSeedData) {
-    const store = await demo()
+    const store = await getDemoStore()
     const amendment = { id: demoId(), ...base, at: new Date() }
     store.amendments.set(noteId, [...(store.amendments.get(noteId) ?? []), amendment])
     return amendment
@@ -322,7 +322,7 @@ const VISIBLE_TO_ADMIN = ["", "provider", "dietitian", "coAdmin", "admin"]
 
 export async function loadStaff(viewerRole) {
   if (usingSeedData) {
-    return (await demo()).staff
+    return (await getDemoStore()).staff
       .filter((member) => viewerRole === "superAdmin" || VISIBLE_TO_ADMIN.includes(member.role))
       .map((member) => ({ ...member }))
   }
@@ -336,7 +336,7 @@ export async function loadStaff(viewerRole) {
 // (that needs a server), and anything they signed keeps their name.
 export async function deleteStaff(uid) {
   if (usingSeedData) {
-    const store = await demo()
+    const store = await getDemoStore()
     store.staff = store.staff.filter((member) => member.uid !== uid)
     return
   }
@@ -354,7 +354,7 @@ export async function addStaff({ name, email, role }, actor) {
   const record = { name, email, role, addedBy: { uid: actor.uid, name: actor.name } }
   if (usingSeedData) {
     const member = { uid: demoId(), ...record, addedAt: new Date() }
-    ;(await demo()).staff.push(member)
+    ;(await getDemoStore()).staff.push(member)
     return member
   }
   const database = requireDb()
@@ -374,7 +374,7 @@ export async function addStaff({ name, email, role }, actor) {
 // role "" removes access. The account stays, so signed notes keep their name.
 export async function setStaffRole(uid, role) {
   if (usingSeedData) {
-    const member = (await demo()).staff.find((entry) => entry.uid === uid)
+    const member = (await getDemoStore()).staff.find((entry) => entry.uid === uid)
     if (member) member.role = role
     return
   }

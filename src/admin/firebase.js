@@ -57,6 +57,10 @@ export const AUDIT_ACTIONS = {
   addStaff: "add_staff",
   changeStaffRole: "change_staff_role",
   deleteStaff: "delete_staff_account",
+  bookAppointment: "book_appointment",
+  moveAppointment: "move_appointment",
+  cancelAppointment: "cancel_appointment",
+  updateAppointmentStatus: "update_appointment_status",
 }
 
 // A record with no status field yet (every one submitted before this feature

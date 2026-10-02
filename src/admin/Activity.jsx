@@ -23,6 +23,10 @@ const ACTION_LABELS = {
   [AUDIT_ACTIONS.addStaff]: "Added staff",
   [AUDIT_ACTIONS.changeStaffRole]: "Changed a staff role",
   [AUDIT_ACTIONS.deleteStaff]: "Deleted a staff account",
+  [AUDIT_ACTIONS.bookAppointment]: "Booked an appointment",
+  [AUDIT_ACTIONS.moveAppointment]: "Changed an appointment",
+  [AUDIT_ACTIONS.cancelAppointment]: "Cancelled an appointment",
+  [AUDIT_ACTIONS.updateAppointmentStatus]: "Marked an appointment",
 }
 
 const DESTRUCTIVE_ACTIONS = new Set([AUDIT_ACTIONS.deleteIntake, AUDIT_ACTIONS.deleteMessage, AUDIT_ACTIONS.deleteStaff])

@@ -5,6 +5,8 @@
 // prescription due for renewal inside a week, so every part of the chart
 // page has something real-looking to show.
 
+import { addDays, changeFor, fromTampa, todayInTampa } from "./calendarMath"
+
 const DAY = 86400000
 const isoDay = (ms) => new Date(ms).toLocaleDateString("en-CA")
 
@@ -187,6 +189,53 @@ export function buildDemoStore(records) {
       ])
     })
 
+  // A week of appointments across the first few charts, with one moved and
+  // one cancelled so the History list has something to show. The last
+  // chart's medical follow-up is left unbooked, for the calendar marker.
+  const today = todayInTampa()
+  const chartIds = [...charts.keys()]
+  const appointments = []
+  const appointmentChanges = new Map()
+  const SLOTS = [
+    [0, "09:00", "medical", PROVIDER],
+    [0, "10:30", "dietitian", DIETITIAN],
+    [1, "14:00", "exercise", PROVIDER],
+    [2, "11:00", "medical", PROVIDER],
+    [3, "09:30", "dietitian", DIETITIAN],
+  ]
+  SLOTS.forEach(([offset, time, discipline, staffMember], index) => {
+    const chartId = chartIds[index % Math.max(1, chartIds.length - 1)]
+    if (!chartId) return
+    const chart = charts.get(chartId)
+    appointments.push({
+      id: `demo-appt-${index}`,
+      intakeId: chartId,
+      patientName: `${chart.firstName} ${chart.lastName}`.trim(),
+      staffUid: staffMember.uid,
+      staffName: staffMember.name,
+      discipline,
+      start: fromTampa(addDays(today, offset), time),
+      minutes: 30,
+      status: "scheduled",
+      note: "",
+      addedBy: { uid: "demo-super", name: "Hyacinth team", role: "superAdmin" },
+      addedAt: new Date(now - 3 * DAY),
+      updatedAt: new Date(now - 3 * DAY),
+    })
+  })
+  if (appointments[0]) {
+    const before = appointments[0]
+    const patch = { start: fromTampa(addDays(today, 1), "09:00") }
+    const change = changeFor(before, patch)
+    appointmentChanges.set(before.id, [{ id: "demo-change-0", ...change, by: PROVIDER, at: new Date(now - DAY) }])
+    Object.assign(before, patch, { lastChangeId: "demo-change-0" })
+  }
+  if (appointments[3]) {
+    const change = changeFor(appointments[3], { status: "cancelled" }, "Patient asked to move to next week")
+    appointmentChanges.set(appointments[3].id, [{ id: "demo-change-1", ...change, by: PROVIDER, at: new Date(now - 2 * DAY) }])
+    Object.assign(appointments[3], { status: "cancelled", lastChangeId: "demo-change-1" })
+  }
+
   const staff = [
     { uid: "demo-super", name: "Hyacinth team", email: "team@hyacinth.example", role: "superAdmin", addedAt: null },
     { uid: PROVIDER.uid, name: PROVIDER.name, email: "provider@corephia.example", role: "admin", addedAt: null },
@@ -194,5 +243,5 @@ export function buildDemoStore(records) {
     { uid: "demo-dietitian", name: "Sam Rivera, RD", email: "sam@corephia.example", role: "dietitian", addedAt: new Date(now - 5 * DAY) },
   ]
 
-  return { charts, notes, amendments, staff }
+  return { charts, notes, amendments, staff, appointments, appointmentChanges }
 }
