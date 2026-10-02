@@ -179,3 +179,48 @@ export function EyeOffIcon(props) {
     </svg>
   )
 }
+
+export function SearchIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="m20 20-4.2-4.2" />
+    </svg>
+  )
+}
+
+export function PencilIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M4 20h4L19 9a2.1 2.1 0 0 0-4-4L4 16v4Z" />
+      <path d="m13.5 6.5 4 4" />
+    </svg>
+  )
+}
+
+export function MoreIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="5.5" cy="12" r="1" fill="currentColor" />
+      <circle cx="12" cy="12" r="1" fill="currentColor" />
+      <circle cx="18.5" cy="12" r="1" fill="currentColor" />
+    </svg>
+  )
+}
+
+export function CheckIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="m5 12.5 4.5 4.5L19 7.5" />
+    </svg>
+  )
+}
+
+export function ClockIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="12" cy="12" r="8" />
+      <path d="M12 8v4.5l3 1.5" />
+    </svg>
+  )
+}
