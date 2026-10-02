@@ -99,16 +99,19 @@ function TodoRow({ todo, chartIds, actor, onChange, onEdit }) {
       <div className="min-w-0 flex-1">
         <p className={`text-sm wrap-break-word ${todo.done ? "text-ink-950/50 line-through" : "text-ink-950"}`}>
           {todo.text}
+        </p>
+        <p className="mt-0.5 text-xs text-ink-950/50">
           {todo.patientName &&
             (chartIds.has(todo.intakeId) ? (
-              <Link to={`/admin/patients/${todo.intakeId}`} className="ml-2 text-xs font-semibold text-accent-text no-underline hover:underline">
+              <Link to={`/admin/patients/${todo.intakeId}`} className="font-semibold text-accent-text no-underline hover:underline">
                 {todo.patientName}
               </Link>
             ) : (
-              <span className="ml-2 text-xs font-semibold text-ink-950/60">{todo.patientName}</span>
+              <span className="font-semibold text-ink-950/65">{todo.patientName}</span>
             ))}
+          {todo.patientName && details.length > 0 && ", "}
+          {details.join(", ")}
         </p>
-        <p className="mt-0.5 text-xs text-ink-950/50">{details.join(", ")}</p>
       </div>
       {todo.done ? (
         <button
@@ -132,7 +135,7 @@ function TodoRow({ todo, chartIds, actor, onChange, onEdit }) {
 
 // The to-dos staff added, grouped by when they're due, with Done at the end.
 // Ticking an item moves it to Done with who and when; Undo moves it back.
-export default function AddedTodos({ todos, today, chartIds, actor, onChange }) {
+export default function AddedTodos({ todos, today, chartIds, actor, onChange, children }) {
   const [editing, setEditing] = useState(null)
   const [showDone, setShowDone] = useState(false)
   const groups = groupTodos(todos, today)
@@ -155,12 +158,14 @@ export default function AddedTodos({ todos, today, chartIds, actor, onChange }) 
     )
 
   return (
-    <section aria-labelledby="added-todos" className="mb-4 rounded-2xl border border-ink-950/10 bg-white p-5">
-      <h2 id="added-todos" className="text-sm font-semibold text-ink-950">
-        Added to-dos <span className="font-normal text-ink-950/45 tabular-nums">{openCount}</span>
+    <section aria-labelledby="added-todos" className="rounded-2xl border border-ink-950/10 bg-white p-5">
+      <h2 id="added-todos" className="font-serif text-xl text-ink-950">
+        Your list <span className="font-sans text-sm font-normal text-ink-950/45 tabular-nums">{openCount}</span>
       </h2>
+      <p className="mt-0.5 text-xs text-ink-950/55">To-dos you and the team add. Tick them off when they're done.</p>
+      <div className="mt-3">{children}</div>
       {openCount === 0 && groups.done.length === 0 ? (
-        <p className="mt-2 text-sm text-ink-950/55">Nothing added yet. Add a to-do above.</p>
+        <p className="mt-3 text-sm text-ink-950/55">Nothing on your list yet.</p>
       ) : (
         <>
           {openCount === 0 && <p className="mt-2 text-sm text-ink-950/55">All done.</p>}

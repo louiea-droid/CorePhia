@@ -122,88 +122,104 @@ export default function Todo({ actor }) {
     <div className="flex h-full flex-col">
       <PageHeader title="To-do" />
 
-      {actor.role === "dietitian" && (
-        <div role="group" aria-label="Show tasks" className="mb-4 flex gap-1.5">
-          {[
-            [false, "Dietitian"],
-            [true, "Everything"],
-          ].map(([value, label]) => (
-            <button
-              key={label}
-              type="button"
-              aria-pressed={showAll === value}
-              onClick={() => setShowAll(value)}
-              className={`cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors duration-200 ${
-                showAll === value ? "bg-accent-dark text-oncolor" : "bg-paper-100 text-ink-950/70 hover:bg-ink-950/10"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      <AddTodo actor={actor} onAdded={upsertTodo} />
-      {todoError ? (
-        <p role="alert" className="mb-4 rounded-2xl border border-ink-950/10 bg-white p-5 text-sm text-brand-dark">
-          Couldn't load added to-dos. {todoError}
-        </p>
-      ) : todos ? (
-        <AddedTodos todos={todos} today={localToday()} chartIds={chartIds} actor={actor} onChange={upsertTodo} />
-      ) : null}
-
-      {error ? (
-        <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-ink-950/10 bg-white p-6 text-center">
-          <h2 className="font-semibold text-ink-950">Could not load the to-do list</h2>
-          <p className="mt-2 text-sm text-ink-950/60">{error}</p>
-        </div>
-      ) : !groups ? (
-        <ApplicantsSkeleton />
-      ) : !groups.length ? (
-        <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-ink-950/10 bg-white p-8 text-center">
-          <h2 className="font-serif text-2xl text-ink-950">Nothing due this week</h2>
-          <p className="mx-auto mt-3 max-w-md text-sm text-ink-950/60">
-            Prescription renewals and follow-up visits show here a week ahead, and stay until the note that handles them is
-            signed.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-4 pb-6">
-          {groups.map((group) => (
-            <section key={group.key} aria-labelledby={`todo-${group.key}`} className="rounded-2xl border border-ink-950/10 bg-white p-5">
-              <h2
-                id={`todo-${group.key}`}
-                className={`text-sm font-semibold ${group.key === "overdue" ? "text-brand-dark" : "text-ink-950"}`}
-              >
-                {group.title} <span className="font-normal text-ink-950/45 tabular-nums">{group.tasks.length}</span>
-              </h2>
-              <ul className="mt-2 divide-y divide-ink-950/5">
-                {group.tasks.map((task) => (
-                  <li key={task.id}>
-                    <Link
-                      to={`/admin/patients/${task.chartId}`}
-                      className="-mx-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 rounded-lg px-2 py-3 outline-none transition-colors duration-150 hover:bg-paper-50 focus-visible:bg-paper-100"
-                    >
-                      <span className="min-w-0">
-                        <span className="font-medium text-ink-950">{task.name}</span>
-                        <span className="ml-2 text-sm text-ink-950/65">{taskLabel(task)}</span>
-                      </span>
-                      <span className="text-sm whitespace-nowrap text-ink-950/55">
-                        {task.booked ? (
-                          <span className="font-medium text-accent-text">Booked {formatDay(tampaParts(task.booked.start).day)}</span>
-                        ) : (
-                          <span className={group.key === "overdue" ? "font-medium text-brand-dark" : undefined}>{whenLabel(task)}</span>
-                        )}
-                        {task.due && <span className="ml-2 text-ink-950/40">{formatDay(task.due)}</span>}
-                      </span>
-                    </Link>
-                  </li>
+      {/* Needs doing first (and on top on a phone): what the charts say is due.
+          Your list beside it: what staff added themselves. */}
+      <div className="grid gap-4 pb-6 lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] lg:items-start">
+        <div className="min-w-0 space-y-4">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="font-serif text-xl text-ink-950">Needs doing</h2>
+              <p className="mt-0.5 text-xs text-ink-950/55">From patient charts. Each clears when the note that handles it is signed.</p>
+            </div>
+            {actor.role === "dietitian" && (
+              <div role="group" aria-label="Show tasks" className="flex gap-1.5">
+                {[
+                  [false, "Dietitian"],
+                  [true, "Everything"],
+                ].map(([value, label]) => (
+                  <button
+                    key={label}
+                    type="button"
+                    aria-pressed={showAll === value}
+                    onClick={() => setShowAll(value)}
+                    className={`cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors duration-200 ${
+                      showAll === value ? "bg-accent-dark text-oncolor" : "bg-paper-100 text-ink-950/70 hover:bg-ink-950/10"
+                    }`}
+                  >
+                    {label}
+                  </button>
                 ))}
-              </ul>
-            </section>
-          ))}
+              </div>
+            )}
+          </div>
+          {error ? (
+            <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-ink-950/10 bg-white p-6 text-center">
+              <h2 className="font-semibold text-ink-950">Could not load the to-do list</h2>
+              <p className="mt-2 text-sm text-ink-950/60">{error}</p>
+            </div>
+          ) : !groups ? (
+            <ApplicantsSkeleton />
+          ) : !groups.length ? (
+            <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-ink-950/10 bg-white p-8 text-center">
+              <h2 className="font-serif text-2xl text-ink-950">Nothing due this week</h2>
+              <p className="mx-auto mt-3 max-w-md text-sm text-ink-950/60">
+                Prescription renewals and follow-up visits show here a week ahead, and stay until the note that handles them is
+                signed.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {groups.map((group) => (
+                <section key={group.key} aria-labelledby={`todo-${group.key}`} className="rounded-2xl border border-ink-950/10 bg-white p-5">
+                  <h2
+                    id={`todo-${group.key}`}
+                    className={`text-sm font-semibold ${group.key === "overdue" ? "text-brand-dark" : "text-ink-950"}`}
+                  >
+                    {group.title} <span className="font-normal text-ink-950/45 tabular-nums">{group.tasks.length}</span>
+                  </h2>
+                  <ul className="mt-2 divide-y divide-ink-950/5">
+                    {group.tasks.map((task) => (
+                      <li key={task.id}>
+                        <Link
+                          to={`/admin/patients/${task.chartId}`}
+                          className="-mx-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 rounded-lg px-2 py-3 outline-none transition-colors duration-150 hover:bg-paper-50 focus-visible:bg-paper-100"
+                        >
+                          <span className="min-w-0">
+                            <span className="font-medium text-ink-950">{task.name}</span>
+                            <span className="ml-2 text-sm text-ink-950/65">{taskLabel(task)}</span>
+                          </span>
+                          <span className="text-sm whitespace-nowrap text-ink-950/55">
+                            {task.booked ? (
+                              <span className="font-medium text-accent-text">Booked {formatDay(tampaParts(task.booked.start).day)}</span>
+                            ) : (
+                              <span className={group.key === "overdue" ? "font-medium text-brand-dark" : undefined}>{whenLabel(task)}</span>
+                            )}
+                            {task.due && <span className="ml-2 text-ink-950/40">{formatDay(task.due)}</span>}
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+
+        <div className="min-w-0 lg:sticky lg:top-20">
+          {todoError ? (
+            <p role="alert" className="rounded-2xl border border-ink-950/10 bg-white p-5 text-sm text-brand-dark">
+              Couldn't load your list. {todoError}
+            </p>
+          ) : todos ? (
+            <AddedTodos todos={todos} today={localToday()} chartIds={chartIds} actor={actor} onChange={upsertTodo}>
+              <AddTodo actor={actor} onAdded={upsertTodo} />
+            </AddedTodos>
+          ) : (
+            <div className="h-40 animate-pulse rounded-2xl bg-ink-950/5" />
+          )}
+        </div>
+      </div>
     </div>
   )
 }

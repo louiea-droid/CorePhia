@@ -39,6 +39,7 @@ export default function AddTodo({ actor, onAdded }) {
   const [patient, setPatient] = useState(NO_PATIENT)
   const [due, setDue] = useState("")
   const [visibility, setVisibility] = useState("me")
+  const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   // Remounts the patient picker and date picker so they clear after adding.
@@ -56,6 +57,7 @@ export default function AddTodo({ actor, onAdded }) {
       setPatient(NO_PATIENT)
       setDue("")
       setRound((value) => value + 1)
+      setOpen(false)
     } catch (cause) {
       console.error("Adding a to-do failed:", cause.code ?? cause.message)
       setError(cause?.code === "permission-denied" ? "Your role can't do this." : "Couldn't add this. Try again.")
@@ -64,11 +66,32 @@ export default function AddTodo({ actor, onAdded }) {
     }
   }
 
+  // Collapsed until wanted, so the page opens on what needs doing.
+  if (!open)
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="w-full cursor-pointer rounded-xl border border-dashed border-ink-950/25 px-3 py-2.5 text-left text-sm font-medium text-ink-950/70 transition-colors duration-200 hover:border-accent-dark hover:text-ink-950"
+      >
+        + Add a to-do
+      </button>
+    )
+
   return (
-    <form onSubmit={add} aria-labelledby="add-todo" className="mb-4 rounded-2xl border border-ink-950/10 bg-white p-5">
-      <h2 id="add-todo" className="text-sm font-semibold text-ink-950">
-        Add a to-do
-      </h2>
+    <form onSubmit={add} aria-labelledby="add-todo" className="rounded-xl bg-paper-100 p-4">
+      <div className="flex items-baseline justify-between gap-3">
+        <h3 id="add-todo" className="text-sm font-semibold text-ink-950">
+          Add a to-do
+        </h3>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="cursor-pointer text-xs font-semibold text-ink-950/60 transition-colors duration-200 hover:text-ink-950"
+        >
+          Cancel
+        </button>
+      </div>
       <label className="mt-3 block">
         <span className="sr-only">What needs doing?</span>
         <input
@@ -76,10 +99,11 @@ export default function AddTodo({ actor, onAdded }) {
           onChange={(event) => setText(event.target.value)}
           maxLength={500}
           placeholder="What needs doing?"
+          autoFocus
           className={inputClass}
         />
       </label>
-      <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+      <div className="mt-3 grid gap-3">
         <PatientPicker key={`patient-${round}`} value={patient} onChange={setPatient} label="Patient" optional />
         <div>
           <span className={labelClass} aria-hidden="true">
