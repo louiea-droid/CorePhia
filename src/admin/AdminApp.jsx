@@ -197,6 +197,7 @@ function NotConfiguredScreen() {
 }
 
 const DEMO_ACTORS = {
+  superAdmin: { uid: "demo-super", name: "Hyacinth team" },
   admin: { uid: "demo-admin", name: "Dr. Antonious" },
   provider: { uid: "demo-provider", name: "Jordan Lee, NP" },
   dietitian: { uid: "demo-dietitian", name: "Sam Rivera, RD" },

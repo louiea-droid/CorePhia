@@ -34,7 +34,7 @@ const initialsOf = (member) =>
     .join("") || "?"
 
 const iconButton =
-  "flex size-8 cursor-pointer items-center justify-center rounded-lg border border-ink-950/15 text-ink-950/70 transition-colors duration-200 hover:bg-paper-100 hover:text-ink-950"
+  "flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-ink-950/15 text-ink-950/70 transition-colors duration-200 hover:bg-paper-100 hover:text-ink-950"
 
 function RoleBadge({ role }) {
   return (
@@ -332,7 +332,7 @@ export default function Staff({ actor }) {
                   <th className="px-3 py-3 font-semibold">Status</th>
                   <th className="px-3 py-3 font-semibold">Added</th>
                   <th className="px-3 py-3 font-semibold">Last sign in</th>
-                  <th className="w-24 px-5 py-3 text-right font-semibold">Actions</th>
+                  <th className="w-32 px-5 py-3 text-right font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-ink-950/5">
@@ -371,7 +371,7 @@ export default function Staff({ actor }) {
               ))}
             </ul>
 
-            <div className="border-t border-ink-950/10 px-5 py-3">
+            <div className="px-5 pb-3">
               <Pagination
                 page={currentPage}
                 totalPages={totalPages}
