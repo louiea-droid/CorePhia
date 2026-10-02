@@ -298,7 +298,7 @@ export async function addAmendment(chartId, noteId, text, actor) {
 
 // Super admins are hidden from admins. The rules refuse an admin any read of
 // a super admin's doc, so an admin's query has to rule them out itself.
-const VISIBLE_TO_ADMIN = ["", "provider", "coAdmin", "admin"]
+const VISIBLE_TO_ADMIN = ["", "provider", "dietitian", "coAdmin", "admin"]
 
 export async function loadStaff(viewerRole) {
   if (usingSeedData) {

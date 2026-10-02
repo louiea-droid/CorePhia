@@ -13,7 +13,7 @@ import Messages from "./Messages"
 import Applicants from "./Applicants"
 import PatientChart from "./PatientChart"
 import Patients from "./Patients"
-import { canOpen } from "./roles"
+import { ROLE_LABELS, canOpen } from "./roles"
 import Staff from "./Staff"
 import ThemeSwitch from "./ThemeSwitch"
 import Todo from "./Todo"
@@ -189,9 +189,24 @@ function NotConfiguredScreen() {
   )
 }
 
+// Demo mode only: open /admin?demoRole=dietitian (or provider, coAdmin, admin)
+// to preview the admin as that role for the rest of the tab. Without it the
+// demo runs as super admin, as before.
+function demoRoleFromUrl() {
+  try {
+    const asked = new URLSearchParams(window.location.search).get("demoRole")
+    if (asked) sessionStorage.setItem("corephia-demo-role", asked)
+    const role = sessionStorage.getItem("corephia-demo-role")
+    return ROLE_LABELS[role] ? role : "superAdmin"
+  } catch {
+    return "superAdmin"
+  }
+}
+
 export default function AdminApp() {
   const [user, setUser] = useState(null)
   const [role, setRole] = useState(null)
+  const [demoRole] = useState(demoRoleFromUrl)
   const [signerName, setSignerName] = useState(null)
   const [checkingAuth, setCheckingAuth] = useState(isConfigured)
   const [demoSignedOut, setDemoSignedOut] = useState(false)
@@ -285,7 +300,7 @@ export default function AdminApp() {
       body = (
         <AdminChrome
           user={null}
-          role="superAdmin"
+          role={demoRole}
           displayName={displayName}
           messagesViewedAt={messagesViewedAt}
           theme={theme}
@@ -293,7 +308,7 @@ export default function AdminApp() {
           onSignOut={() => setDemoSignedOut(true)}
         >
           <AdminRoutes
-            role="superAdmin"
+            role={demoRole}
             user={null}
             displayName={displayName}
             onDisplayNameChange={setDisplayName}

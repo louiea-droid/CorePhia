@@ -2,6 +2,7 @@
 // reads the same wherever it's shown.
 /* oxlint-disable react/only-export-components */
 import { asDate } from "./chartMath"
+import { ROLE_LABELS } from "./roles"
 
 export const NOTE_TYPE_LABELS = { consultation: "Consultation", progress: "Progress note" }
 
@@ -45,10 +46,8 @@ export const formatStamp = (value) =>
     minute: "2-digit",
   }) ?? ""
 
-export const ROLE_NAMES = { provider: "Provider", coAdmin: "Co-admin", admin: "Admin", superAdmin: "Super admin" }
-
 export const signerLine = (signedBy, signedAt) =>
-  signedBy ? `Signed by ${signedBy.name} (${ROLE_NAMES[signedBy.role] ?? signedBy.role}), ${formatStamp(signedAt)}` : ""
+  signedBy ? `Signed by ${signedBy.name} (${ROLE_LABELS[signedBy.role] ?? signedBy.role}), ${formatStamp(signedAt)}` : ""
 
 export function vitalsLine(vitals) {
   if (!vitals) return ""

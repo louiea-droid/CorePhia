@@ -124,6 +124,7 @@ export function buildDemoStore(records) {
     { uid: "demo-super", name: "Hyacinth team", email: "team@hyacinth.example", role: "superAdmin", addedAt: null },
     { uid: PROVIDER.uid, name: PROVIDER.name, email: "provider@corephia.example", role: "admin", addedAt: null },
     { uid: "demo-provider", name: "Jordan Lee, NP", email: "jordan@corephia.example", role: "provider", addedAt: new Date(now - 12 * DAY) },
+    { uid: "demo-dietitian", name: "Sam Rivera, RD", email: "sam@corephia.example", role: "dietitian", addedAt: new Date(now - 5 * DAY) },
   ]
 
   return { charts, notes, amendments, staff }

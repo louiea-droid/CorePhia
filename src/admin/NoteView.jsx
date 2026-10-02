@@ -7,7 +7,6 @@ import { AUDIT_ACTIONS, recordAuditEvent } from "./firebase"
 import { CloseIcon } from "./icons"
 import {
   NOTE_TYPE_LABELS,
-  ROLE_NAMES,
   SECTION_FIELDS,
   formatDay,
   formatStamp,
@@ -17,6 +16,7 @@ import {
   vitalsLine,
 } from "./noteUi"
 import { getAdminPortalRoot } from "./portalRoot"
+import { ROLE_LABELS } from "./roles"
 
 // A signed note, read-only: signed notes are locked by firestore.rules. The
 // one thing anyone can do here is add an addendum, which is dated, signed by
@@ -172,7 +172,7 @@ export default function NoteView({ chart, intake, note, actor, onClose }) {
                     <li key={amendment.id} className="rounded-xl border-l-2 border-accent-dark/40 bg-paper-50 px-4 py-3">
                       <p className="text-sm leading-relaxed whitespace-pre-wrap text-ink-950">{amendment.text}</p>
                       <p className="mt-1.5 text-xs text-ink-950/55">
-                        {amendment.authorName} ({ROLE_NAMES[amendment.authorRole] ?? amendment.authorRole}),{" "}
+                        {amendment.authorName} ({ROLE_LABELS[amendment.authorRole] ?? amendment.authorRole}),{" "}
                         {formatStamp(amendment.at)}
                       </p>
                     </li>

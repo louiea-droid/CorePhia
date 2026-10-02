@@ -5,10 +5,20 @@
 // admin is Dr. Antonious; coAdmin is anyone he adds at that level (Louie,
 // 2026-10-01). Same pages, but a co-admin can't change or delete the admin
 // or another co-admin, so nobody below super admin can remove him.
-export const ROLE_LABELS = { superAdmin: "Super admin", admin: "Admin", coAdmin: "Co-admin", provider: "Provider" }
+export const ROLE_LABELS = {
+  superAdmin: "Super admin",
+  admin: "Admin",
+  coAdmin: "Co-admin",
+  provider: "Provider",
+  dietitian: "Dietitian",
+}
 
-export const CLINICAL_ROLES = ["provider", "coAdmin", "admin", "superAdmin"]
+export const CLINICAL_ROLES = ["dietitian", "provider", "coAdmin", "admin", "superAdmin"]
 const STAFF_ROLES = ["coAdmin", "admin", "superAdmin"]
+// Everyone clinical except the dietitian: admits applicants, writes medical
+// and exercise notes. Exercise notes are theirs until an exercise role exists
+// (Louie, 2026-10-02).
+const PRESCRIBERS = ["provider", "coAdmin", "admin", "superAdmin"]
 
 export const isClinicalRole = (role) => CLINICAL_ROLES.includes(role)
 
@@ -17,6 +27,7 @@ const PAGE_ROLES = {
   applicants: CLINICAL_ROLES,
   patients: CLINICAL_ROLES,
   todo: CLINICAL_ROLES,
+  calendar: CLINICAL_ROLES,
   messages: STAFF_ROLES,
   analytics: STAFF_ROLES,
   staff: STAFF_ROLES,
@@ -26,19 +37,35 @@ const PAGE_ROLES = {
 
 export const canOpen = (page, role) => PAGE_ROLES[page]?.includes(role) ?? false
 
+// Which note types a role may write and sign. Mirrors canWriteType in
+// firestore.rules. The admin (Dr. Antonious) also writes dietitian notes.
+const NOTE_WRITERS = {
+  consultation: PRESCRIBERS,
+  progress: PRESCRIBERS,
+  exercise: PRESCRIBERS,
+  dietitian: ["dietitian", "admin"],
+}
+
+export const canWriteNote = (type, role) => NOTE_WRITERS[type]?.includes(role) ?? false
+export const canAdmit = (role) => PRESCRIBERS.includes(role)
+// A dietitian adds addenda only to dietitian notes, so they can't add text
+// to a medical record. Everyone else clinical: any signed note.
+export const canAmend = (noteType, role) => isClinicalRole(role) && (role !== "dietitian" || noteType === "dietitian")
+
 // The roles a signed-in person may hand out on the Staff page. Only a super
 // admin grants admin or super admin.
 export const grantableRoles = (role) =>
   role === "superAdmin"
-    ? ["provider", "coAdmin", "admin", "superAdmin"]
+    ? ["provider", "dietitian", "coAdmin", "admin", "superAdmin"]
     : role === "admin" || role === "coAdmin"
-      ? ["provider", "coAdmin"]
+      ? ["provider", "dietitian", "coAdmin"]
       : []
 
 // Whose current role a person may change or delete (never their own):
-// super admin, anyone; admin, providers, co-admins and no-access accounts;
-// co-admin, providers and no-access accounts only. Mirrors canActOn.
-const ACTS_ON = { admin: ["", "provider", "coAdmin"], coAdmin: ["", "provider"] }
+// super admin, anyone; admin, providers, dietitians, co-admins and no-access
+// accounts; co-admin, providers, dietitians and no-access accounts only.
+// Mirrors canActOn.
+const ACTS_ON = { admin: ["", "provider", "dietitian", "coAdmin"], coAdmin: ["", "provider", "dietitian"] }
 
 export const canManageMember = (viewer, member) =>
   member.uid !== viewer.uid &&

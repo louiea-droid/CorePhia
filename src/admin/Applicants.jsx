@@ -9,6 +9,7 @@ import ApplicantModal from "./ApplicantModal"
 import ApplicantsTable from "./ApplicantsTable"
 import { setApplicantStatus } from "./chartStore"
 import { ApplicantsSkeleton } from "./Skeleton"
+import { canAdmit } from "./roles"
 import { TEMP_FAKE_RECORDS } from "./tempFakeRecords"
 import { useIntakeRecords } from "./useIntakeRecords"
 
@@ -47,9 +48,10 @@ export default function Applicants({ role, actor }) {
   // either no-op against a nonexistent id or (worse) collide with an unrelated
   // real id, so the option is hidden rather than wired to something misleading.
   const canDelete = role === "superAdmin" && !usingSampleFallback
-  // Admitting/declining isn't destructive, so both admin tiers can do it —
-  // just not against the sample fallback rows, same reasoning as canDelete.
-  const canReview = Boolean(role) && !usingSampleFallback
+  // Admitting/declining isn't destructive, so every clinical role but the
+  // dietitian can do it (roles.canAdmit; firestore.rules isAdmitter), just
+  // not against the sample fallback rows, same reasoning as canDelete.
+  const canReview = canAdmit(role) && !usingSampleFallback
 
   // Admitting starts (or reactivates) the patient's chart; moving away from
   // admitted marks it inactive. Both happen with the status in one batch.
