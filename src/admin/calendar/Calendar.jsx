@@ -7,7 +7,7 @@ import { loadActiveChartNotes, loadStaff } from "../patients/chartStore"
 import { DISCIPLINE_LABELS } from "../patients/noteUi"
 import PageHeader from "../layout/PageHeader"
 import { CloseIcon } from "../ui/icons"
-import { isClinicalRole } from "../staff/roles"
+import { isClinicalRole, staffDisplayName } from "../staff/roles"
 
 const HOUR_PX = 48
 const DAY_START_HOUR = 7
@@ -71,24 +71,28 @@ function WeekView({ days, today, appointments, markers, onOpen, onBook, onSlot }
     if (scrollRef.current) scrollRef.current.scrollTop = DAY_START_HOUR * HOUR_PX
   }, [])
   return (
-    <div className="overflow-x-auto rounded-2xl border border-ink-950/10 bg-white">
-      <div className="min-w-176">
-        <div className="grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))] border-b border-ink-950/10">
-          <div />
-          {days.map((day) => (
-            <div key={day} className="space-y-1 border-l border-ink-950/5 px-1.5 py-2">
-              <p className={`text-xs font-semibold ${day === today ? "text-accent-text" : "text-ink-950/70"}`}>
-                {dayLabel(day, { weekday: "short", month: "short", day: "numeric" })}
-              </p>
-              {markers
-                .filter((marker) => marker.date === day)
-                .map((marker) => (
-                  <Marker key={`${marker.intakeId}-${marker.discipline}`} followUp={marker} onBook={onBook} />
-                ))}
-            </div>
-          ))}
-        </div>
-        <div ref={scrollRef} className="scrollbar-thin max-h-144 overflow-y-auto">
+    // Fills the space left on the page and clips vertically: only the hours
+    // below scroll, so there's never a second scrollbar around them.
+    <div className="flex min-h-80 flex-1 flex-col overflow-x-auto overflow-y-hidden rounded-2xl border border-ink-950/10 bg-white">
+      <div className="flex min-h-0 min-w-176 flex-1 flex-col">
+        <div ref={scrollRef} className="scrollbar-thin min-h-0 flex-1 overflow-y-auto">
+          {/* Sticky inside the scrolling area, so the header and the hours share one
+              width and their column lines match whatever the scrollbar takes. */}
+          <div className="sticky top-0 z-10 grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))] border-b border-ink-950/10 bg-white">
+            <div />
+            {days.map((day) => (
+              <div key={day} className="space-y-1 border-l border-ink-950/5 px-1.5 py-2">
+                <p className={`text-xs font-semibold ${day === today ? "text-accent-text" : "text-ink-950/70"}`}>
+                  {dayLabel(day, { weekday: "short", month: "short", day: "numeric" })}
+                </p>
+                {markers
+                  .filter((marker) => marker.date === day)
+                  .map((marker) => (
+                    <Marker key={`${marker.intakeId}-${marker.discipline}`} followUp={marker} onBook={onBook} />
+                  ))}
+              </div>
+            ))}
+          </div>
           <div className="relative grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))]" style={{ height: 24 * HOUR_PX }}>
             <div>
               {Array.from({ length: 24 }, (_, hour) => (
@@ -435,7 +439,7 @@ export default function Calendar({ actor }) {
   const whoOptions = [
     ["mine", "My schedule"],
     ["all", "Everyone"],
-    ...staff.filter((member) => member.uid !== actor.uid).map((member) => [member.uid, member.name || member.email]),
+    ...staff.filter((member) => member.uid !== actor.uid).map((member) => [member.uid, staffDisplayName(member)]),
   ]
   const open = (appointment) => setDialog({ appointment })
   const book = (followUp) =>

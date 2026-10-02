@@ -10,7 +10,7 @@ import { AUDIT_ACTIONS, loadIntakeRecords, recordAuditEvent } from "../lib/fireb
 import { CloseIcon } from "../ui/icons"
 import { DISCIPLINE_LABELS, formatStamp, inputClass, labelClass } from "../patients/noteUi"
 import { getAdminPortalRoot } from "../ui/portalRoot"
-import { ROLE_LABELS, canSeeAppointmentHistory, isClinicalRole } from "../staff/roles"
+import { ROLE_LABELS, canSeeAppointmentHistory, isClinicalRole, staffDisplayName } from "../staff/roles"
 
 const COMPACT = "px-3 py-2 text-sm"
 const LENGTHS = [15, 30, 45, 60].map((minutes) => ({ value: String(minutes), label: `${minutes} min` }))
@@ -78,7 +78,7 @@ export default function AppointmentDialog({ appointment, prefill = {}, actor, on
     patientName: appointment?.patientName ?? prefill.patientName ?? "",
     patientKind: "",
     staffUid: appointment?.staffUid ?? (isClinicalRole(actor.role) && actor.role !== "superAdmin" ? actor.uid : ""),
-    staffName: appointment?.staffName ?? (isClinicalRole(actor.role) && actor.role !== "superAdmin" ? actor.name : ""),
+    staffName: appointment?.staffName ?? (isClinicalRole(actor.role) && actor.role !== "superAdmin" ? staffDisplayName({ name: actor.name }) : ""),
     discipline: appointment?.discipline ?? prefill.discipline ?? (actor.role === "dietitian" ? "dietitian" : "medical"),
     day: startParts?.day ?? prefill.day ?? todayInTampa(),
     time: startParts?.time ?? prefill.time ?? "09:00",
@@ -206,7 +206,7 @@ export default function AppointmentDialog({ appointment, prefill = {}, actor, on
 
   const staffOptions = staff.map((member) => ({
     value: member.uid,
-    label: `${member.name || member.email} (${ROLE_LABELS[member.role]})`,
+    label: staffDisplayName(member),
   }))
 
   return createPortal(
@@ -314,7 +314,7 @@ export default function AppointmentDialog({ appointment, prefill = {}, actor, on
                     value={form.staffUid}
                     onChange={(uid) => {
                       const member = staff.find((entry) => entry.uid === uid)
-                      set({ staffUid: uid, staffName: member?.name || member?.email || "" })
+                      set({ staffUid: uid, staffName: staffDisplayName(member) })
                     }}
                     placeholder="Choose someone"
                     triggerClassName={COMPACT}

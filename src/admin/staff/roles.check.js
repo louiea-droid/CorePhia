@@ -10,6 +10,7 @@ import {
   canWriteNote,
   grantableRoles,
   isClinicalRole,
+  staffDisplayName,
 } from "./roles.js"
 
 // The dietitian is clinical: opens charts, To-do, Calendar; not Messages or Staff.
@@ -49,5 +50,12 @@ assert.equal(canManageMember({ uid: "d", role: "dietitian" }, { uid: "p", role: 
 // Appointment history: co-admin, admin, super admin.
 for (const role of ["coAdmin", "admin", "superAdmin"]) assert.equal(canSeeAppointmentHistory(role), true, role)
 for (const role of ["provider", "dietitian", ""]) assert.equal(canSeeAppointmentHistory(role), false, role)
+
+// Staff are shown by name only; with no name set, the part of the email before @.
+assert.equal(staffDisplayName({ name: "Sam Rivera, RD", email: "sam@corephia.com" }), "Sam Rivera, RD")
+assert.equal(staffDisplayName({ name: "", email: "ProviderMD@CorePhia.com" }), "ProviderMD")
+assert.equal(staffDisplayName({ email: "test@gmail.com" }), "test")
+assert.equal(staffDisplayName({ name: "ProviderMD@CorePhia.com" }), "ProviderMD")
+assert.equal(staffDisplayName({}), "")
 
 console.log("roles: all checks passed")

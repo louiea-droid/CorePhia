@@ -74,3 +74,10 @@ const ACTS_ON = { admin: ["", "provider", "dietitian", "coAdmin"], coAdmin: ["",
 export const canManageMember = (viewer, member) =>
   member.uid !== viewer.uid &&
   (viewer.role === "superAdmin" || (ACTS_ON[viewer.role]?.includes(member.role ?? "") ?? false))
+
+// How a staff member is shown in lists (the calendar's "With" and staff
+// filter): their name, or with none set, the part of their email before @.
+export function staffDisplayName(member) {
+  const raw = member?.name?.trim() || member?.email || ""
+  return raw.includes("@") ? raw.split("@")[0] : raw
+}
