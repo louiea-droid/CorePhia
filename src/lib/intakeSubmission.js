@@ -18,7 +18,7 @@ export const isConfigured = Boolean(config.apiKey && config.projectId)
 const app = isConfigured ? (getApps().length ? getApp() : initializeApp(config)) : null
 const db = app ? getFirestore(app) : null
 
-// Matches INTAKE_COLLECTION in admin/firebase.js, which is what reads these back.
+// Matches INTAKE_COLLECTION in admin/lib/firebase.js, which is what reads these back.
 const INTAKE_COLLECTION = "intakeRecords"
 
 // Written straight from the browser with no sign-in, because a patient completes

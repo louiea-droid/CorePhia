@@ -23,7 +23,7 @@ const config = {
 
 export const isConfigured = Boolean(config.apiKey && config.projectId)
 
-// Separate module from admin/firebase.js (rather than sharing it) so the public
+// Separate module from admin/lib/firebase.js (rather than sharing it) so the public
 // site's login panel never pulls in the admin bundle, and vice versa. Both call
 // getApps() first because Firebase throws if initializeApp() runs twice against
 // the same config — harmless here since neither bundle loads unless its own

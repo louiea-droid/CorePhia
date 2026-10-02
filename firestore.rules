@@ -58,7 +58,7 @@ service cloud.firestore {
     // The name a person signs with: the `name` on their staff record (set on
     // the Staff page), else their account email. Never the display name they
     // can edit themselves, so a note can't be signed as someone else.
-    // Mirrors getAdminAccess() in src/admin/firebase.js.
+    // Mirrors getAdminAccess() in src/admin/lib/firebase.js.
     function myName() {
       return get(/databases/$(database)/documents/user/$(request.auth.uid)).data.get('name', request.auth.token.get('email', ''));
     }

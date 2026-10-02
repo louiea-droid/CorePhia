@@ -22,7 +22,7 @@ const isConfigured = Boolean(config.apiKey && config.projectId)
 const app = isConfigured ? (getApps().length ? getApp() : initializeApp(config)) : null
 const db = app ? getFirestore(app) : null
 
-// Matches SITE_EVENTS_COLLECTION in admin/firebase.js, which reads these back.
+// Matches SITE_EVENTS_COLLECTION in admin/lib/firebase.js, which reads these back.
 const SITE_EVENTS_COLLECTION = "siteEvents"
 
 // ponytail: one document per event, written straight from the browser. The

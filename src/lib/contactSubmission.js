@@ -18,7 +18,7 @@ export const isConfigured = Boolean(config.apiKey && config.projectId)
 const app = isConfigured ? (getApps().length ? getApp() : initializeApp(config)) : null
 const db = app ? getFirestore(app) : null
 
-// Matches MESSAGES_COLLECTION in admin/firebase.js, which is what reads these
+// Matches MESSAGES_COLLECTION in admin/lib/firebase.js, which is what reads these
 // back. Written straight from the browser with no sign-in — same reasoning as
 // the intake form: a visitor sends this before any account exists, so
 // firestore.rules (isWellFormedContactMessage) is the only gate on the way in.

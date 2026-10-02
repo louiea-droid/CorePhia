@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "check": "node src/admin/chartMath.check.js && node src/admin/roles.check.js && node src/admin/calendarMath.check.js",
+    "check": "node src/admin/patients/chartMath.check.js && node src/admin/staff/roles.check.js && node src/admin/calendar/calendarMath.check.js",
     "test:rules": "firebase emulators:exec --only firestore \"node --test tests/*.test.js\""
   },
   "dependencies": {
