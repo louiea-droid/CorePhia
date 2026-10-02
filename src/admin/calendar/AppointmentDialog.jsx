@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import DatePicker from "../../components/DatePicker"
 import Select from "../../components/Select"
@@ -6,7 +6,8 @@ import { bookAppointment, changeAppointment, loadAppointments, loadChanges } fro
 import { addDays, changeFor, fromTampa, overlaps, tampaParts, todayInTampa } from "./calendarMath"
 import TimePicker from "./TimePicker"
 import { loadStaff } from "../patients/chartStore"
-import { AUDIT_ACTIONS, loadIntakeRecords, recordAuditEvent } from "../lib/firebase"
+import { AUDIT_ACTIONS, recordAuditEvent } from "../lib/firebase"
+import PatientPicker from "../ui/PatientPicker"
 import { CloseIcon } from "../ui/icons"
 import { DISCIPLINE_LABELS, formatStamp, inputClass, labelClass } from "../patients/noteUi"
 import { getAdminPortalRoot } from "../ui/portalRoot"
@@ -86,8 +87,6 @@ export default function AppointmentDialog({ appointment, prefill = {}, actor, on
     note: appointment?.note ?? "",
   }))
   const [staff, setStaff] = useState([])
-  const [patients, setPatients] = useState(null)
-  const [search, setSearch] = useState("")
   const [sameDay, setSameDay] = useState([])
   const [history, setHistory] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -102,17 +101,12 @@ export default function AppointmentDialog({ appointment, prefill = {}, actor, on
     loadStaff(actor.role)
       .then((members) => setStaff(members.filter((member) => isClinicalRole(member.role) && member.role !== "superAdmin")))
       .catch((cause) => console.error("Staff list failed:", cause.code ?? cause.message))
-    if (isNew && !prefill.intakeId) {
-      loadIntakeRecords()
-        .then((records) => setPatients(records.filter((record) => record.status !== "declined")))
-        .catch((cause) => console.error("Patient list failed:", cause.code ?? cause.message))
-    }
     if (!isNew && canSeeAppointmentHistory(actor.role)) {
       loadChanges(appointment.id)
         .then(setHistory)
         .catch((cause) => console.error("History failed:", cause.code ?? cause.message))
     }
-  }, [actor.role, appointment?.id, isNew, prefill.intakeId])
+  }, [actor.role, appointment?.id, isNew])
 
   // Same-day bookings, for the overlap warning.
   useEffect(() => {
@@ -135,13 +129,6 @@ export default function AppointmentDialog({ appointment, prefill = {}, actor, on
 
   const start = fromTampa(form.day, form.time)
   const clashes = overlaps({ id: appointment?.id, staffUid: form.staffUid, start, minutes: form.minutes }, sameDay)
-  const matches = useMemo(() => {
-    if (!patients || !search.trim()) return []
-    const needle = search.trim().toLowerCase()
-    return patients
-      .filter((record) => `${record.demographics?.firstName ?? ""} ${record.demographics?.lastName ?? ""}`.toLowerCase().includes(needle))
-      .slice(0, 8)
-  }, [patients, search])
   const problem = !form.intakeId ? "Choose a patient." : !form.staffUid ? "Choose who the appointment is with." : null
 
   const fail = (cause, fallback) => {
@@ -247,64 +234,12 @@ export default function AppointmentDialog({ appointment, prefill = {}, actor, on
               <h3 id="appointment-who" className="text-sm font-semibold text-ink-950">
                 Who
               </h3>
-              {isNew && !prefill.intakeId && !form.intakeId ? (
-                <div>
-                  <label className="block">
-                    <span className={labelClass}>Patient or applicant</span>
-                    <input
-                      value={search}
-                      onChange={(event) => setSearch(event.target.value)}
-                      placeholder={patients ? "Search by name" : "Loading…"}
-                      autoComplete="off"
-                      className={inputClass}
-                    />
-                  </label>
-                  {search.trim() && patients && (
-                    <ul className="mt-1.5 overflow-hidden rounded-lg border border-ink-950/10 bg-white">
-                      {matches.length === 0 ? (
-                        <li className="px-3 py-2 text-sm text-ink-950/55">No patient or applicant matches "{search.trim()}".</li>
-                      ) : (
-                        matches.map((record) => {
-                          const name = `${record.demographics?.firstName ?? ""} ${record.demographics?.lastName ?? ""}`.trim()
-                          const kind = record.status === "admitted" ? "patient" : "applicant"
-                          return (
-                            <li key={record.id}>
-                              <button
-                                type="button"
-                                onClick={() => set({ intakeId: record.id, patientName: name, patientKind: kind })}
-                                className="flex w-full cursor-pointer items-baseline justify-between gap-3 px-3 py-2 text-left text-sm text-ink-950 transition-colors duration-150 hover:bg-accent-dark/10 focus-visible:bg-accent-dark/10 focus-visible:outline-none"
-                              >
-                                <span className="truncate">{name || "Unnamed"}</span>
-                                <span className="shrink-0 text-xs text-ink-950/50 capitalize">{kind}</span>
-                              </button>
-                            </li>
-                          )
-                        })
-                      )}
-                    </ul>
-                  )}
-                </div>
-              ) : (
-                isNew && (
-                  <div className="flex items-center justify-between gap-3 rounded-lg border border-ink-950/10 bg-white px-3 py-2">
-                    <p className="min-w-0 truncate text-sm text-ink-950">
-                      <span className="font-medium">{form.patientName || "Unnamed"}</span>
-                      {form.patientKind && <span className="text-ink-950/50">, {form.patientKind}</span>}
-                    </p>
-                    {!prefill.intakeId && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          set({ intakeId: "", patientName: "", patientKind: "" })
-                          setSearch("")
-                        }}
-                        className="shrink-0 cursor-pointer text-xs font-semibold text-accent-text hover:underline"
-                      >
-                        Change
-                      </button>
-                    )}
-                  </div>
-                )
+              {isNew && (
+                <PatientPicker
+                  value={{ intakeId: form.intakeId, patientName: form.patientName, patientKind: form.patientKind }}
+                  onChange={set}
+                  canChange={!prefill.intakeId}
+                />
               )}
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="With">

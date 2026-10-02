@@ -3,7 +3,10 @@ import { Link } from "react-router-dom"
 import { asDate, dueTasks } from "./chartMath"
 import { loadAppointments } from "../calendar/appointmentStore"
 import { addDays, fromTampa, matchingAppointment, tampaParts, todayInTampa } from "../calendar/calendarMath"
+import AddedTodos from "./AddedTodos"
+import AddTodo from "./AddTodo"
 import { loadActiveChartNotes } from "./chartStore"
+import { loadTodos } from "./todoStore"
 import { DISCIPLINE_LABELS, formatDay } from "./noteUi"
 import PageHeader from "../layout/PageHeader"
 import { ApplicantsSkeleton } from "../ui/Skeleton"
@@ -48,6 +51,26 @@ export default function Todo({ actor }) {
   const [tasks, setTasks] = useState(null)
   const [error, setError] = useState(null)
   const [showAll, setShowAll] = useState(actor.role !== "dietitian")
+  // Staff-added to-dos load on their own, so a failure there never hides
+  // the automatic list (and the other way round).
+  const [todos, setTodos] = useState(null)
+  const [todoError, setTodoError] = useState(null)
+  const [chartIds, setChartIds] = useState(() => new Set())
+  const upsertTodo = (todo) =>
+    setTodos((current) => {
+      const list = current ?? []
+      return list.some((entry) => entry.id === todo.id) ? list.map((entry) => (entry.id === todo.id ? todo : entry)) : [...list, todo]
+    })
+
+  useEffect(() => {
+    let active = true
+    loadTodos(actor.uid)
+      .then((list) => active && setTodos(list))
+      .catch((cause) => active && setTodoError(cause.code ?? cause.message))
+    return () => {
+      active = false
+    }
+  }, [actor.uid])
 
   useEffect(() => {
     let active = true
@@ -58,8 +81,9 @@ export default function Todo({ actor }) {
       loadActiveChartNotes(actor.uid),
       loadAppointments(fromTampa(addDays(todayInTampa(), -33)), fromTampa(addDays(todayInTampa(), 11))).catch(() => []),
     ])
-      .then(([perChart, appointments]) =>
-        perChart.flatMap(({ chart, notes }) => {
+      .then(([perChart, appointments]) => {
+        if (active) setChartIds(new Set(perChart.map(({ chart }) => chart.id)))
+        return perChart.flatMap(({ chart, notes }) => {
           const name = `${chart.firstName} ${chart.lastName}`.trim() || "Unnamed patient"
           const admittedAt = asDate(chart.admittedAt)
           return dueTasks(notes, today).map((task, index) => ({
@@ -73,8 +97,8 @@ export default function Todo({ actor }) {
                 ? matchingAppointment({ intakeId: chart.id, discipline: task.discipline, date: task.due }, appointments)
                 : null,
           }))
-        }),
-      )
+        })
+      })
       .then((all) => active && setTasks(all))
       .catch((cause) => active && setError(cause.code ?? cause.message))
     return () => {
@@ -118,6 +142,15 @@ export default function Todo({ actor }) {
           ))}
         </div>
       )}
+
+      <AddTodo actor={actor} onAdded={upsertTodo} />
+      {todoError ? (
+        <p role="alert" className="mb-4 rounded-2xl border border-ink-950/10 bg-white p-5 text-sm text-brand-dark">
+          Couldn't load added to-dos. {todoError}
+        </p>
+      ) : todos ? (
+        <AddedTodos todos={todos} today={localToday()} chartIds={chartIds} actor={actor} onChange={upsertTodo} />
+      ) : null}
 
       {error ? (
         <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-ink-950/10 bg-white p-6 text-center">
