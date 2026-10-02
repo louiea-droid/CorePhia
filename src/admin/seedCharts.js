@@ -9,6 +9,7 @@ const DAY = 86400000
 const isoDay = (ms) => new Date(ms).toLocaleDateString("en-CA")
 
 const PROVIDER = { uid: "demo-admin", name: "Dr. Antonious", role: "admin" }
+const DIETITIAN = { uid: "demo-dietitian", name: "Sam Rivera, RD", role: "dietitian" }
 
 export function buildDemoStore(records) {
   const now = Date.now()
@@ -94,6 +95,72 @@ export function buildDemoStore(records) {
         signedAt: new Date(progressAt + 3600000),
       }
 
+      const extra = []
+      if (index % 2 === 0) {
+        const dietAt = consultAt + 7 * DAY
+        extra.push({
+          ...consult,
+          id: `${record.id}-n3`,
+          type: "dietitian",
+          authorUid: DIETITIAN.uid,
+          authorName: DIETITIAN.name,
+          authorRole: DIETITIAN.role,
+          createdAt: new Date(dietAt),
+          updatedAt: new Date(dietAt),
+          visitDate: isoDay(dietAt),
+          sections: {
+            ...consult.sections,
+            chiefConcern: "",
+            hpi: "",
+            pertinentHistory: "",
+            plan: "",
+            dietHistory: "Two meals a day, skips breakfast, snacks in the evening.",
+            assessment: "Low protein early in the day, large evening intake.",
+            goals: "Three meals a day, protein at breakfast.",
+            mealPlan: "1,600 kcal plan, 30 g protein per meal. Swap evening snacks for a planned dinner.",
+          },
+          vitals: { weightLb: weight - 4, systolic: null, diastolic: null, heartRate: null },
+          prescriptions: [],
+          // The first chart's dietitian follow-up lands this week, for To-do.
+          nextFollowUp: isoDay(now + (index === 0 ? 2 : 25) * DAY),
+          signedAt: new Date(dietAt + 3600000),
+          signedBy: DIETITIAN,
+        })
+      }
+      if (index % 3 === 0) {
+        const exerciseAt = consultAt + 10 * DAY
+        extra.push({
+          ...consult,
+          id: `${record.id}-n4`,
+          type: "exercise",
+          createdAt: new Date(exerciseAt),
+          updatedAt: new Date(exerciseAt),
+          visitDate: isoDay(exerciseAt),
+          sections: {
+            ...consult.sections,
+            chiefConcern: "",
+            hpi: "",
+            pertinentHistory: "",
+            assessment: "",
+            plan: "",
+            activityLevel: "Walks the dog twice a week.",
+            limitations: "Left knee pain on stairs.",
+            goals: "Build to 150 minutes a week.",
+          },
+          exercisePlan: {
+            daysPerWeek: 4,
+            intensity: "moderate",
+            minutesPerSession: 30,
+            kind: "Brisk walking, low-impact cycling",
+            notes: "Avoid deep squats until the knee settles.",
+          },
+          vitals: { weightLb: weight - 5, systolic: null, diastolic: null, heartRate: null },
+          prescriptions: [],
+          nextFollowUp: isoDay(now + 12 * DAY),
+          signedAt: new Date(exerciseAt + 3600000),
+        })
+      }
+
       charts.set(record.id, {
         id: record.id,
         intakeRecordId: record.id,
@@ -107,7 +174,7 @@ export function buildDemoStore(records) {
         updatedAt: progress.signedAt,
         lastNote: { type: "progress", signedAt: progress.signedAt },
       })
-      notes.set(record.id, [consult, progress])
+      notes.set(record.id, [consult, progress, ...extra])
       amendments.set(consult.id, [
         {
           id: `${consult.id}-a1`,

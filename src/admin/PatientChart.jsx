@@ -2,15 +2,24 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { Link, useParams } from "react-router-dom"
 import ApplicantModal from "./ApplicantModal"
 import { medicationInterestLabel } from "./analytics"
-import { ageFrom, asDate, bmi, currentPrescriptions } from "./chartMath"
+import { ageFrom, asDate, bmi, currentExercisePlan, currentPrescriptions, disciplineOf, nextFollowUps } from "./chartMath"
 import { countAmendments, createDraftNote, loadChart, loadIntakeRecord, loadNotes } from "./chartStore"
 import { AUDIT_ACTIONS, recordAuditEvent } from "./firebase"
 import { ChevronLeftIcon } from "./icons"
 import NoteEditor from "./NoteEditor"
 import NoteView from "./NoteView"
-import { NOTE_TYPE_LABELS, STATUS_PILL, formatDay, prescriptionLine, signerLine } from "./noteUi"
+import {
+  DISCIPLINE_LABELS,
+  NOTE_TYPES,
+  NOTE_TYPE_LABELS,
+  STATUS_PILL,
+  exercisePlanLine,
+  formatDay,
+  prescriptionLine,
+  signerLine,
+} from "./noteUi"
 import PageHeader from "./PageHeader"
-import { isClinicalRole } from "./roles"
+import { canWriteNote } from "./roles"
 
 const list = (value) => (Array.isArray(value) ? value.filter((item) => item && item !== "None of the above").join(", ") : value)
 
@@ -31,6 +40,34 @@ function historyFromIntake(intake) {
     .map(([label, value]) => `${label}: ${value}`)
     .join("\n")
 }
+
+// Diet history for a new dietitian note, from the intake's nutrition answers.
+function dietFromIntake(intake) {
+  const nutrition = intake?.nutrition ?? {}
+  const lines = [
+    ["Meals per day", nutrition.mealsPerDay],
+    ["Water", nutrition.waterIntake],
+    ["Estimated daily calories", nutrition.estimatedDailyCalories || nutrition.estimatedDailyCaloriesRange],
+    ["Diet notes", nutrition.dietNotes],
+  ]
+  return lines
+    .filter(([, value]) => value)
+    .map(([label, value]) => `${label}: ${value}`)
+    .join("\n")
+}
+
+const PREFILL = {
+  consultation: (intake) => ({ sections: { pertinentHistory: historyFromIntake(intake) } }),
+  dietitian: (intake) => ({ sections: { dietHistory: dietFromIntake(intake) } }),
+  exercise: (intake) => ({ sections: { activityLevel: intake?.socialHistory?.exerciseFrequency ?? "" } }),
+}
+
+const NOTE_FILTERS = [
+  ["all", "All"],
+  ["medical", "Medical"],
+  ["dietitian", "Dietitian"],
+  ["exercise", "Exercise"],
+]
 
 function SummaryRow({ label, value }) {
   return (
@@ -65,6 +102,7 @@ export default function PatientChart({ actor }) {
   const [creating, setCreating] = useState(null)
   const [createError, setCreateError] = useState(null)
   const [showIntake, setShowIntake] = useState(false)
+  const [noteFilter, setNoteFilter] = useState("all")
 
   const reload = async () => {
     const [nextChart, nextNotes] = await Promise.all([loadChart(chartId), loadNotes(chartId, actor.uid)])
@@ -102,6 +140,8 @@ export default function PatientChart({ actor }) {
   }, [chart])
 
   const current = useMemo(() => (notes ? currentPrescriptions(notes) : []), [notes])
+  const exercisePlan = useMemo(() => (notes ? currentExercisePlan(notes) : null), [notes])
+  const followUps = useMemo(() => (notes ? nextFollowUps(notes) : []), [notes])
   const signedNotes = notes?.filter((note) => note.status === "signed") ?? []
   // The last signed weight, or the intake's if no note has one yet; the
   // editor says which ("since last note" / "since intake").
@@ -129,7 +169,7 @@ export default function PatientChart({ actor }) {
     setCreating(type)
     setCreateError(null)
     try {
-      const prefill = type === "consultation" ? { sections: { pertinentHistory: historyFromIntake(intake) } } : {}
+      const prefill = PREFILL[type]?.(intake) ?? {}
       const note = await createDraftNote(chartId, type, actor, prefill)
       setNotes((existing) => [note, ...(existing ?? [])])
       setOpenNote(note)
@@ -183,7 +223,9 @@ export default function PatientChart({ actor }) {
   const demographics = intake?.demographics ?? {}
   const vitals = intake?.vitals ?? {}
   const intakeBmi = bmi(vitals.heightFeet, vitals.heightInches, vitals.currentWeightLb)
-  const canWrite = isClinicalRole(actor.role) && chart.status === "active"
+  const writableTypes = Object.keys(NOTE_TYPES).filter((type) => canWriteNote(type, actor.role))
+  const canWrite = writableTypes.length > 0 && chart.status === "active"
+  const shownNotes = (notes ?? []).filter((note) => noteFilter === "all" || disciplineOf(note.type) === noteFilter)
   const draftOpen = openNote?.status === "draft"
 
   return (
@@ -230,8 +272,8 @@ export default function PatientChart({ actor }) {
             fill
             action={
               canWrite && (
-                <div className="flex gap-1.5">
-                  {["consultation", "progress"].map((type) => (
+                <div className="flex flex-wrap gap-1.5">
+                  {writableTypes.map((type) => (
                     <button
                       key={type}
                       type="button"
@@ -239,13 +281,30 @@ export default function PatientChart({ actor }) {
                       onClick={() => startNote(type)}
                       className="cursor-pointer rounded-lg bg-ink-950 px-3 py-1.5 text-xs font-semibold whitespace-nowrap text-paper-50 transition-colors duration-200 hover:bg-brand-dark disabled:opacity-50"
                     >
-                      {creating === type ? "Starting…" : type === "consultation" ? "New consultation" : "New progress note"}
+                      {creating === type ? "Starting…" : NOTE_TYPES[type].newLabel}
                     </button>
                   ))}
                 </div>
               )
             }
           >
+            {notes?.length > 0 && (
+              <div role="group" aria-label="Show notes" className="mb-3 flex flex-wrap gap-1.5">
+                {NOTE_FILTERS.map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={noteFilter === value}
+                    onClick={() => setNoteFilter(value)}
+                    className={`cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors duration-200 ${
+                      noteFilter === value ? "bg-accent-dark text-oncolor" : "bg-paper-100 text-ink-950/70 hover:bg-ink-950/10"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
             {createError && (
               <p role="alert" className="mb-3 text-sm text-brand-dark">
                 {createError}
@@ -257,9 +316,13 @@ export default function PatientChart({ actor }) {
               <p className="py-6 text-center text-sm text-ink-950/55 lg:my-auto">
                 No notes yet.{canWrite ? " Start with a consultation." : ""}
               </p>
+            ) : shownNotes.length === 0 ? (
+              <p className="py-6 text-center text-sm text-ink-950/55 lg:my-auto">
+                No {DISCIPLINE_LABELS[noteFilter].toLowerCase()} notes yet.
+              </p>
             ) : (
               <ol className="-mx-2 divide-y divide-ink-950/10">
-                {notes.map((note) => (
+                {shownNotes.map((note) => (
                   <li key={note.id}>
                     <button
                       type="button"
@@ -281,8 +344,13 @@ export default function PatientChart({ actor }) {
                       {note.status === "signed" && (
                         <span className="mt-0.5 block text-xs text-ink-950/50">{signerLine(note.signedBy, note.signedAt)}</span>
                       )}
-                      {note.sections?.plan && (
-                        <span className="mt-1 line-clamp-2 block text-sm text-ink-950/70">Plan: {note.sections.plan}</span>
+                      {note.status === "draft" && (
+                        <span className="mt-0.5 block text-xs text-ink-950/50">Started by {note.authorName}</span>
+                      )}
+                      {(note.sections?.plan || note.sections?.mealPlan || exercisePlanLine(note.exercisePlan)) && (
+                        <span className="mt-1 line-clamp-2 block text-sm text-ink-950/70">
+                          Plan: {note.sections?.plan || note.sections?.mealPlan || exercisePlanLine(note.exercisePlan)}
+                        </span>
                       )}
                     </button>
                   </li>
@@ -300,6 +368,28 @@ export default function PatientChart({ actor }) {
               <ul className="space-y-2 text-sm text-ink-950">
                 {current.map((rx) => (
                   <li key={rx.id}>{prescriptionLine({ ...rx, action: "start" }).replace(/^Start /, "")}</li>
+                ))}
+              </ul>
+            )}
+          </Card>
+
+          <Card title="Current exercise plan">
+            {exercisePlanLine(exercisePlan) ? (
+              <p className="text-sm text-ink-950">{exercisePlanLine(exercisePlan)}</p>
+            ) : (
+              <p className="text-sm text-ink-950/55">None yet. It appears here once an exercise note is signed.</p>
+            )}
+          </Card>
+
+          <Card title="Next follow-ups">
+            {followUps.length === 0 ? (
+              <p className="text-sm text-ink-950/55">None set.</p>
+            ) : (
+              <ul className="space-y-1.5 text-sm text-ink-950">
+                {followUps.map((followUp) => (
+                  <li key={followUp.discipline}>
+                    <span className="text-ink-950/55">{DISCIPLINE_LABELS[followUp.discipline]}:</span> {formatDay(followUp.date)}
+                  </li>
                 ))}
               </ul>
             )}
