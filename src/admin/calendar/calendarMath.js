@@ -65,6 +65,14 @@ export function monthGrid(day) {
   return Array.from({ length: 42 }, (_, index) => addDays(gridStart, index))
 }
 
+// Every day of the month that `day` falls in, first to last.
+export function monthDays(day) {
+  const first = `${day.slice(0, 7)}-01`
+  const days = []
+  for (let current = first; current.slice(0, 7) === first.slice(0, 7); current = addDays(current, 1)) days.push(current)
+  return days
+}
+
 export function monthRange(day) {
   const days = monthGrid(day)
   return { days, start: fromTampa(days[0]), end: fromTampa(addDays(days[41], 1)) }

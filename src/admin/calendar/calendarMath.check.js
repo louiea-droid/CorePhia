@@ -7,6 +7,7 @@ import {
   fromTampa,
   lanes,
   matchingAppointment,
+  monthDays,
   monthGrid,
   periodOf,
   slotTime,
@@ -130,5 +131,12 @@ assert.equal(timesIn("PM").length, 37) // 12:00 to 9:00
 assert.deepEqual(timesIn("AM")[0], { value: "06:00", label: "6:00" })
 assert.deepEqual(timesIn("PM")[0], { value: "12:00", label: "12:00" })
 assert.deepEqual(timesIn("PM").at(-1), { value: "21:00", label: "9:00" })
+
+// The Agenda lists the whole month being viewed: every day of it, in order.
+assert.equal(monthDays("2026-10-15").length, 31)
+assert.equal(monthDays("2026-10-15")[0], "2026-10-01")
+assert.equal(monthDays("2026-10-15").at(-1), "2026-10-31")
+assert.equal(monthDays("2026-02-03").length, 28)
+assert.equal(monthDays("2028-02-03").length, 29)
 
 console.log("calendarMath: all checks passed")

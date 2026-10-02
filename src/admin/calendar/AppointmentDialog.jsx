@@ -413,7 +413,7 @@ export default function AppointmentDialog({ appointment, prefill = {}, actor, on
                     type="button"
                     disabled={busy}
                     onClick={() => setCancelling(false)}
-                    className="cursor-pointer rounded-full px-3 py-2 text-sm font-medium text-ink-950/60 transition-colors duration-200 hover:bg-ink-950/5 hover:text-ink-950 disabled:opacity-50"
+                    className="cursor-pointer rounded-full px-3 py-2 text-sm font-medium whitespace-nowrap text-ink-950/60 transition-colors duration-200 hover:bg-ink-950/5 hover:text-ink-950 disabled:opacity-50"
                   >
                     Keep it
                   </button>
@@ -433,7 +433,7 @@ export default function AppointmentDialog({ appointment, prefill = {}, actor, on
                     type="button"
                     disabled={busy}
                     onClick={() => setCancelling(true)}
-                    className="cursor-pointer rounded-full px-3 py-2 text-sm font-medium text-ink-950/60 transition-colors duration-200 hover:bg-ink-950/5 hover:text-ink-950 disabled:opacity-50"
+                    className="cursor-pointer rounded-full px-3 py-2 text-sm font-medium whitespace-nowrap text-ink-950/60 transition-colors duration-200 hover:bg-ink-950/5 hover:text-ink-950 disabled:opacity-50"
                   >
                     Cancel appointment
                   </button>
@@ -441,7 +441,7 @@ export default function AppointmentDialog({ appointment, prefill = {}, actor, on
                     type="button"
                     disabled={busy}
                     onClick={() => setStatus("completed")}
-                    className="cursor-pointer rounded-full px-3 py-2 text-sm font-medium text-ink-950/60 transition-colors duration-200 hover:bg-ink-950/5 hover:text-ink-950 disabled:opacity-50"
+                    className="cursor-pointer rounded-full px-3 py-2 text-sm font-medium whitespace-nowrap text-ink-950/60 transition-colors duration-200 hover:bg-ink-950/5 hover:text-ink-950 disabled:opacity-50"
                   >
                     Mark completed
                   </button>
@@ -449,16 +449,18 @@ export default function AppointmentDialog({ appointment, prefill = {}, actor, on
                     type="button"
                     disabled={busy}
                     onClick={() => setStatus("noShow")}
-                    className="cursor-pointer rounded-full px-3 py-2 text-sm font-medium text-ink-950/60 transition-colors duration-200 hover:bg-ink-950/5 hover:text-ink-950 disabled:opacity-50"
+                    className="cursor-pointer rounded-full px-3 py-2 text-sm font-medium whitespace-nowrap text-ink-950/60 transition-colors duration-200 hover:bg-ink-950/5 hover:text-ink-950 disabled:opacity-50"
                   >
                     No-show
                   </button>
                 </>
               )}
             </div>
-            <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-3">
+            {/* Never shrinks under the actions on the left: when both don't fit
+                on one row, this moves to its own row instead of overlapping. */}
+            <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
               {(error || (editable && problem)) && (
-                <p role={error ? "alert" : undefined} className={`text-sm ${error ? "text-brand-dark" : "text-ink-950/55"}`}>
+                <p role={error ? "alert" : undefined} className={`max-w-80 text-sm ${error ? "text-brand-dark" : "text-ink-950/55"}`}>
                   {error ?? problem}
                 </p>
               )}

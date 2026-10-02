@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import AppointmentDialog from "./AppointmentDialog"
 import { loadAppointments } from "./appointmentStore"
-import { addDays, fromTampa, lanes, monthRange, slotTime, tampaParts, todayInTampa, unbookedFollowUps, weekRange } from "./calendarMath"
+import { addDays, fromTampa, lanes, monthDays, monthRange, slotTime, tampaParts, todayInTampa, unbookedFollowUps, weekRange } from "./calendarMath"
 import { nextFollowUps } from "../patients/chartMath"
 import { loadActiveChartNotes, loadStaff } from "../patients/chartStore"
 import { DISCIPLINE_LABELS } from "../patients/noteUi"
 import PageHeader from "../layout/PageHeader"
+import { CloseIcon } from "../ui/icons"
 import { isClinicalRole } from "../staff/roles"
 
 const HOUR_PX = 48
@@ -16,6 +17,8 @@ const TONE = {
   dietitian: "border-l-brand bg-brand/10",
   exercise: "border-l-ink-700 bg-ink-950/[0.06]",
 }
+const DOT = { medical: "bg-accent-dark", dietitian: "bg-brand", exercise: "bg-ink-700" }
+
 const VIEWS = [
   ["week", "Week"],
   ["month", "Month"],
@@ -156,39 +159,99 @@ function WeekView({ days, today, appointments, markers, onOpen, onBook, onSlot }
   )
 }
 
-function MonthView({ days, month, today, appointments, markers, onOpen, onBook, onDay }) {
+const sameDay = (day) => (appointment) => tampaParts(appointment.start).day === day
+
+// One appointment as a row: the Agenda and the month view's day panel.
+function AppointmentRow({ appointment, onOpen }) {
   return (
-    <div className="overflow-x-auto rounded-2xl border border-ink-950/10 bg-white">
-      <div className="grid min-w-176 grid-cols-7">
+    <button
+      type="button"
+      onClick={() => onOpen(appointment)}
+      className={`flex w-full cursor-pointer items-baseline justify-between gap-3 rounded-lg border-l-4 px-3 py-2 text-left text-sm transition-colors duration-150 hover:bg-paper-100 ${TONE[appointment.discipline]} ${
+        appointment.status === "cancelled" ? "line-through opacity-60" : ""
+      }`}
+    >
+      <span className="min-w-0 text-ink-950">
+        <span className="block truncate font-medium">{appointment.patientName}</span>
+        <span className="block truncate text-xs text-ink-950/60">
+          {DISCIPLINE_LABELS[appointment.discipline]}, {appointment.staffName}
+        </span>
+      </span>
+      <span className="shrink-0 text-xs whitespace-nowrap text-ink-950/60">
+        {timeLabel(appointment.start)}, {appointment.minutes} min
+      </span>
+    </button>
+  )
+}
+
+// Click any day to see everything on it in the panel beside the month.
+function MonthView({ days, month, today, selected, appointments, markers, onOpen, onBook, onSelect }) {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-ink-950/10 bg-white">
+      <div className="grid grid-cols-7">
         {days.slice(0, 7).map((day) => (
-          <p key={day} className="border-b border-ink-950/10 px-2 py-2 text-xs font-semibold text-ink-950/60">
+          <p key={day} className="border-b border-ink-950/10 px-1 py-2 text-center text-xs font-semibold text-ink-950/60 sm:px-2 sm:text-left">
             {dayLabel(day, { weekday: "short" })}
           </p>
         ))}
         {days.map((day) => {
           const items = [
             ...markers.filter((marker) => marker.date === day).map((marker) => ({ marker })),
-            ...appointments.filter((appointment) => tampaParts(appointment.start).day === day).map((appointment) => ({ appointment })),
+            ...appointments.filter(sameDay(day)).map((appointment) => ({ appointment })),
           ]
+          const isSelected = day === selected
           return (
-            <div key={day} className={`min-h-28 space-y-1 border-b border-l border-ink-950/5 p-1.5 ${day.slice(0, 7) === month ? "" : "bg-paper-50"}`}>
-              <p className={`text-xs ${day === today ? "font-semibold text-accent-text" : "text-ink-950/55"}`}>{Number(day.slice(8))}</p>
-              {items.slice(0, 3).map((item) =>
-                item.marker ? (
-                  <Marker key={`m-${item.marker.intakeId}-${item.marker.discipline}`} followUp={item.marker} onBook={onBook} />
-                ) : (
-                  <Chip key={item.appointment.id} appointment={item.appointment} onOpen={onOpen} />
-                ),
+            <div
+              key={day}
+              onClick={() => onSelect(day)}
+              className={`min-h-14 min-w-0 cursor-pointer space-y-1 border-b border-l border-ink-950/5 p-1 transition-colors duration-150 sm:min-h-28 sm:p-1.5 ${
+                isSelected
+                  ? "bg-accent-dark/10 ring-2 ring-accent-dark/60 ring-inset"
+                  : day.slice(0, 7) === month
+                    ? "hover:bg-paper-100"
+                    : "bg-paper-50 hover:bg-paper-100"
+              }`}
+            >
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onSelect(day)
+                }}
+                aria-pressed={isSelected}
+                aria-label={`${dayLabel(day, { weekday: "long", month: "long", day: "numeric" })}, ${items.length} ${items.length === 1 ? "item" : "items"}`}
+                className={`flex size-6 cursor-pointer items-center justify-center rounded-full text-xs transition-colors duration-150 ${
+                  day === today
+                    ? "bg-accent-dark font-semibold text-oncolor"
+                    : isSelected
+                      ? "font-semibold text-accent-text"
+                      : "text-ink-950/55 hover:text-ink-950"
+                }`}
+              >
+                {Number(day.slice(8))}
+              </button>
+              {/* A phone has no room for chips: a dot per item, details in the panel. */}
+              {items.length > 0 && (
+                <div aria-hidden="true" className="flex flex-wrap gap-0.5 px-0.5 sm:hidden">
+                  {items.slice(0, 4).map((item) =>
+                    item.marker ? (
+                      <span key={`d-${item.marker.intakeId}-${item.marker.discipline}`} className="size-1.5 rounded-full border border-ink-950/40" />
+                    ) : (
+                      <span key={`d-${item.appointment.id}`} className={`size-1.5 rounded-full ${DOT[item.appointment.discipline]}`} />
+                    ),
+                  )}
+                </div>
               )}
-              {items.length > 3 && (
-                <button
-                  type="button"
-                  onClick={() => onDay(day)}
-                  className="cursor-pointer text-xs font-medium text-accent-text hover:underline"
-                >
-                  +{items.length - 3} more
-                </button>
-              )}
+              <div className="hidden space-y-1 sm:block">
+                {items.slice(0, 3).map((item) =>
+                  item.marker ? (
+                    <Marker key={`m-${item.marker.intakeId}-${item.marker.discipline}`} followUp={item.marker} onBook={onBook} />
+                  ) : (
+                    <Chip key={item.appointment.id} appointment={item.appointment} onOpen={onOpen} />
+                  ),
+                )}
+                {items.length > 3 && <p className="text-xs font-medium text-accent-text">+{items.length - 3} more</p>}
+              </div>
             </div>
           )
         })}
@@ -197,18 +260,65 @@ function MonthView({ days, month, today, appointments, markers, onOpen, onBook, 
   )
 }
 
+// Everything on the selected day: appointments, follow-ups still to book,
+// and booking on that day.
+function DayPanel({ day, today, appointments, markers, onOpen, onBook, onNew, onClose }) {
+  const booked = appointments.filter(sameDay(day))
+  const due = markers.filter((marker) => marker.date === day)
+  return (
+    <aside aria-label="Selected day" className="rounded-2xl border border-ink-950/10 bg-white p-4 lg:sticky lg:top-20 lg:self-start">
+      <div className="flex items-start justify-between gap-3">
+        <h2 className="font-serif text-lg text-ink-950">
+          {dayLabel(day, { weekday: "long", month: "long", day: "numeric" })}
+          {day === today && <span className="ml-2 align-middle font-sans text-xs font-semibold text-accent-text">Today</span>}
+        </h2>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close this day"
+          className="-mt-0.5 -mr-1 cursor-pointer rounded-lg p-1 text-ink-950/50 transition-colors duration-200 hover:bg-ink-950/5 hover:text-ink-950"
+        >
+          <CloseIcon className="size-4" />
+        </button>
+      </div>
+      <p className="mt-0.5 text-xs text-ink-950/55">
+        {booked.length === 0 ? "Nothing booked" : `${booked.length} ${booked.length === 1 ? "appointment" : "appointments"}`}
+        {due.length > 0 && `, ${due.length} follow-up${due.length === 1 ? "" : "s"} to book`}
+      </p>
+      <div className="mt-3 space-y-1.5">
+        {booked.map((appointment) => (
+          <AppointmentRow key={appointment.id} appointment={appointment} onOpen={onOpen} />
+        ))}
+        {due.map((marker) => (
+          <Marker key={`${marker.intakeId}-${marker.discipline}`} followUp={marker} onBook={onBook} />
+        ))}
+      </div>
+      {day >= today && (
+        <button
+          type="button"
+          onClick={() => onNew(day)}
+          className="mt-4 w-full cursor-pointer rounded-full bg-ink-950 px-4 py-2 text-sm font-semibold text-paper-50 transition-colors duration-200 hover:bg-brand-dark"
+        >
+          {booked.length ? "Add appointment" : "Book on this day"}
+        </button>
+      )}
+    </aside>
+  )
+}
+
+// Every day of the month being viewed that has something on it.
 function AgendaView({ days, today, appointments, markers, onOpen, onBook }) {
   const withItems = days
     .map((day) => ({
       day,
       markers: markers.filter((marker) => marker.date === day),
-      appointments: appointments.filter((appointment) => tampaParts(appointment.start).day === day),
+      appointments: appointments.filter(sameDay(day)),
     }))
     .filter((entry) => entry.markers.length || entry.appointments.length)
   if (!withItems.length)
     return (
       <div className="rounded-2xl border border-ink-950/10 bg-white p-8 text-center text-sm text-ink-950/60">
-        Nothing booked in the next two weeks.
+        Nothing booked in {dayLabel(days[0], { month: "long" })}.
       </div>
     )
   return (
@@ -223,22 +333,7 @@ function AgendaView({ days, today, appointments, markers, onOpen, onBook }) {
               <Marker key={`${marker.intakeId}-${marker.discipline}`} followUp={marker} onBook={onBook} />
             ))}
             {entry.appointments.map((appointment) => (
-              <button
-                key={appointment.id}
-                type="button"
-                onClick={() => onOpen(appointment)}
-                className={`flex w-full cursor-pointer items-baseline justify-between gap-3 rounded-lg border-l-4 px-3 py-2 text-left text-sm transition-colors duration-150 hover:bg-paper-100 ${TONE[appointment.discipline]} ${
-                  appointment.status === "cancelled" ? "line-through opacity-60" : ""
-                }`}
-              >
-                <span className="min-w-0 truncate text-ink-950">
-                  <span className="font-medium">{appointment.patientName}</span>{" "}
-                  <span className="text-ink-950/60">with {appointment.staffName}</span>
-                </span>
-                <span className="text-xs whitespace-nowrap text-ink-950/60">
-                  {timeLabel(appointment.start)}, {appointment.minutes} min
-                </span>
-              </button>
+              <AppointmentRow key={appointment.id} appointment={appointment} onOpen={onOpen} />
             ))}
           </div>
         </section>
@@ -253,6 +348,10 @@ export default function Calendar({ actor }) {
   const today = todayInTampa()
   const [view, setView] = useState(() => (isPhone() ? "agenda" : "week"))
   const [cursor, setCursor] = useState(today)
+  // The month view's clicked day; null until one is clicked, so the month
+  // opens full width and the day panel only appears on a click.
+  const [selected, setSelected] = useState(null)
+  const selectDay = (day) => setSelected((current) => (current === day ? null : day))
   const [who, setWho] = useState("mine") // "mine" | "all" | a staff uid
   const [showCancelled, setShowCancelled] = useState(false)
   const [staff, setStaff] = useState([])
@@ -265,8 +364,8 @@ export default function Calendar({ actor }) {
   const range = useMemo(() => {
     if (view === "month") return monthRange(cursor)
     if (view === "agenda") {
-      const days = Array.from({ length: 14 }, (_, index) => addDays(cursor, index))
-      return { days, start: fromTampa(days[0]), end: fromTampa(addDays(cursor, 14)) }
+      const days = monthDays(cursor)
+      return { days, start: fromTampa(days[0]), end: fromTampa(addDays(days.at(-1), 1)) }
     }
     return weekRange(cursor)
   }, [view, cursor])
@@ -316,14 +415,20 @@ export default function Calendar({ actor }) {
       )
     : []
 
-  const step = (direction) =>
-    setCursor((day) =>
-      view === "month"
-        ? `${new Date(Date.UTC(+day.slice(0, 4), +day.slice(5, 7) - 1 + direction, 1)).toISOString().slice(0, 7)}-01`
-        : addDays(day, direction * (view === "agenda" ? 14 : 7)),
-    )
+  // Month and Agenda step a month at a time, Week a week. Moving to another
+  // month closes the day panel.
+  const step = (direction) => {
+    if (view === "week") return setCursor((day) => addDays(day, direction * 7))
+    const next = `${new Date(Date.UTC(+cursor.slice(0, 4), +cursor.slice(5, 7) - 1 + direction, 1)).toISOString().slice(0, 7)}-01`
+    setCursor(next)
+    setSelected(null)
+  }
+  const goToday = () => {
+    setCursor(today)
+    setSelected(null)
+  }
   const title =
-    view === "month"
+    view === "month" || view === "agenda"
       ? dayLabel(`${cursor.slice(0, 7)}-15`, { month: "long", year: "numeric" })
       : `${dayLabel(range.days[0], { month: "short", day: "numeric" })} to ${dayLabel(range.days[range.days.length - 1], { month: "short", day: "numeric", year: "numeric" })}`
 
@@ -350,7 +455,7 @@ export default function Calendar({ actor }) {
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-1.5">
-          <button type="button" onClick={() => setCursor(today)} className={pill(false)}>
+          <button type="button" onClick={goToday} className={pill(false)}>
             Today
           </button>
           <button type="button" onClick={() => step(-1)} aria-label="Previous" className={pill(false)}>
@@ -363,7 +468,7 @@ export default function Calendar({ actor }) {
         </div>
         <button
           type="button"
-          onClick={() => setDialog({ prefill: { day: cursor < today ? today : cursor } })}
+          onClick={() => setDialog({ prefill: { day: view === "month" && selected && selected >= today ? selected : cursor < today ? today : cursor } })}
           className="cursor-pointer rounded-full bg-ink-950 px-4 py-2 text-sm font-semibold text-paper-50 transition-colors duration-200 hover:bg-brand-dark"
         >
           New appointment
@@ -410,19 +515,31 @@ export default function Calendar({ actor }) {
           onSlot={(day, time) => setDialog({ prefill: { day, time } })}
         />
       ) : view === "month" ? (
-        <MonthView
-          days={range.days}
-          month={cursor.slice(0, 7)}
-          today={today}
-          appointments={shown}
-          markers={markers}
-          onOpen={open}
-          onBook={book}
-          onDay={(day) => {
-            setCursor(day)
-            setView("week")
-          }}
-        />
+        <div className={`grid gap-4 ${selected ? "lg:grid-cols-[minmax(0,1fr)_20rem]" : ""}`}>
+          <MonthView
+            days={range.days}
+            month={cursor.slice(0, 7)}
+            today={today}
+            selected={selected}
+            appointments={shown}
+            markers={markers}
+            onOpen={open}
+            onBook={book}
+            onSelect={selectDay}
+          />
+          {selected && (
+            <DayPanel
+              day={selected}
+              today={today}
+              appointments={shown}
+              markers={markers}
+              onOpen={open}
+              onBook={book}
+              onNew={(day) => setDialog({ prefill: { day } })}
+              onClose={() => setSelected(null)}
+            />
+          )}
+        </div>
       ) : (
         <AgendaView days={range.days} today={today} appointments={shown} markers={markers} onOpen={open} onBook={book} />
       )}
