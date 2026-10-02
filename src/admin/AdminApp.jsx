@@ -49,7 +49,10 @@ function AdminRoutes({ role, signerName, user, displayName, onDisplayNameChange,
   // Who is acting, for chart admission, note signing and staff changes.
   // name is the staff record's (getAdminAccess), not the editable display
   // name: it is what gets stamped on signed notes, and the rules check it.
-  const actor = { uid: user?.uid ?? "demo", name: signerName || "Demo admin", role }
+  // In demo mode (no user) each role acts as its seeded staff member
+  // (seedCharts.js), so "My schedule" and authorship line up with the demo data.
+  const demo = DEMO_ACTORS[role] ?? { uid: "demo", name: "Demo admin" }
+  const actor = { uid: user?.uid ?? demo.uid, name: signerName || demo.name, role }
   const guard = (page, element) => (
     <Guard page={page} role={role}>
       {element}
@@ -189,6 +192,12 @@ function NotConfiguredScreen() {
       </div>
     </div>
   )
+}
+
+const DEMO_ACTORS = {
+  admin: { uid: "demo-admin", name: "Dr. Antonious" },
+  provider: { uid: "demo-provider", name: "Jordan Lee, NP" },
+  dietitian: { uid: "demo-dietitian", name: "Sam Rivera, RD" },
 }
 
 // Demo mode only: open /admin?demoRole=dietitian (or provider, coAdmin, admin)

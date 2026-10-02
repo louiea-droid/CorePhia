@@ -427,7 +427,7 @@ export default function AppointmentDialog({ appointment, prefill = {}, actor, on
                   type="button"
                   onClick={save}
                   disabled={busy || Boolean(problem)}
-                  className="cursor-pointer rounded-full bg-ink-950 px-6 py-2.5 text-sm font-semibold text-paper-50 shadow-lg shadow-ink-950/15 transition-colors duration-200 hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
+                  className="cursor-pointer rounded-full bg-ink-950 px-6 py-2.5 text-sm font-semibold whitespace-nowrap text-paper-50 shadow-lg shadow-ink-950/15 transition-colors duration-200 hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {busy ? "Saving…" : isNew ? "Book" : "Save changes"}
                 </button>

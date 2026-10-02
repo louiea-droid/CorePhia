@@ -54,6 +54,7 @@ function Marker({ followUp, onBook }) {
     <button
       type="button"
       onClick={() => onBook(followUp)}
+      title={`Follow-up due: ${followUp.patientName} (${DISCIPLINE_LABELS[followUp.discipline]})`}
       className="block w-full cursor-pointer truncate rounded-md border border-dashed border-ink-950/30 px-1.5 py-0.5 text-left text-xs text-ink-950/70 transition-colors duration-150 hover:border-accent-dark hover:text-ink-950"
     >
       Follow-up due: {followUp.patientName} ({DISCIPLINE_LABELS[followUp.discipline]})
@@ -118,6 +119,7 @@ function WeekView({ days, today, appointments, markers, onOpen, onBook, onSlot }
                         key={id}
                         type="button"
                         onClick={() => onOpen(appointment)}
+                        title={`${appointment.patientName}, ${timeLabel(appointment.start)}, ${appointment.minutes} min, ${appointment.staffName}`}
                         style={{
                           top: (startMin / 60) * HOUR_PX,
                           height: Math.max((appointment.minutes / 60) * HOUR_PX - 2, 20),
@@ -128,10 +130,20 @@ function WeekView({ days, today, appointments, markers, onOpen, onBook, onSlot }
                           appointment.status === "cancelled" ? "line-through opacity-60" : ""
                         }`}
                       >
-                        <span className="block font-medium">{appointment.patientName}</span>
-                        <span className="block text-ink-950/60">
-                          {timeLabel(appointment.start)}, {appointment.staffName}
-                        </span>
+                        {/* Under 45 minutes there's room for one line only. */}
+                        {appointment.minutes < 45 ? (
+                          <span className="block truncate">
+                            <span className="font-medium">{appointment.patientName}</span>{" "}
+                            <span className="text-ink-950/60">{timeLabel(appointment.start)}</span>
+                          </span>
+                        ) : (
+                          <>
+                            <span className="block truncate font-medium">{appointment.patientName}</span>
+                            <span className="block truncate text-ink-950/60">
+                              {timeLabel(appointment.start)}, {appointment.staffName}
+                            </span>
+                          </>
+                        )}
                       </button>
                     )
                   })}
