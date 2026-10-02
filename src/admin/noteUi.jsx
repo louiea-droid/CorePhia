@@ -4,7 +4,19 @@
 import { asDate } from "./chartMath"
 import { ROLE_LABELS } from "./roles"
 
-export const NOTE_TYPE_LABELS = { consultation: "Consultation", progress: "Progress note" }
+// Every note type, in the order "New note" offers them. Dietitian and
+// exercise notes have no prescriptions (medication stays in the medical
+// record, written by providers) and record weight only.
+export const NOTE_TYPES = {
+  consultation: { label: "Consultation", newLabel: "New consultation", discipline: "medical", fullVitals: true, prescriptions: true },
+  progress: { label: "Progress note", newLabel: "New progress note", discipline: "medical", fullVitals: true, prescriptions: true },
+  exercise: { label: "Exercise note", newLabel: "New exercise note", discipline: "exercise", fullVitals: false, prescriptions: false },
+  dietitian: { label: "Dietitian note", newLabel: "New dietitian note", discipline: "dietitian", fullVitals: false, prescriptions: false },
+}
+
+export const NOTE_TYPE_LABELS = Object.fromEntries(Object.entries(NOTE_TYPES).map(([type, { label }]) => [type, label]))
+
+export const DISCIPLINE_LABELS = { medical: "Medical", dietitian: "Dietitian", exercise: "Exercise" }
 
 // Which sections each note type has, in order. Labels are the clinical terms
 // Dr. Antonious used (HPI, plan), spelled out where a new provider may not
@@ -22,6 +34,36 @@ export const SECTION_FIELDS = {
     ["assessment", "Assessment"],
     ["plan", "Plan"],
   ],
+  dietitian: [
+    ["dietHistory", "Diet history and current eating pattern"],
+    ["assessment", "Assessment"],
+    ["goals", "Goals"],
+    ["mealPlan", "Meal plan and recommendations"],
+  ],
+  exercise: [
+    ["activityLevel", "Current activity level"],
+    ["limitations", "Limitations and injuries"],
+    ["goals", "Goals"],
+  ],
+}
+
+export const INTENSITIES = [
+  ["light", "Light"],
+  ["moderate", "Moderate"],
+  ["vigorous", "Vigorous"],
+]
+
+// "4 days a week, moderate, 30 min per session, Walking", or "" when empty.
+export function exercisePlanLine(plan) {
+  if (!plan) return ""
+  return [
+    plan.daysPerWeek != null && `${plan.daysPerWeek} ${plan.daysPerWeek === 1 ? "day" : "days"} a week`,
+    INTENSITIES.find(([value]) => value === plan.intensity)?.[1].toLowerCase(),
+    plan.minutesPerSession != null && `${plan.minutesPerSession} min per session`,
+    plan.kind?.trim(),
+  ]
+    .filter(Boolean)
+    .join(", ")
 }
 
 export const inputClass =

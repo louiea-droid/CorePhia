@@ -35,18 +35,28 @@ export const EMPTY_SECTIONS = {
   pertinentHistory: "",
   assessment: "",
   plan: "",
+  dietHistory: "",
+  goals: "",
+  mealPlan: "",
+  activityLevel: "",
+  limitations: "",
 }
 
 const EMPTY_VITALS = { weightLb: null, systolic: null, diastolic: null, heartRate: null }
 
+// Exercise notes only. Whole numbers or null; the rules check the ranges.
+export const EMPTY_EXERCISE_PLAN = { daysPerWeek: null, intensity: "", minutesPerSession: null, kind: "", notes: "" }
+
 // The fields an author edits; everything else on a note is set by these
-// functions (and checked by the rules), never by the editor.
-const pickNoteFields = ({ visitDate, sections, vitals, prescriptions, nextFollowUp }) => ({
+// functions (and checked by the rules), never by the editor. exercisePlan
+// exists on exercise notes only, so it's passed through only when present.
+const pickNoteFields = ({ visitDate, sections, vitals, prescriptions, nextFollowUp, exercisePlan }) => ({
   visitDate,
   sections,
   vitals,
   prescriptions,
   nextFollowUp,
+  ...(exercisePlan !== undefined && { exercisePlan }),
 })
 
 const requireDb = () => {
@@ -180,6 +190,7 @@ export async function createDraftNote(chartId, type, actor, prefill = {}) {
     vitals: { ...EMPTY_VITALS },
     prescriptions: [],
     nextFollowUp: "",
+    ...(type === "exercise" && { exercisePlan: { ...EMPTY_EXERCISE_PLAN } }),
     signedAt: null,
     signedBy: null,
   }

@@ -8,6 +8,7 @@ import { CloseIcon } from "./icons"
 import {
   NOTE_TYPE_LABELS,
   SECTION_FIELDS,
+  exercisePlanLine,
   formatDay,
   formatStamp,
   inputClass,
@@ -16,7 +17,7 @@ import {
   vitalsLine,
 } from "./noteUi"
 import { getAdminPortalRoot } from "./portalRoot"
-import { ROLE_LABELS } from "./roles"
+import { ROLE_LABELS, canAmend } from "./roles"
 
 // A signed note, read-only: signed notes are locked by firestore.rules. The
 // one thing anyone can do here is add an addendum, which is dated, signed by
@@ -132,6 +133,15 @@ export default function NoteView({ chart, intake, note, actor, onClose }) {
                 <p className="mt-1.5 text-sm leading-relaxed whitespace-pre-wrap text-ink-950">{note.sections[key]}</p>
               </section>
             ))}
+            {exercisePlanLine(note.exercisePlan) && (
+              <section>
+                <h3 className="text-xs font-semibold tracking-wide text-ink-950/50 uppercase">Exercise prescription</h3>
+                <p className="mt-1.5 text-sm text-ink-950">{exercisePlanLine(note.exercisePlan)}</p>
+                {note.exercisePlan.notes?.trim() && (
+                  <p className="mt-1 text-sm whitespace-pre-wrap text-ink-950/75">{note.exercisePlan.notes}</p>
+                )}
+              </section>
+            )}
             {vitals && (
               <section>
                 <h3 className="text-xs font-semibold tracking-wide text-ink-950/50 uppercase">Vitals</h3>
@@ -154,7 +164,7 @@ export default function NoteView({ chart, intake, note, actor, onClose }) {
                 <p className="mt-1.5 text-sm text-ink-950">{formatDay(note.nextFollowUp)}</p>
               </section>
             )}
-            {!sections.length && !vitals && !note.prescriptions?.length && (
+            {!sections.length && !vitals && !note.prescriptions?.length && !exercisePlanLine(note.exercisePlan) && (
               <p className="text-sm text-ink-950/55">This note was signed with no sections filled in.</p>
             )}
 
@@ -224,7 +234,7 @@ export default function NoteView({ chart, intake, note, actor, onClose }) {
                     </button>
                   </div>
                 </div>
-              ) : (
+              ) : canAmend(note.type, actor.role) ? (
                 <button
                   type="button"
                   onClick={() => setAdding(true)}
@@ -232,7 +242,7 @@ export default function NoteView({ chart, intake, note, actor, onClose }) {
                 >
                   Add addendum
                 </button>
-              )}
+              ) : null}
             </section>
           </div>
         </div>

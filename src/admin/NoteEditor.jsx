@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import DatePicker from "../components/DatePicker"
+import Select from "../components/Select"
 import { bmi } from "./chartMath"
 import { discardDraftNote, saveDraftNote, signNote } from "./chartStore"
 import ConfirmDialog from "./ConfirmDialog"
 import { AUDIT_ACTIONS, recordAuditEvent } from "./firebase"
 import { CloseIcon } from "./icons"
-import { NOTE_TYPE_LABELS, SECTION_FIELDS, inputClass, labelClass, prescriptionLine } from "./noteUi"
+import { INTENSITIES, NOTE_TYPES, NOTE_TYPE_LABELS, SECTION_FIELDS, inputClass, labelClass, prescriptionLine } from "./noteUi"
 import { getAdminPortalRoot } from "./portalRoot"
 
 const AUTOSAVE_MS = 1500
@@ -19,6 +20,11 @@ const addDays = (isoDay, days) => {
 }
 const newId = () => `rx-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
 const numberOrNull = (value) => (value === "" || value == null ? null : Number(value))
+// Days and minutes are whole numbers (the rules check `is int`), so a typed
+// 3.5 is rounded here rather than refused at signing.
+const intOrNull = (value, max) => (value == null ? null : Math.min(max, Math.max(0, Math.round(value))))
+const DAY_OPTIONS = Array.from({ length: 8 }, (_, days) => ({ value: String(days), label: String(days) }))
+const INTENSITY_OPTIONS = INTENSITIES.map(([value, label]) => ({ value, label }))
 
 // Only the author ever opens a draft, and only with a clinical role, so a
 // refused write here means the draft changed somewhere else (signed or
@@ -159,6 +165,56 @@ function PrescriptionRow({ entry, visitDate, onChange, onRemove }) {
   )
 }
 
+function ExercisePlanFields({ plan, onChange }) {
+  const set = (patch) => onChange({ ...plan, ...patch })
+  return (
+    <section>
+      <h3 className="text-sm font-semibold text-ink-950">Exercise prescription</h3>
+      <div className="mt-3 grid gap-3 sm:grid-cols-3">
+        <div>
+          <span className={labelClass} aria-hidden="true">
+            Days per week
+          </span>
+          <Select
+            ariaLabel="Days per week"
+            options={DAY_OPTIONS}
+            value={plan.daysPerWeek == null ? "" : String(plan.daysPerWeek)}
+            onChange={(value) => set({ daysPerWeek: value === "" ? null : Number(value) })}
+            placeholder="Choose"
+            triggerClassName={COMPACT_DATE}
+          />
+        </div>
+        <div>
+          <span className={labelClass} aria-hidden="true">
+            Intensity
+          </span>
+          <Select
+            ariaLabel="Intensity"
+            options={INTENSITY_OPTIONS}
+            value={plan.intensity}
+            onChange={(intensity) => set({ intensity })}
+            placeholder="Choose"
+            triggerClassName={COMPACT_DATE}
+          />
+        </div>
+        <NumberField
+          label="Minutes per session"
+          suffix="min"
+          value={plan.minutesPerSession}
+          onChange={(value) => set({ minutesPerSession: intOrNull(value, 300) })}
+        />
+        <label className="block sm:col-span-3">
+          <span className={labelClass}>Type of exercise</span>
+          <input value={plan.kind} onChange={(event) => set({ kind: event.target.value })} className={inputClass} />
+        </label>
+        <div className="sm:col-span-3">
+          <TextArea label="Notes" value={plan.notes} onChange={(notes) => set({ notes })} rows={2} />
+        </div>
+      </div>
+    </section>
+  )
+}
+
 // Why a note can't be signed yet, or null when it can.
 function signProblem(fields) {
   if (!fields.visitDate) return "Add the visit date."
@@ -191,7 +247,9 @@ export default function NoteEditor({
     vitals: note.vitals,
     prescriptions: note.prescriptions,
     nextFollowUp: note.nextFollowUp,
+    ...(note.exercisePlan && { exercisePlan: note.exercisePlan }),
   }))
+  const config = NOTE_TYPES[note.type]
   const [saveState, setSaveState] = useState("saved") // saved | pending | saving | error
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
@@ -373,13 +431,21 @@ export default function NoteEditor({
               ))}
             </section>
 
+            {fields.exercisePlan && (
+              <ExercisePlanFields plan={fields.exercisePlan} onChange={(exercisePlan) => update({ exercisePlan })} />
+            )}
+
             <section>
-              <h3 className="text-sm font-semibold text-ink-950">Vitals</h3>
-              <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <h3 className="text-sm font-semibold text-ink-950">{config.fullVitals ? "Vitals" : "Weight"}</h3>
+              <div className={`mt-3 grid gap-3 ${config.fullVitals ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2"}`}>
                 <NumberField label="Weight" suffix="lbs" value={fields.vitals.weightLb} onChange={(v) => setVital("weightLb", v)} />
-                <NumberField label="Systolic" value={fields.vitals.systolic} onChange={(v) => setVital("systolic", v)} />
-                <NumberField label="Diastolic" value={fields.vitals.diastolic} onChange={(v) => setVital("diastolic", v)} />
-                <NumberField label="Heart rate" suffix="bpm" value={fields.vitals.heartRate} onChange={(v) => setVital("heartRate", v)} />
+                {config.fullVitals && (
+                  <>
+                    <NumberField label="Systolic" value={fields.vitals.systolic} onChange={(v) => setVital("systolic", v)} />
+                    <NumberField label="Diastolic" value={fields.vitals.diastolic} onChange={(v) => setVital("diastolic", v)} />
+                    <NumberField label="Heart rate" suffix="bpm" value={fields.vitals.heartRate} onChange={(v) => setVital("heartRate", v)} />
+                  </>
+                )}
               </div>
               <p className="mt-2 min-h-5 text-xs text-ink-950/60" aria-live="polite">
                 {[
@@ -392,97 +458,99 @@ export default function NoteEditor({
               </p>
             </section>
 
-            <section>
-              <h3 className="text-sm font-semibold text-ink-950">Prescriptions</h3>
-              {current.length > 0 && (
-                <ul className="mt-3 divide-y divide-ink-950/10 rounded-xl border border-ink-950/10 bg-white">
-                  {current.map((rx) => (
-                    <li key={rx.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
-                      <span className="min-w-0 text-sm text-ink-950">
-                        {prescriptionLine({ ...rx, action: "start" }).replace(/^Start /, "")}
-                      </span>
-                      {actedOn.has(rx.id) ? (
-                        <span className="text-xs text-ink-950/50">Updated below</span>
-                      ) : (
-                        <span className="flex gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              addEntry({
-                                id: newId(),
-                                action: "renew",
-                                renewsId: rx.id,
-                                medication: rx.medication,
-                                instructions: "",
-                                startDate: "",
-                                renewalDue: "",
-                                stopReason: "",
-                              })
-                            }
-                            className="cursor-pointer rounded-lg bg-paper-100 px-2.5 py-1 text-xs font-medium text-ink-950 transition-colors duration-200 hover:bg-ink-950/10"
-                          >
-                            Renew
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              addEntry({
-                                id: newId(),
-                                action: "stop",
-                                renewsId: rx.id,
-                                medication: rx.medication,
-                                instructions: "",
-                                startDate: "",
-                                renewalDue: "",
-                                stopReason: "",
-                              })
-                            }
-                            className="cursor-pointer rounded-lg bg-paper-100 px-2.5 py-1 text-xs font-medium text-ink-950 transition-colors duration-200 hover:bg-ink-950/10"
-                          >
-                            Stop
-                          </button>
+            {config.prescriptions && (
+              <section>
+                <h3 className="text-sm font-semibold text-ink-950">Prescriptions</h3>
+                {current.length > 0 && (
+                  <ul className="mt-3 divide-y divide-ink-950/10 rounded-xl border border-ink-950/10 bg-white">
+                    {current.map((rx) => (
+                      <li key={rx.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+                        <span className="min-w-0 text-sm text-ink-950">
+                          {prescriptionLine({ ...rx, action: "start" }).replace(/^Start /, "")}
                         </span>
-                      )}
-                    </li>
+                        {actedOn.has(rx.id) ? (
+                          <span className="text-xs text-ink-950/50">Updated below</span>
+                        ) : (
+                          <span className="flex gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                addEntry({
+                                  id: newId(),
+                                  action: "renew",
+                                  renewsId: rx.id,
+                                  medication: rx.medication,
+                                  instructions: "",
+                                  startDate: "",
+                                  renewalDue: "",
+                                  stopReason: "",
+                                })
+                              }
+                              className="cursor-pointer rounded-lg bg-paper-100 px-2.5 py-1 text-xs font-medium text-ink-950 transition-colors duration-200 hover:bg-ink-950/10"
+                            >
+                              Renew
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                addEntry({
+                                  id: newId(),
+                                  action: "stop",
+                                  renewsId: rx.id,
+                                  medication: rx.medication,
+                                  instructions: "",
+                                  startDate: "",
+                                  renewalDue: "",
+                                  stopReason: "",
+                                })
+                              }
+                              className="cursor-pointer rounded-lg bg-paper-100 px-2.5 py-1 text-xs font-medium text-ink-950 transition-colors duration-200 hover:bg-ink-950/10"
+                            >
+                              Stop
+                            </button>
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="mt-3 space-y-3">
+                  {fields.prescriptions.map((entry) => (
+                    <PrescriptionRow
+                      key={entry.id}
+                      entry={entry}
+                      visitDate={fields.visitDate}
+                      onChange={(next) => setPrescriptions(latest.current.prescriptions.map((e) => (e.id === entry.id ? next : e)))}
+                      onRemove={() => setPrescriptions(latest.current.prescriptions.filter((e) => e.id !== entry.id))}
+                    />
                   ))}
-                </ul>
-              )}
-              <div className="mt-3 space-y-3">
-                {fields.prescriptions.map((entry) => (
-                  <PrescriptionRow
-                    key={entry.id}
-                    entry={entry}
-                    visitDate={fields.visitDate}
-                    onChange={(next) => setPrescriptions(latest.current.prescriptions.map((e) => (e.id === entry.id ? next : e)))}
-                    onRemove={() => setPrescriptions(latest.current.prescriptions.filter((e) => e.id !== entry.id))}
-                  />
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={() =>
-                  addEntry({
-                    id: newId(),
-                    action: "start",
-                    renewsId: "",
-                    medication: "",
-                    instructions: "",
-                    startDate: fields.visitDate || today(),
-                    renewalDue: "",
-                    stopReason: "",
-                  })
-                }
-                disabled={atCap}
-                className="mt-3 cursor-pointer rounded-lg border border-dashed border-ink-950/25 px-3 py-2 text-sm font-medium text-ink-950/70 transition-colors duration-200 hover:border-ink-950/50 hover:text-ink-950 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Add prescription
-              </button>
-              {atCap && (
-                <p className="mt-2 text-xs text-ink-950/55">
-                  A note holds up to {MAX_PRESCRIPTIONS} prescription entries. Start another note for more.
-                </p>
-              )}
-            </section>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    addEntry({
+                      id: newId(),
+                      action: "start",
+                      renewsId: "",
+                      medication: "",
+                      instructions: "",
+                      startDate: fields.visitDate || today(),
+                      renewalDue: "",
+                      stopReason: "",
+                    })
+                  }
+                  disabled={atCap}
+                  className="mt-3 cursor-pointer rounded-lg border border-dashed border-ink-950/25 px-3 py-2 text-sm font-medium text-ink-950/70 transition-colors duration-200 hover:border-ink-950/50 hover:text-ink-950 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Add prescription
+                </button>
+                {atCap && (
+                  <p className="mt-2 text-xs text-ink-950/55">
+                    A note holds up to {MAX_PRESCRIPTIONS} prescription entries. Start another note for more.
+                  </p>
+                )}
+              </section>
+            )}
 
             <section className="grid gap-4 sm:grid-cols-2">
               <DateField
