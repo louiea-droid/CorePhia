@@ -3,7 +3,6 @@ import { Link } from "react-router-dom"
 import ConfirmDialog from "../ui/ConfirmDialog"
 import { signOutAdmin } from "../lib/firebase"
 import { ChevronLeftIcon, PersonIcon, SignOutIcon } from "../ui/icons"
-import { ROLE_LABELS } from "../staff/roles"
 
 const itemClass =
   "flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium text-ink-950/75 transition-colors duration-150 hover:bg-ink-950/5 hover:text-ink-950 focus-visible:bg-ink-950/5 focus-visible:outline-none"
@@ -19,16 +18,16 @@ const nameFromEmail = (email = "") =>
 // Top-right account button: who is signed in, plus Profile (display name,
 // password, two-step sign-in) and sign out. A disclosure (button + plain links), not an ARIA menu, so Tab
 // moves through it the way it does everywhere else in the admin.
-export default function AccountMenu({ user, role, displayName, onSignOut = signOutAdmin }) {
+export default function AccountMenu({ user, displayName, onSignOut = signOutAdmin }) {
   const [open, setOpen] = useState(false)
   const [confirmingSignOut, setConfirmingSignOut] = useState(false)
   const rootRef = useRef(null)
   const buttonRef = useRef(null)
-  // The button shows a name, never the full email: with none set, the part
-  // before the @ ("jordan.lee@…" → "Jordan Lee"). The email stays in the menu.
+  // The button and the menu show a name only, never the email or role
+  // (Louie, 2026-10-02): with no name set, the part before the @
+  // ("jordan.lee@…" → "Jordan Lee").
   const buttonName = displayName || (user ? nameFromEmail(user.email) : "Demo admin (preview)")
   const name = buttonName || user?.email
-  const roleLabel = ROLE_LABELS[role] ?? "No role assigned"
 
   useEffect(() => {
     if (!open) return
@@ -80,8 +79,6 @@ export default function AccountMenu({ user, role, displayName, onSignOut = signO
       >
         <div className="border-b border-ink-950/10 px-3 pt-2 pb-3">
           <p className="truncate text-sm font-semibold text-ink-950">{name}</p>
-          {user?.email && user.email !== name && <p className="truncate text-xs text-ink-950/55">{user.email}</p>}
-          <p className={`mt-0.5 text-xs ${role ? "text-ink-950/55" : "text-brand-dark"}`}>{roleLabel}</p>
         </div>
         <div className="pt-1.5">
           <Link to="/admin/security" onClick={() => setOpen(false)} className={itemClass}>
