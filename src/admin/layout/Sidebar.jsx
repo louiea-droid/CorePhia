@@ -90,7 +90,7 @@ export default function Sidebar({
           collapsed ? "lg:w-18" : "lg:w-64"
         } ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
       >
-        <div className="flex items-center justify-between gap-2 border-b border-ink-950/10 px-4 py-4">
+        <div className="flex items-center justify-between gap-2 px-4 py-4">
           <div className="flex min-w-0 items-center gap-2">
             {/* The real Corephia infinity mark, in its original colours —
                 cropped from cp-logo.webp. CLAUDE.md keeps this logo's orange
