@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { Link } from "react-router-dom"
 import ConfirmDialog from "../ui/ConfirmDialog"
 import { signOutAdmin } from "../lib/firebase"
+import { ROLE_LABELS } from "../staff/roles"
 import { ChevronLeftIcon, PersonIcon, SignOutIcon } from "../ui/icons"
 
 const itemClass =
@@ -18,7 +19,7 @@ const nameFromEmail = (email = "") =>
 // Top-right account button: who is signed in, plus Profile (display name,
 // password, two-step sign-in) and sign out. A disclosure (button + plain links), not an ARIA menu, so Tab
 // moves through it the way it does everywhere else in the admin.
-export default function AccountMenu({ user, displayName, onSignOut = signOutAdmin }) {
+export default function AccountMenu({ user, role, displayName, onSignOut = signOutAdmin }) {
   const [open, setOpen] = useState(false)
   const [confirmingSignOut, setConfirmingSignOut] = useState(false)
   const rootRef = useRef(null)
@@ -28,6 +29,8 @@ export default function AccountMenu({ user, displayName, onSignOut = signOutAdmi
   // ("jordan.lee@…" → "Jordan Lee").
   const buttonName = displayName || (user ? nameFromEmail(user.email) : "Demo admin (preview)")
   const name = buttonName || user?.email
+  // Under the name on the button only (Louie, 2026-10-02), not in the menu.
+  const roleLabel = ROLE_LABELS[role] ?? ""
 
   useEffect(() => {
     if (!open) return
@@ -60,13 +63,18 @@ export default function AccountMenu({ user, displayName, onSignOut = signOutAdmi
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
         aria-controls="account-menu"
-        aria-label={`Account: ${name}`}
-        className="flex cursor-pointer items-center gap-2 rounded-full border border-ink-950/10 bg-white py-1 pr-2.5 pl-1 transition-colors duration-200 hover:bg-paper-100"
+        aria-label={`Account: ${name}${roleLabel ? `, ${roleLabel}` : ""}`}
+        className="flex cursor-pointer items-center gap-2.5 rounded-full border border-ink-950/10 bg-white py-1 pr-3 pl-1 transition-colors duration-200 hover:bg-paper-100"
       >
-        <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-paper-100 text-ink-950/70">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-accent-dark/15 text-accent-text">
           <PersonIcon className="size-4" />
         </span>
-        {buttonName && <span className="hidden max-w-44 truncate text-sm font-medium text-ink-950 sm:block">{buttonName}</span>}
+        {buttonName && (
+          <span className="hidden min-w-0 flex-col items-start text-left leading-tight sm:flex">
+            <span className="max-w-44 truncate text-sm font-semibold text-ink-950">{buttonName}</span>
+            {roleLabel && <span className="text-[10px] font-semibold tracking-wider text-ink-950/50 uppercase">{roleLabel}</span>}
+          </span>
+        )}
         <ChevronLeftIcon
           className={`size-4 shrink-0 text-ink-950/50 transition-transform duration-200 ${open ? "rotate-90" : "-rotate-90"}`}
         />

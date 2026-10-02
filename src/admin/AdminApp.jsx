@@ -136,7 +136,7 @@ function AdminChrome({ user, role, displayName, messagesViewedAt, theme, onToggl
             phones, each page's sticky PageHeader on desktop. */}
         <div className="absolute top-2 right-4 z-20 flex items-center gap-2 sm:right-6">
           <ThemeSwitch theme={theme} onToggle={onToggleTheme} />
-          <AccountMenu user={user} displayName={displayName} onSignOut={onSignOut} />
+          <AccountMenu user={user} role={role} displayName={displayName} onSignOut={onSignOut} />
         </div>
         <div className="flex shrink-0 items-center gap-3 border-b border-ink-950/10 bg-white px-4 py-3 lg:hidden">
           <button
