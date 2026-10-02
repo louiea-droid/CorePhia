@@ -127,10 +127,12 @@ service cloud.firestore {
     }
 
     match /user/{uid} {
+      // Clinicians read the staff list (the calendar books for any of them);
+      // super admins stay hidden from everyone but super admins.
       allow read: if request.auth != null
         && (request.auth.uid == uid
             || role() == 'superAdmin'
-            || (role() in ['admin', 'coAdmin'] && resource.data.get('role', '') != 'superAdmin'));
+            || (isClinical() && resource.data.get('role', '') != 'superAdmin'));
       allow create, update: if request.auth != null && isRoleChange(uid);
       allow delete: if request.auth != null
         && request.auth.uid != uid
@@ -399,6 +401,79 @@ service cloud.firestore {
                 || get(/databases/$(database)/documents/patients/$(chartId)/notes/$(noteId)).data.type == 'dietitian');
           allow update, delete: if false;
         }
+      }
+    }
+
+    // --- Appointments --------------------------------------------------------
+    // Booked by any clinician for any patient or applicant (intakeId is the
+    // intake record's id, which becomes the chart id on admission). Who added
+    // it is fixed at creation; every later change lands in the same batch as
+    // an append-only history entry (changes/{id}) naming who made it, and
+    // only co-admins and up read that history (Louie, 2026-10-02). Nothing is
+    // deleted: an appointment is cancelled instead. PHI: patient names and
+    // visit times, so the same BAA requirement as intakeRecords.
+    function isAppointmentShape(data) {
+      return data.keys().hasOnly([
+            'intakeId', 'patientName', 'staffUid', 'staffName', 'discipline', 'start', 'minutes',
+            'status', 'note', 'addedBy', 'addedAt', 'updatedAt', 'lastChangeId'
+          ])
+        && data.intakeId is string
+        && exists(/databases/$(database)/documents/intakeRecords/$(data.intakeId))
+        && data.patientName is string && data.patientName.size() > 0 && data.patientName.size() <= 200
+        && data.staffUid is string && data.staffUid.size() > 0 && data.staffUid.size() <= 200
+        && data.staffName is string && data.staffName.size() <= 200
+        && data.discipline in ['medical', 'dietitian', 'exercise']
+        && data.start is timestamp
+        && data.minutes in [15, 30, 45, 60]
+        && data.status in ['scheduled', 'completed', 'cancelled', 'noShow']
+        && data.note is string && data.note.size() <= 500;
+    }
+
+    function isMe(by) {
+      return by is map
+        && by.keys().hasOnly(['uid', 'name', 'role'])
+        && by.uid == request.auth.uid
+        && by.name == myName()
+        && by.role == role();
+    }
+
+    match /appointments/{appointmentId} {
+      allow read: if isClinical();
+      allow create: if isClinical()
+        && isAppointmentShape(request.resource.data)
+        && !('lastChangeId' in request.resource.data)
+        && request.resource.data.status == 'scheduled'
+        && isMe(request.resource.data.addedBy)
+        && request.resource.data.addedAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      // Only a scheduled appointment changes, only these fields, and only
+      // with a brand-new history entry written in the same batch.
+      allow update: if isClinical()
+        && resource.data.status == 'scheduled'
+        && isAppointmentShape(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+             'start', 'minutes', 'staffUid', 'staffName', 'status', 'note', 'updatedAt', 'lastChangeId'
+           ])
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.lastChangeId is string
+        && request.resource.data.lastChangeId != resource.data.get('lastChangeId', '')
+        && !exists(/databases/$(database)/documents/appointments/$(appointmentId)/changes/$(request.resource.data.lastChangeId))
+        && existsAfter(/databases/$(database)/documents/appointments/$(appointmentId)/changes/$(request.resource.data.lastChangeId));
+      allow delete: if false;
+
+      match /changes/{changeId} {
+        allow read: if isStaff();
+        allow create: if isClinical()
+          && request.resource.data.keys().hasOnly(['kind', 'from', 'to', 'reason', 'by', 'at'])
+          && request.resource.data.kind in ['moved', 'cancelled', 'completed', 'noShow', 'noteEdited']
+          && request.resource.data.from is map
+          && request.resource.data.to is map
+          && request.resource.data.reason is string && request.resource.data.reason.size() <= 500
+          && isMe(request.resource.data.by)
+          && request.resource.data.at == request.time
+          // Only as part of the appointment update that it explains.
+          && getAfter(/databases/$(database)/documents/appointments/$(appointmentId)).data.get('lastChangeId', '') == changeId;
+        allow update, delete: if false;
       }
     }
 

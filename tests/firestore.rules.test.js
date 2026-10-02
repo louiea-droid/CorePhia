@@ -360,3 +360,108 @@ describe("dietitian and exercise notes", () => {
     await assertSucceeds(updateDoc(doc(as("coadmin"), "user", "dietitian"), { role: "" }))
   })
 })
+
+describe("appointments", () => {
+  const booking = (uid, role, overrides = {}) => ({
+    intakeId: "pending1",
+    patientName: "Pat Doe",
+    staffUid: "provider",
+    staffName: "provider",
+    discipline: "medical",
+    start: new Date("2026-10-05T14:00:00Z"),
+    minutes: 30,
+    status: "scheduled",
+    note: "",
+    addedBy: { uid, name: uid, role },
+    addedAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    ...overrides,
+  })
+  const change = (uid, role, overrides = {}) => ({
+    kind: "moved",
+    from: { start: new Date("2026-10-05T14:00:00Z") },
+    to: { start: new Date("2026-10-07T18:00:00Z") },
+    reason: "",
+    by: { uid, name: uid, role },
+    at: serverTimestamp(),
+    ...overrides,
+  })
+  const seed = () =>
+    env.withSecurityRulesDisabled((c) =>
+      setDoc(doc(c.firestore(), "appointments", "ap1"), { ...booking("admin", "admin"), addedAt: new Date(), updatedAt: new Date() }),
+    )
+  const move = (db, uid, role, changeId, patch = { start: new Date("2026-10-07T18:00:00Z") }, entry = change(uid, role)) => {
+    const batch = writeBatch(db)
+    batch.update(doc(db, "appointments", "ap1"), { ...patch, updatedAt: serverTimestamp(), lastChangeId: changeId })
+    batch.set(doc(db, "appointments/ap1/changes", changeId), entry)
+    return batch.commit()
+  }
+
+  test("any clinician books, signed as themselves at server time", async () => {
+    await assertSucceeds(setDoc(doc(as("dietitian"), "appointments", "n1"), booking("dietitian", "dietitian")))
+    await assertSucceeds(setDoc(doc(as("provider"), "appointments", "n2"), booking("provider", "provider")))
+  })
+  test("a booking can't claim someone else added it, or a past time", async () => {
+    await assertFails(setDoc(doc(as("provider"), "appointments", "n1"), booking("admin", "admin")))
+    await assertFails(setDoc(doc(as("provider"), "appointments", "n2"), booking("provider", "provider", { addedAt: new Date("2020-01-01") })))
+  })
+  test("a booking starts scheduled, with a known discipline and length", async () => {
+    const db = as("provider")
+    await assertFails(setDoc(doc(db, "appointments", "n1"), booking("provider", "provider", { status: "completed" })))
+    await assertFails(setDoc(doc(db, "appointments", "n2"), booking("provider", "provider", { discipline: "massage" })))
+    await assertFails(setDoc(doc(db, "appointments", "n3"), booking("provider", "provider", { minutes: 20 })))
+    await assertFails(setDoc(doc(db, "appointments", "n4"), booking("provider", "provider", { intakeId: "nope" })))
+  })
+  test("someone with no role can't read or book", async () => {
+    await assertFails(getDoc(doc(as("nobody"), "appointments", "ap1")))
+    await assertFails(setDoc(doc(as("nobody"), "appointments", "n1"), booking("nobody", "")))
+  })
+  test("a move with its history entry succeeds", async () => {
+    await seed()
+    await assertSucceeds(move(as("provider"), "provider", "provider", "c1"))
+  })
+  test("a move without a history entry fails", async () => {
+    await seed()
+    await assertFails(updateDoc(doc(as("provider"), "appointments", "ap1"), { start: new Date("2026-10-07T18:00:00Z"), updatedAt: serverTimestamp() }))
+    await assertFails(
+      updateDoc(doc(as("provider"), "appointments", "ap1"), { start: new Date("2026-10-07T18:00:00Z"), updatedAt: serverTimestamp(), lastChangeId: "ghost" }),
+    )
+  })
+  test("a history entry can't be signed as someone else", async () => {
+    await seed()
+    await assertFails(move(as("provider"), "provider", "provider", "c1", undefined, change("admin", "admin")))
+  })
+  test("'added by' never changes", async () => {
+    await seed()
+    await assertFails(move(as("provider"), "provider", "provider", "c1", { addedBy: { uid: "provider", name: "provider", role: "provider" } }))
+  })
+  test("a cancelled appointment can't be moved", async () => {
+    await seed()
+    await assertSucceeds(move(as("provider"), "provider", "provider", "c1", { status: "cancelled" }, change("provider", "provider", { kind: "cancelled", from: { status: "scheduled" }, to: { status: "cancelled" } })))
+    await assertFails(move(as("admin"), "admin", "admin", "c2"))
+  })
+  test("appointments are never deleted", async () => {
+    await seed()
+    await assertFails(deleteDoc(doc(as("super"), "appointments", "ap1")))
+  })
+  test("history: co-admins and up read it; providers and the dietitian don't; nobody edits it", async () => {
+    await seed()
+    await move(as("provider"), "provider", "provider", "c1")
+    await assertSucceeds(getDoc(doc(as("coadmin"), "appointments/ap1/changes/c1")))
+    await assertSucceeds(getDoc(doc(as("admin"), "appointments/ap1/changes/c1")))
+    await assertFails(getDoc(doc(as("provider"), "appointments/ap1/changes/c1")))
+    await assertFails(getDoc(doc(as("dietitian"), "appointments/ap1/changes/c1")))
+    await assertFails(updateDoc(doc(as("super"), "appointments/ap1/changes/c1"), { reason: "edited" }))
+    await assertFails(deleteDoc(doc(as("super"), "appointments/ap1/changes/c1")))
+  })
+  test("a history entry can't be written on its own", async () => {
+    await seed()
+    await assertFails(setDoc(doc(as("provider"), "appointments/ap1/changes/lonely"), change("provider", "provider")))
+  })
+  test("clinicians read the staff list, minus super admins", async () => {
+    const db = as("provider")
+    await assertSucceeds(getDoc(doc(db, "user", "dietitian")))
+    await assertFails(getDoc(doc(db, "user", "super")))
+    await assertSucceeds(getDocs(query(collection(db, "user"), where("role", "in", ["", "provider", "dietitian", "coAdmin", "admin"]))))
+  })
+})
