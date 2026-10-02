@@ -139,6 +139,6 @@ in the admin searches by it. Batch alerts if bots ever flood the intake.
 
 ## Open decision
 
-**Portal accounts: invite-only (recommended), or keep open sign-up?** This was the
-question on the table when it was parked. After that: confirm the section order, then
-design Updates first.
+Decided 2026-10-02 (Louie): **invite-only**. Section order Updates → Track progress →
+Messages (Membership waits on billing) is agreed but on hold; **the invite-only login is
+built first**.

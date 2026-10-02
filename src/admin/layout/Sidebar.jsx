@@ -104,7 +104,7 @@ export default function Sidebar({
             <img src="/cp-mark.webp" alt="" className="size-7 shrink-0 object-contain" />
 
             <div className={`min-w-0 ${collapsibleLabelClass(collapsed)}`}>
-              <p className="truncate font-serif text-base leading-none text-ink-950">CorePhia Admin</p>
+              <p className="truncate font-serif text-base leading-none text-ink-950">CorePhia</p>
               
             </div>
           </div>
