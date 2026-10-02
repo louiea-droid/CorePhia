@@ -1,7 +1,18 @@
 // Self-check for chartMath.js: `npm run check`. No test framework in this
 // repo, so plain node:assert. Each block names the behaviour it pins.
 import assert from "node:assert/strict"
-import { ageFrom, asDate, bmi, currentPrescriptions, dueTasks } from "./chartMath.js"
+import {
+  ageFrom,
+  asDate,
+  bmi,
+  currentExercisePlan,
+  currentPrescriptions,
+  daysFrom,
+  disciplineOf,
+  dueTasks,
+  latestSignedByDiscipline,
+  nextFollowUps,
+} from "./chartMath.js"
 
 const signed = (signedAt, prescriptions) => ({ status: "signed", signedAt, prescriptions })
 const start = (id, medication, renewalDue) => ({
@@ -148,5 +159,79 @@ assert.deepEqual(summary(dueTasks([{ status: "draft", visitDate: "2026-10-01" }]
 
 // Day counts are calendar days, unaffected by the November DST change.
 assert.deepEqual(summary(dueTasks([visit("2026-10-01", { nextFollowUp: "2026-11-02" })], "2026-10-31")), ["followUp::2"])
+
+// Disciplines: consultation and progress (and old notes with no type) are medical.
+assert.equal(disciplineOf("consultation"), "medical")
+assert.equal(disciplineOf("progress"), "medical")
+assert.equal(disciplineOf(undefined), "medical")
+assert.equal(disciplineOf("dietitian"), "dietitian")
+assert.equal(disciplineOf("exercise"), "exercise")
+
+assert.equal(daysFrom("2026-10-01", "2026-10-04"), 3)
+
+// The latest signed note per discipline; drafts ignored.
+{
+  const notes = [
+    visit("2026-09-01", { type: "consultation", id: "c" }),
+    visit("2026-09-20", { type: "dietitian", id: "d1" }),
+    visit("2026-09-25", { type: "dietitian", id: "d2" }),
+    { status: "draft", type: "exercise", visitDate: "2026-09-30", id: "x" },
+  ]
+  const latest = latestSignedByDiscipline(notes)
+  assert.equal(latest.medical.id, "c")
+  assert.equal(latest.dietitian.id, "d2")
+  assert.equal(latest.exercise, undefined)
+}
+
+// The exercise plan stands from the latest signed exercise note.
+{
+  const plan = { daysPerWeek: 4, intensity: "moderate", minutesPerSession: 30, kind: "Walking", notes: "" }
+  assert.deepEqual(currentExercisePlan([visit("2026-09-01", { type: "exercise", exercisePlan: plan })]), plan)
+  assert.equal(currentExercisePlan([visit("2026-09-01", { type: "progress" })]), null)
+}
+
+// One next follow-up per discipline, each from its own latest note.
+assert.deepEqual(
+  nextFollowUps([
+    visit("2026-09-01", { type: "progress", nextFollowUp: "2026-10-03" }),
+    visit("2026-09-20", { type: "dietitian", nextFollowUp: "2026-10-02" }),
+    visit("2026-09-22", { type: "exercise", nextFollowUp: "" }),
+  ]),
+  [
+    { discipline: "medical", date: "2026-10-03" },
+    { discipline: "dietitian", date: "2026-10-02" },
+  ],
+)
+
+// To-do: a newer dietitian note doesn't clear the medical follow-up, and each
+// discipline's follow-up shows separately with its discipline.
+{
+  const tasks = dueTasks(
+    [
+      visit("2026-09-01", { type: "consultation", nextFollowUp: "2026-10-03" }),
+      visit("2026-09-20", { type: "dietitian", nextFollowUp: "2026-10-02" }),
+    ],
+    "2026-10-01",
+  )
+  assert.deepEqual(
+    tasks.map((task) => `${task.kind}:${task.discipline}:${task.days}`),
+    ["followUp:medical:2", "followUp:dietitian:1"],
+  )
+}
+
+// Only a dietitian note signed: the first consultation is still to happen,
+// and the dietitian follow-up still shows.
+assert.deepEqual(
+  dueTasks([visit("2026-09-20", { type: "dietitian", nextFollowUp: "2026-10-02" })], "2026-10-01").map(
+    (task) => `${task.kind}:${task.discipline}`,
+  ),
+  ["followUp:dietitian", "firstConsult:medical"],
+)
+
+// Renewals are medical.
+assert.equal(
+  dueTasks([visit("2026-09-01", { prescriptions: [start("a", "Med A", "2026-10-02")] })], "2026-10-01")[0].discipline,
+  "medical",
+)
 
 console.log("chartMath: all checks passed")

@@ -47,38 +47,73 @@ export function currentPrescriptions(notes) {
   return [...chains.values()]
 }
 
+export const DISCIPLINES = ["medical", "dietitian", "exercise"]
+
+// Consultation and progress notes (and anything older with no type) are the
+// medical record; dietitian and exercise notes are their own disciplines.
+export const disciplineOf = (type) => (type === "dietitian" || type === "exercise" ? type : "medical")
+
+const newestVisitFirst = (a, b) =>
+  (b.visitDate ?? "").localeCompare(a.visitDate ?? "") || millis(b.signedAt) - millis(a.signedAt)
+const signedNewestFirst = (notes) => notes.filter((note) => note.status === "signed").sort(newestVisitFirst)
+
+// The latest signed note of each discipline: { medical, dietitian, exercise },
+// a key missing when that discipline has no signed note yet.
+export function latestSignedByDiscipline(notes) {
+  const latest = {}
+  for (const note of signedNewestFirst(notes)) latest[disciplineOf(note.type)] ??= note
+  return latest
+}
+
+export const currentExercisePlan = (notes) => latestSignedByDiscipline(notes).exercise?.exercisePlan ?? null
+
+// Each discipline's next follow-up, from that discipline's latest signed
+// note only: a later note with no date clears an earlier one.
+export function nextFollowUps(notes) {
+  const latest = latestSignedByDiscipline(notes)
+  return DISCIPLINES.filter((discipline) => latest[discipline]?.nextFollowUp).map((discipline) => ({
+    discipline,
+    date: latest[discipline].nextFollowUp,
+  }))
+}
+
 // Calendar days from one YYYY-MM-DD to another, negative when `to` is earlier.
 // Date.UTC so a DST change in between doesn't shave off an hour and a day.
 const utcDay = (iso) => {
   const [year, month, day] = iso.split("-").map(Number)
   return Date.UTC(year, month - 1, day)
 }
-const daysFrom = (from, to) => Math.round((utcDay(to) - utcDay(from)) / 86_400_000)
+export const daysFrom = (from, to) => Math.round((utcDay(to) - utcDay(from)) / 86_400_000)
 
 // What the To-do page lists for one patient, as of `today` (YYYY-MM-DD):
-// renewals and the follow-up due within `windowDays` (or overdue), or the
-// first consultation when nothing is signed yet. Nothing here is ticked off by
-// hand: signing the note that renews or follows up is what clears an item.
+// renewals and each discipline's follow-up due within `windowDays` (or
+// overdue), and the first consultation while no medical note is signed.
+// Nothing here is ticked off by hand: signing the note that renews or follows
+// up is what clears an item.
 export function dueTasks(notes, today, windowDays = 7) {
-  const signed = notes
-    .filter((note) => note.status === "signed")
-    .sort((a, b) => (b.visitDate ?? "").localeCompare(a.visitDate ?? "") || millis(b.signedAt) - millis(a.signedAt))
-  if (!signed.length) return [{ kind: "firstConsult", due: null, days: null }]
-
+  const signed = signedNewestFirst(notes)
   const withinWindow = (due) => due && daysFrom(today, due) <= windowDays
   const renewals = currentPrescriptions(signed)
     .filter((prescription) => withinWindow(prescription.renewalDue))
     .map((prescription) => ({
       kind: "renewal",
+      discipline: "medical",
       medication: prescription.medication,
       due: prescription.renewalDue,
       days: daysFrom(today, prescription.renewalDue),
     }))
-  // The latest visit's plan stands: an older follow-up date is superseded.
-  const followUp = signed[0].nextFollowUp
-  return withinWindow(followUp)
-    ? [...renewals, { kind: "followUp", due: followUp, days: daysFrom(today, followUp) }]
-    : renewals
+  const followUps = nextFollowUps(signed)
+    .filter((followUp) => withinWindow(followUp.date))
+    .map((followUp) => ({
+      kind: "followUp",
+      discipline: followUp.discipline,
+      due: followUp.date,
+      days: daysFrom(today, followUp.date),
+    }))
+  const firstConsult = latestSignedByDiscipline(signed).medical
+    ? []
+    : [{ kind: "firstConsult", discipline: "medical", due: null, days: null }]
+  return [...renewals, ...followUps, ...firstConsult]
 }
 
 // A Date from a Firestore Timestamp, a Date or an ISO string; null otherwise.
