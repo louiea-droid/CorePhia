@@ -9,7 +9,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "check": "node src/admin/chartMath.check.js && node src/admin/roles.check.js && node src/admin/calendarMath.check.js",
-    "test:rules": "firebase emulators:exec --only firestore \"node --test tests/\""
+    "test:rules": "firebase emulators:exec --only firestore \"node --test tests/*.test.js\""
   },
   "dependencies": {
     "firebase": "^12.19.0",

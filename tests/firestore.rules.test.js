@@ -1,10 +1,9 @@
-// firestore.rules tests for charts, notes, amendments and staff roles.
+// firestore.rules tests for charts, notes (all four types), amendments, staff
+// roles and appointments.
 //
 // Run: npm run test:rules
-// Needs Java 21+ for the Firestore emulator (firebase-tools starts it). This
-// machine had no Java when these were written (2026-10-01; dietitian and
-// exercise notes added 2026-10-02), so they have not been run yet. Run them
-// before deploying the rules.
+// Needs Java 21+ for the Firestore emulator (firebase-tools starts it). All 66
+// passed on 2026-10-02. Run them before every rules deploy.
 import { readFileSync } from "node:fs"
 import { after, before, beforeEach, describe, test } from "node:test"
 import { assertFails, assertSucceeds, initializeTestEnvironment } from "@firebase/rules-unit-testing"

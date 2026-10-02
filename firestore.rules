@@ -60,7 +60,7 @@ service cloud.firestore {
     // can edit themselves, so a note can't be signed as someone else.
     // Mirrors getAdminAccess() in src/admin/firebase.js.
     function myName() {
-      return get(/databases/$(database)/documents/user/$(request.auth.uid)).data.get('name', request.auth.token.email);
+      return get(/databases/$(database)/documents/user/$(request.auth.uid)).data.get('name', request.auth.token.get('email', ''));
     }
 
     // Anyone can post to an open endpoint, so this is the only thing standing
