@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Link, useParams } from "react-router-dom"
 import ApplicantModal from "./ApplicantModal"
+import AppointmentDialog from "./AppointmentDialog"
+import { loadAppointmentsFor } from "./appointmentStore"
 import { medicationInterestLabel } from "./analytics"
 import { ageFrom, asDate, bmi, currentExercisePlan, currentPrescriptions, disciplineOf, nextFollowUps } from "./chartMath"
 import { countAmendments, createDraftNote, loadChart, loadIntakeRecord, loadNotes } from "./chartStore"
@@ -103,6 +105,9 @@ export default function PatientChart({ actor }) {
   const [createError, setCreateError] = useState(null)
   const [showIntake, setShowIntake] = useState(false)
   const [noteFilter, setNoteFilter] = useState("all")
+  const [appointments, setAppointments] = useState([])
+  const [booking, setBooking] = useState(null) // null | { appointment } | { prefill }
+  const [appointmentsVersion, setAppointmentsVersion] = useState(0)
 
   const reload = async () => {
     const [nextChart, nextNotes] = await Promise.all([loadChart(chartId), loadNotes(chartId, actor.uid)])
@@ -124,6 +129,20 @@ export default function PatientChart({ actor }) {
       active = false
     }
   }, [chartId, actor.uid])
+
+  // The next few booked visits, for the summary. Reloaded after a booking.
+  useEffect(() => {
+    let active = true
+    loadAppointmentsFor(chartId)
+      .then(
+        (list) =>
+          active && setAppointments(list.filter((entry) => entry.status === "scheduled" && asDate(entry.start) >= new Date()).slice(0, 3)),
+      )
+      .catch((cause) => console.error("Appointments failed:", cause.code ?? cause.message))
+    return () => {
+      active = false
+    }
+  }, [chartId, appointmentsVersion])
 
   // Opening a chart is an access event. The ref keeps StrictMode's double
   // effect run from logging it twice.
@@ -396,6 +415,48 @@ export default function PatientChart({ actor }) {
           </Card>
 
           <Card
+            title="Upcoming appointments"
+            action={
+              <button
+                type="button"
+                onClick={() => setBooking({ prefill: { intakeId: chart.id, patientName: name } })}
+                className="cursor-pointer text-xs font-semibold text-accent-text hover:underline"
+              >
+                Book appointment
+              </button>
+            }
+          >
+            {appointments.length === 0 ? (
+              <p className="text-sm text-ink-950/55">Nothing booked.</p>
+            ) : (
+              <ul className="space-y-1.5 text-sm">
+                {appointments.map((entry) => (
+                  <li key={entry.id}>
+                    <button
+                      type="button"
+                      onClick={() => setBooking({ appointment: entry })}
+                      className="cursor-pointer text-left text-ink-950 hover:underline"
+                    >
+                      {asDate(entry.start).toLocaleString("en-US", {
+                        timeZone: "America/New_York",
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                      <span className="text-ink-950/55">
+                        {" "}
+                        {DISCIPLINE_LABELS[entry.discipline]}, {entry.staffName}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+
+          <Card
             title="From the intake"
             action={
               intake && (
@@ -463,6 +524,19 @@ export default function PatientChart({ actor }) {
         <NoteView chart={chart} intake={intake} note={openNote} actor={actor} onClose={() => {
             setOpenNote(null)
             setCountsVersion((version) => version + 1)
+          }}
+        />
+      )}
+
+      {booking && (
+        <AppointmentDialog
+          appointment={booking.appointment ?? null}
+          prefill={booking.prefill}
+          actor={actor}
+          onClose={() => setBooking(null)}
+          onSaved={() => {
+            setBooking(null)
+            setAppointmentsVersion((version) => version + 1)
           }}
         />
       )}

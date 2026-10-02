@@ -72,6 +72,9 @@ export default function ApplicantModal({
   onUpdateStatus,
   onSaveNote,
   audit = true,
+  // Optional: the next booked visit, and a "Book appointment" action.
+  nextVisit = null,
+  onBook,
 }) {
   const closeButtonRef = useRef(null)
   const open = Boolean(record)
@@ -207,6 +210,28 @@ export default function ApplicantModal({
                 <p className="mt-1 text-sm text-ink-950/50">
                   Submitted {formatDate(record.submittedAt, { month: "long", day: "numeric", year: "numeric" })}
                 </p>
+                {nextVisit && (
+                  <p className="mt-0.5 text-sm text-ink-950/60">
+                    Next visit{" "}
+                    {new Date(nextVisit.start.toDate ? nextVisit.start.toDate() : nextVisit.start).toLocaleString("en-US", {
+                      timeZone: "America/New_York",
+                      month: "short",
+                      day: "numeric",
+                      hour: "numeric",
+                      minute: "2-digit",
+                    })}{" "}
+                    with {nextVisit.staffName}
+                  </p>
+                )}
+                {onBook && (
+                  <button
+                    type="button"
+                    onClick={() => onBook(record)}
+                    className="mt-1 cursor-pointer text-sm font-semibold text-accent-text hover:underline"
+                  >
+                    Book appointment
+                  </button>
+                )}
               </div>
               <div className="flex shrink-0 items-center gap-1">
                 {canDelete && (

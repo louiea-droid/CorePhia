@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { asDate, dueTasks } from "./chartMath"
+import { loadAppointments } from "./appointmentStore"
+import { addDays, fromTampa, matchingAppointment, tampaParts, todayInTampa } from "./calendarMath"
 import { loadActiveChartNotes } from "./chartStore"
 import { DISCIPLINE_LABELS, formatDay } from "./noteUi"
 import PageHeader from "./PageHeader"
@@ -50,12 +52,27 @@ export default function Todo({ actor }) {
   useEffect(() => {
     let active = true
     const today = localToday()
-    loadActiveChartNotes(actor.uid)
-      .then((perChart) =>
+    // Appointments around the To-do window (overdue items included), so a
+    // follow-up that's already booked says so.
+    Promise.all([
+      loadActiveChartNotes(actor.uid),
+      loadAppointments(fromTampa(addDays(todayInTampa(), -33)), fromTampa(addDays(todayInTampa(), 11))).catch(() => []),
+    ])
+      .then(([perChart, appointments]) =>
         perChart.flatMap(({ chart, notes }) => {
           const name = `${chart.firstName} ${chart.lastName}`.trim() || "Unnamed patient"
           const admittedAt = asDate(chart.admittedAt)
-          return dueTasks(notes, today).map((task, index) => ({ ...task, id: `${chart.id}-${index}`, chartId: chart.id, name, admittedAt }))
+          return dueTasks(notes, today).map((task, index) => ({
+            ...task,
+            id: `${chart.id}-${index}`,
+            chartId: chart.id,
+            name,
+            admittedAt,
+            booked:
+              task.kind === "followUp"
+                ? matchingAppointment({ intakeId: chart.id, discipline: task.discipline, date: task.due }, appointments)
+                : null,
+          }))
         }),
       )
       .then((all) => active && setTasks(all))
@@ -139,7 +156,11 @@ export default function Todo({ actor }) {
                         <span className="ml-2 text-sm text-ink-950/65">{taskLabel(task)}</span>
                       </span>
                       <span className="text-sm whitespace-nowrap text-ink-950/55">
-                        <span className={group.key === "overdue" ? "font-medium text-brand-dark" : undefined}>{whenLabel(task)}</span>
+                        {task.booked ? (
+                          <span className="font-medium text-accent-text">Booked {formatDay(tampaParts(task.booked.start).day)}</span>
+                        ) : (
+                          <span className={group.key === "overdue" ? "font-medium text-brand-dark" : undefined}>{whenLabel(task)}</span>
+                        )}
                         {task.due && <span className="ml-2 text-ink-950/40">{formatDay(task.due)}</span>}
                       </span>
                     </Link>

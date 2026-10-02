@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Select from "../components/Select"
 import ConfirmDialog from "./ConfirmDialog"
 import { PAGE_SIZE_OPTIONS } from "./constants"
@@ -7,6 +7,9 @@ import PageHeader from "./PageHeader"
 import Pagination from "./Pagination"
 import ApplicantModal from "./ApplicantModal"
 import ApplicantsTable from "./ApplicantsTable"
+import AppointmentDialog from "./AppointmentDialog"
+import { loadAppointmentsFor } from "./appointmentStore"
+import { asDate } from "./chartMath"
 import { setApplicantStatus } from "./chartStore"
 import { ApplicantsSkeleton } from "./Skeleton"
 import { canAdmit } from "./roles"
@@ -33,6 +36,10 @@ function readStoredPageSize() {
 export default function Applicants({ role, actor }) {
   const { records, error, removeRecord, patchRecord, patchLocal } = useIntakeRecords()
   const [selectedRecord, setSelectedRecord] = useState(null)
+  const [booking, setBooking] = useState(null) // prefill for a new appointment, or null
+  // { id, visit }: the next booked visit for the record with that id, so a
+  // stale answer for a previously opened record is never shown.
+  const [nextVisitFor, setNextVisitFor] = useState(null)
   const [pendingDelete, setPendingDelete] = useState(null)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState(null)
@@ -52,6 +59,25 @@ export default function Applicants({ role, actor }) {
   // dietitian can do it (roles.canAdmit; firestore.rules isAdmitter), just
   // not against the sample fallback rows, same reasoning as canDelete.
   const canReview = canAdmit(role) && !usingSampleFallback
+
+  const selectedId = selectedRecord?.id
+  useEffect(() => {
+    if (!selectedId) return
+    let active = true
+    loadAppointmentsFor(selectedId)
+      .then(
+        (list) =>
+          active &&
+          setNextVisitFor({
+            id: selectedId,
+            visit: list.find((entry) => entry.status === "scheduled" && asDate(entry.start) >= new Date()) ?? null,
+          }),
+      )
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [selectedId])
 
   // Admitting starts (or reactivates) the patient's chart; moving away from
   // admitted marks it inactive. Both happen with the status in one batch.
@@ -239,6 +265,16 @@ export default function Applicants({ role, actor }) {
 
       <ApplicantModal
         record={selectedRecord}
+        nextVisit={nextVisitFor && nextVisitFor.id === selectedRecord?.id ? nextVisitFor.visit : null}
+        onBook={
+          usingSampleFallback
+            ? undefined
+            : (record) =>
+                setBooking({
+                  intakeId: record.id,
+                  patientName: `${record.demographics?.firstName ?? ""} ${record.demographics?.lastName ?? ""}`.trim(),
+                })
+        }
         onClose={() => setSelectedRecord(null)}
         canDelete={canDelete}
         onRequestDelete={setPendingDelete}
@@ -250,6 +286,19 @@ export default function Applicants({ role, actor }) {
         // with entries that point at documents that never existed.
         audit={!usingSampleFallback}
       />
+
+      {booking && (
+        <AppointmentDialog
+          appointment={null}
+          prefill={booking}
+          actor={actor}
+          onClose={() => setBooking(null)}
+          onSaved={(saved) => {
+            setBooking(null)
+            setNextVisitFor({ id: saved.intakeId, visit: saved })
+          }}
+        />
+      )}
 
       <ConfirmDialog
         open={Boolean(pendingDelete)}
