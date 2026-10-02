@@ -116,7 +116,7 @@ function RowMenu({ label, items }) {
                   item.onClick()
                 }}
                 className={`block w-full cursor-pointer rounded-lg px-3 py-2 text-left text-sm transition-colors duration-150 hover:bg-paper-100 ${
-                  item.danger ? "text-red-600" : "text-ink-950"
+                  item.danger ? "text-red-700 [.dark_&]:text-red-400" : "text-ink-950"
                 }`}
               >
                 {item.label}
