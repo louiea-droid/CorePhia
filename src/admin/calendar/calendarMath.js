@@ -81,7 +81,6 @@ const minutesOf = (time) => {
   const [hours, minutes] = time.split(":").map(Number)
   return hours * 60 + minutes
 }
-const clampSlot = (minutes) => Math.min(LAST_SLOT, Math.max(FIRST_SLOT, minutes))
 
 export const periodOf = (time) => (minutesOf(time) < 12 * 60 ? "AM" : "PM")
 
@@ -95,13 +94,6 @@ export function timesIn(period) {
     times.push({ value: hhmm(minutes), label: `${hour}:${String(minutes % 60).padStart(2, "0")}` })
   }
   return times
-}
-
-// Same clock time in the other half of the day, or the nearest bookable one.
-export function switchPeriod(time, period) {
-  if (periodOf(time) === period) return time
-  const shifted = minutesOf(time) + (period === "PM" ? 12 * 60 : -12 * 60)
-  return hhmm(clampSlot(shifted))
 }
 
 const startMs = (appointment) => asDate(appointment.start)?.getTime() ?? 0

@@ -10,7 +10,6 @@ import {
   monthGrid,
   periodOf,
   slotTime,
-  switchPeriod,
   timesIn,
   overlaps,
   tampaParts,
@@ -122,7 +121,7 @@ assert.equal(slotTime(22 * 60 + 10), "21:00")
 assert.equal(slotTime(5 * 60), "06:00")
 assert.equal(slotTime(21 * 60), "21:00")
 
-// The Time field is a short list for one half of the day plus an AM/PM switch.
+// The time picker lists one half of the day at a time, with AM/PM in its panel.
 assert.equal(periodOf("09:00"), "AM")
 assert.equal(periodOf("12:00"), "PM")
 assert.equal(periodOf("21:00"), "PM")
@@ -131,12 +130,5 @@ assert.equal(timesIn("PM").length, 37) // 12:00 to 9:00
 assert.deepEqual(timesIn("AM")[0], { value: "06:00", label: "6:00" })
 assert.deepEqual(timesIn("PM")[0], { value: "12:00", label: "12:00" })
 assert.deepEqual(timesIn("PM").at(-1), { value: "21:00", label: "9:00" })
-// Switching keeps the clock time when it exists in the other half, else the nearest bookable one.
-assert.equal(switchPeriod("09:30", "PM"), "21:00")
-assert.equal(switchPeriod("08:15", "PM"), "20:15")
-assert.equal(switchPeriod("14:00", "AM"), "06:00")
-assert.equal(switchPeriod("12:30", "AM"), "06:00")
-assert.equal(switchPeriod("10:45", "PM"), "21:00")
-assert.equal(switchPeriod("09:00", "AM"), "09:00")
 
 console.log("calendarMath: all checks passed")
