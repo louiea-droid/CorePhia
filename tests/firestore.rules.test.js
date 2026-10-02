@@ -2,8 +2,9 @@
 //
 // Run: npm run test:rules
 // Needs Java 21+ for the Firestore emulator (firebase-tools starts it). This
-// machine had no Java when these were written (2026-10-01), so they have not
-// been run yet. Run them before deploying the rules.
+// machine had no Java when these were written (2026-10-01; dietitian and
+// exercise notes added 2026-10-02), so they have not been run yet. Run them
+// before deploying the rules.
 import { readFileSync } from "node:fs"
 import { after, before, beforeEach, describe, test } from "node:test"
 import { assertFails, assertSucceeds, initializeTestEnvironment } from "@firebase/rules-unit-testing"
@@ -23,7 +24,7 @@ import {
 
 let env
 
-const ROLES = { super: "superAdmin", admin: "admin", coadmin: "coAdmin", coadmin2: "coAdmin", provider: "provider", provider2: "provider" }
+const ROLES = { super: "superAdmin", admin: "admin", coadmin: "coAdmin", coadmin2: "coAdmin", provider: "provider", provider2: "provider", dietitian: "dietitian" }
 const as = (uid) => env.authenticatedContext(uid).firestore()
 
 const draft = (uid, role, overrides = {}) => ({
@@ -63,6 +64,7 @@ beforeEach(async () => {
     await setDoc(doc(db, "patients", "chart1"), { intakeRecordId: "chart1", status: "active" })
     await setDoc(doc(db, "patients/chart1/notes/signed1"), { ...draft("provider", "provider"), status: "signed" })
     await setDoc(doc(db, "patients/chart1/notes/draft1"), draft("provider", "provider"))
+    await setDoc(doc(db, "patients/chart1/notes/diet1"), { ...draft("admin", "admin", { type: "dietitian" }), status: "signed" })
     await setDoc(doc(db, "contactMessages", "m1"), { name: "x" })
   })
 })
@@ -278,5 +280,83 @@ describe("amendments", () => {
     const db = as("admin")
     await assertSucceeds(setDoc(doc(db, "patients/chart1/notes/signed1/amendments/a1"), amendment("admin", "admin")))
     await assertFails(updateDoc(doc(db, "patients/chart1/notes/signed1/amendments/a1"), { text: "rewritten" }))
+  })
+})
+
+describe("dietitian and exercise notes", () => {
+  const sign = (uid, role) => ({
+    status: "signed",
+    signedAt: serverTimestamp(),
+    signedBy: { uid, name: uid, role },
+    updatedAt: serverTimestamp(),
+  })
+  const plan = (overrides = {}) => ({ daysPerWeek: 3, intensity: "moderate", minutesPerSession: 30, kind: "Walking", notes: "", ...overrides })
+  const exerciseDraft = (overrides) => draft("provider", "provider", { type: "exercise", exercisePlan: plan(overrides) })
+
+  test("a dietitian can't admit or decline an applicant", async () => {
+    await assertFails(updateDoc(doc(as("dietitian"), "intakeRecords", "pending1"), { status: "admitted" }))
+  })
+  test("a dietitian reads charts and signed notes", async () => {
+    await assertSucceeds(getDoc(doc(as("dietitian"), "patients", "chart1")))
+    await assertSucceeds(getDoc(doc(as("dietitian"), "patients/chart1/notes/signed1")))
+  })
+  test("a dietitian starts dietitian notes only", async () => {
+    const db = as("dietitian")
+    await assertSucceeds(setDoc(doc(db, "patients/chart1/notes/d1"), draft("dietitian", "dietitian", { type: "dietitian" })))
+    await assertFails(setDoc(doc(db, "patients/chart1/notes/d2"), draft("dietitian", "dietitian", { type: "progress" })))
+    await assertFails(setDoc(doc(db, "patients/chart1/notes/d3"), draft("dietitian", "dietitian", { type: "exercise", exercisePlan: plan() })))
+  })
+  test("the admin writes dietitian notes; a provider can't", async () => {
+    await assertSucceeds(setDoc(doc(as("admin"), "patients/chart1/notes/a1"), draft("admin", "admin", { type: "dietitian" })))
+    await assertFails(setDoc(doc(as("provider"), "patients/chart1/notes/p1"), draft("provider", "provider", { type: "dietitian" })))
+  })
+  test("a provider can't sign a dietitian draft, even their own after a role change", async () => {
+    await env.withSecurityRulesDisabled((c) =>
+      setDoc(doc(c.firestore(), "patients/chart1/notes/old"), draft("provider", "provider", { type: "dietitian" })),
+    )
+    await assertFails(updateDoc(doc(as("provider"), "patients/chart1/notes/old"), sign("provider", "provider")))
+  })
+  test("a dietitian signs their own dietitian note", async () => {
+    await env.withSecurityRulesDisabled((c) =>
+      setDoc(doc(c.firestore(), "patients/chart1/notes/mine"), draft("dietitian", "dietitian", { type: "dietitian" })),
+    )
+    await assertSucceeds(updateDoc(doc(as("dietitian"), "patients/chart1/notes/mine"), sign("dietitian", "dietitian")))
+  })
+  test("a dietitian's signing updates the chart's last note", async () => {
+    await assertSucceeds(
+      updateDoc(doc(as("dietitian"), "patients", "chart1"), {
+        lastNote: { type: "dietitian", signedAt: serverTimestamp() },
+        updatedAt: serverTimestamp(),
+      }),
+    )
+  })
+  test("a dietitian can't make a chart inactive", async () => {
+    await assertFails(updateDoc(doc(as("dietitian"), "patients", "chart1"), { status: "inactive", updatedAt: serverTimestamp() }))
+  })
+  test("dietitian and exercise notes can't carry a prescription", async () => {
+    const rx = [{ id: "r", action: "start", medication: "M", instructions: "", startDate: "", renewalDue: "", stopReason: "", renewsId: "" }]
+    await assertFails(
+      setDoc(doc(as("dietitian"), "patients/chart1/notes/r1"), draft("dietitian", "dietitian", { type: "dietitian", prescriptions: rx })),
+    )
+    await assertFails(setDoc(doc(as("provider"), "patients/chart1/notes/r2"), { ...exerciseDraft(), prescriptions: rx }))
+  })
+  test("an exercise plan is checked", async () => {
+    const db = as("provider")
+    await assertSucceeds(setDoc(doc(db, "patients/chart1/notes/e1"), exerciseDraft()))
+    await assertSucceeds(setDoc(doc(db, "patients/chart1/notes/e2"), exerciseDraft({ daysPerWeek: null, minutesPerSession: null, intensity: "" })))
+    await assertFails(setDoc(doc(db, "patients/chart1/notes/e3"), exerciseDraft({ daysPerWeek: 9 })))
+    await assertFails(setDoc(doc(db, "patients/chart1/notes/e4"), exerciseDraft({ daysPerWeek: 3.5 })))
+    await assertFails(setDoc(doc(db, "patients/chart1/notes/e5"), exerciseDraft({ intensity: "extreme" })))
+    await assertFails(setDoc(doc(db, "patients/chart1/notes/e6"), exerciseDraft({ extra: 1 })))
+    await assertFails(setDoc(doc(db, "patients/chart1/notes/e7"), draft("provider", "provider", { type: "progress", exercisePlan: plan() })))
+  })
+  test("a dietitian adds addenda to dietitian notes only", async () => {
+    const amendment = { text: "Added detail.", authorUid: "dietitian", authorName: "dietitian", authorRole: "dietitian", at: serverTimestamp() }
+    await assertSucceeds(setDoc(doc(as("dietitian"), "patients/chart1/notes/diet1/amendments/a1"), amendment))
+    await assertFails(setDoc(doc(as("dietitian"), "patients/chart1/notes/signed1/amendments/a2"), amendment))
+  })
+  test("admins and co-admins grant and remove the dietitian role", async () => {
+    await assertSucceeds(setDoc(doc(as("admin"), "user", "newdiet"), { role: "dietitian", name: "N" }))
+    await assertSucceeds(updateDoc(doc(as("coadmin"), "user", "dietitian"), { role: "" }))
   })
 })

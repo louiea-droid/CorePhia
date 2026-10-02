@@ -35,11 +35,24 @@ service cloud.firestore {
       return role() in ['coAdmin', 'admin', 'superAdmin'];
     }
 
-    // Everyone who works with patients: providers plus both admin tiers.
-    // Gates intake records, charts and notes. isStaff() stays the gate for
-    // messages, site analytics and the staff list, which providers don't see.
+    // Everyone who works with patients: the dietitian, providers and the
+    // admin tiers. Gates intake records, charts and notes. isStaff() stays the
+    // gate for messages, site analytics and the staff list.
     function isClinical() {
+      return role() in ['dietitian', 'provider', 'coAdmin', 'admin', 'superAdmin'];
+    }
+
+    // Admits and declines applicants, and writes medical and exercise notes:
+    // everyone clinical except the dietitian. Mirrors roles.canAdmit.
+    function isAdmitter() {
       return role() in ['provider', 'coAdmin', 'admin', 'superAdmin'];
+    }
+
+    // Which role writes which note type. The admin (Dr. Antonious) writes
+    // dietitian notes too. Exercise notes are providers' until an exercise
+    // role exists. Mirrors roles.canWriteNote.
+    function canWriteType(type) {
+      return type == 'dietitian' ? role() in ['dietitian', 'admin'] : isAdmitter();
     }
 
     // The name a person signs with: the `name` on their staff record (set on
@@ -80,10 +93,10 @@ service cloud.firestore {
     // writes or deletes their own doc, so nobody can promote or remove
     // themselves.
     //   super admin: may set any role, and change or delete anyone.
-    //   admin: grants provider or co-admin; changes or deletes providers,
-    //     co-admins and no-access accounts.
-    //   co-admin: grants provider or co-admin; changes or deletes only
-    //     providers and no-access accounts.
+    //   admin: grants provider, dietitian or co-admin; changes or deletes
+    //     providers, dietitians, co-admins and no-access accounts.
+    //   co-admin: grants provider, dietitian or co-admin; changes or deletes
+    //     only providers, dietitians and no-access accounts.
     // So only a super admin can grant admin or touch the admin, and a
     // co-admin can never remove the admin or another co-admin.
     // Role "" means access removed. Deleting the doc takes the person off the
@@ -93,8 +106,8 @@ service cloud.firestore {
     // first super admin.
     function canActOn(previousRole) {
       return role() == 'superAdmin'
-        || (role() == 'admin' && previousRole in ['', 'provider', 'coAdmin'])
-        || (role() == 'coAdmin' && previousRole in ['', 'provider']);
+        || (role() == 'admin' && previousRole in ['', 'provider', 'dietitian', 'coAdmin'])
+        || (role() == 'coAdmin' && previousRole in ['', 'provider', 'dietitian']);
     }
 
     function isRoleChange(uid) {
@@ -108,9 +121,9 @@ service cloud.firestore {
             || (next.addedBy.keys().hasOnly(['uid', 'name']) && next.addedBy.uid == request.auth.uid))
         && (!('addedAt' in changed) || next.addedAt == request.time)
         && next.keys().hasOnly(['role', 'name', 'email', 'addedBy', 'addedAt'])
-        && next.role in ['', 'provider', 'coAdmin', 'admin', 'superAdmin']
+        && next.role in ['', 'provider', 'dietitian', 'coAdmin', 'admin', 'superAdmin']
         && canActOn(previous)
-        && (role() == 'superAdmin' || next.role in ['', 'provider', 'coAdmin']);
+        && (role() == 'superAdmin' || next.role in ['', 'provider', 'dietitian', 'coAdmin']);
     }
 
     match /user/{uid} {
@@ -223,7 +236,7 @@ service cloud.firestore {
     match /intakeRecords/{recordId} {
       allow read: if isClinical();
       allow create: if isWellFormedIntake();
-      allow update: if isClinical() && isStatusUpdate();
+      allow update: if isAdmitter() && isStatusUpdate();
       // Deletion is the one destructive action here, so it stays on the
       // superAdmin tier rather than every admin — matching the split already
       // described above.
@@ -276,29 +289,50 @@ service cloud.firestore {
         && getAfter(/databases/$(database)/documents/intakeRecords/$(chartId)).data.status == 'admitted';
     }
 
+    // An exercise prescription: whole numbers in range or null, a known
+    // intensity, short text. Nothing else.
+    function isExercisePlan(plan) {
+      return plan is map
+        && plan.keys().hasOnly(['daysPerWeek', 'intensity', 'minutesPerSession', 'kind', 'notes'])
+        && (plan.get('daysPerWeek', null) == null
+            || (plan.daysPerWeek is int && plan.daysPerWeek >= 0 && plan.daysPerWeek <= 7))
+        && (plan.get('minutesPerSession', null) == null
+            || (plan.minutesPerSession is int && plan.minutesPerSession >= 0 && plan.minutesPerSession <= 300))
+        && plan.get('intensity', '') in ['', 'light', 'moderate', 'vigorous']
+        && plan.get('kind', '') is string && plan.get('kind', '').size() <= 500
+        && plan.get('notes', '') is string && plan.get('notes', '').size() <= 2000;
+    }
+
     function isNoteShape(data) {
       return data.keys().hasOnly([
             'type', 'status', 'authorUid', 'authorName', 'authorRole', 'createdAt', 'updatedAt',
-            'visitDate', 'sections', 'vitals', 'prescriptions', 'nextFollowUp', 'signedAt', 'signedBy'
+            'visitDate', 'sections', 'vitals', 'prescriptions', 'nextFollowUp', 'signedAt', 'signedBy',
+            'exercisePlan'
           ])
-        && data.type in ['consultation', 'progress']
+        && data.type in ['consultation', 'progress', 'dietitian', 'exercise']
         && data.sections is map
         && data.vitals is map
-        && data.prescriptions is list && data.prescriptions.size() <= 30;
+        && data.prescriptions is list && data.prescriptions.size() <= 30
+        // Medication lives only in the medical record.
+        && (data.type in ['consultation', 'progress'] || data.prescriptions.size() == 0)
+        && (!('exercisePlan' in data) || (data.type == 'exercise' && isExercisePlan(data.exercisePlan)));
     }
 
     match /patients/{chartId} {
       allow read: if isClinical();
-      allow create: if isClinical() && isNewChart(chartId);
+      allow create: if isAdmitter() && isNewChart(chartId);
       // lastNote (the list's "Last note" column) is only ever written by a
       // signing, so it must look like one: a note type and the server's time.
       allow update: if isClinical()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt', 'lastNote'])
+        // Only an admitter moves a chart between active and inactive; the
+        // dietitian's signings still update lastNote.
+        && (!('status' in request.resource.data.diff(resource.data).affectedKeys()) || isAdmitter())
         && request.resource.data.status in ['active', 'inactive']
         && request.resource.data.updatedAt == request.time
         && (!('lastNote' in request.resource.data.diff(resource.data).affectedKeys())
             || (request.resource.data.lastNote.keys().hasOnly(['type', 'signedAt'])
-                && request.resource.data.lastNote.type in ['consultation', 'progress']
+                && request.resource.data.lastNote.type in ['consultation', 'progress', 'dietitian', 'exercise']
                 && request.resource.data.lastNote.signedAt == request.time));
       allow delete: if false;
 
@@ -311,6 +345,7 @@ service cloud.firestore {
         allow read: if isClinical()
           && (resource.data.status == 'signed' || resource.data.authorUid == request.auth.uid);
         allow create: if isClinical()
+          && canWriteType(request.resource.data.type)
           && isNoteShape(request.resource.data)
           && request.resource.data.status == 'draft'
           && request.resource.data.authorUid == request.auth.uid
@@ -321,11 +356,12 @@ service cloud.firestore {
           && request.resource.data.signedBy == null
           && get(/databases/$(database)/documents/patients/$(chartId)).data.status == 'active';
         allow update: if isClinical()
+          && canWriteType(resource.data.type)
           && resource.data.status == 'draft'
           && resource.data.authorUid == request.auth.uid
           && isNoteShape(request.resource.data)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-               'visitDate', 'sections', 'vitals', 'prescriptions', 'nextFollowUp',
+               'visitDate', 'sections', 'vitals', 'prescriptions', 'nextFollowUp', 'exercisePlan',
                'updatedAt', 'status', 'signedAt', 'signedBy'
              ])
           && request.resource.data.updatedAt == request.time
@@ -357,7 +393,10 @@ service cloud.firestore {
             && request.resource.data.authorName == myName()
             && request.resource.data.authorRole == role()
             && request.resource.data.at == request.time
-            && get(/databases/$(database)/documents/patients/$(chartId)/notes/$(noteId)).data.status == 'signed';
+            && get(/databases/$(database)/documents/patients/$(chartId)/notes/$(noteId)).data.status == 'signed'
+            // A dietitian adds addenda only to dietitian notes.
+            && (role() != 'dietitian'
+                || get(/databases/$(database)/documents/patients/$(chartId)/notes/$(noteId)).data.type == 'dietitian');
           allow update, delete: if false;
         }
       }
