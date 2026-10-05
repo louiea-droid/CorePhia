@@ -120,7 +120,7 @@ export default function Header() {
                   dark ? "text-paper-100/80 hover:text-paper-100" : "text-ink-950/70 hover:text-ink-950"
                 }`}
               >
-                My account
+                Patient portal
               </Link>
             ) : (
               <button
@@ -132,7 +132,7 @@ export default function Header() {
                   dark ? "text-paper-100/80 hover:text-paper-100" : "text-ink-950/70 hover:text-ink-950"
                 }`}
               >
-                Log in
+                Patient portal
               </button>
             )}
             <button

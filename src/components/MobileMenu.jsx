@@ -131,7 +131,7 @@ export default function MobileMenu({ open, onClose, onAccountClick }) {
   const accountButton = (
     <button
       type="button"
-      aria-label="Account"
+      aria-label="Patient portal"
       onClick={() => {
         onClose()
         onAccountClick?.()

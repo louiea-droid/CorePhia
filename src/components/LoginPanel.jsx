@@ -10,8 +10,8 @@ const labelClass = "mb-1.5 block text-sm font-medium text-ink-950/80"
 const fieldClass =
   "w-full rounded-2xl border border-ink-950/15 bg-paper-50 px-4 py-3.5 text-ink-950 placeholder-ink-950/40 outline-none transition-colors duration-200 ease-out-smooth focus:border-ink-950/40"
 
-// Patient accounts are invite-only (Louie, 2026-10-02): no sign-up, password
-// reset or Google sign-in here. The invite flow will add how accounts are made.
+// Patient accounts are invite-only (Louie, 2026-10-02): sign-in only, no
+// sign-up or Google. Staff invite admitted patients from the admin.
 export default function LoginPanel({ open, onClose }) {
   const closeButtonRef = useRef(null)
   const navigate = useNavigate()
@@ -74,7 +74,7 @@ export default function LoginPanel({ open, onClose }) {
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Patient log in"
+        aria-label="Patient portal sign in"
         className={`absolute top-0 right-0 flex h-full w-full max-w-sm flex-col overflow-y-auto rounded-l-3xl bg-paper-50 shadow-2xl transition-transform duration-300 ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
@@ -89,7 +89,7 @@ export default function LoginPanel({ open, onClose }) {
           >
             <CloseIcon className="size-4" />
           </button>
-          <h2 className="text-base font-semibold text-ink-950">Patient log in</h2>
+          <h2 className="text-base font-semibold text-ink-950">Sign in</h2>
         </div>
 
         <div className="px-6 pt-8 pb-8">
@@ -145,13 +145,13 @@ export default function LoginPanel({ open, onClose }) {
               disabled={busy}
               className="w-full rounded-full bg-ink-950 py-3.5 text-sm font-semibold text-paper-50 transition-colors duration-200 ease-out-smooth hover:bg-ink-900 disabled:opacity-60"
             >
-              {busy ? "Please wait…" : "Log in"}
+              {busy ? "Please wait…" : "Sign in"}
             </button>
           </form>
 
           <p className="mt-5 text-center text-sm leading-relaxed text-ink-950/70">
             Trouble logging in? Call{" "}
-            <a href={`tel:${SUPPORT_PHONE.replace(/D/g, "")}`} className="font-medium text-ink-950 underline underline-offset-2">
+            <a href={`tel:${SUPPORT_PHONE.replace(/\D/g, "")}`} className="font-medium text-ink-950 underline underline-offset-2">
               {SUPPORT_PHONE}
             </a>{" "}
             or email{" "}

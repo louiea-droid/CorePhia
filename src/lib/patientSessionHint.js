@@ -2,7 +2,7 @@ const KEY = "corephia-patient-session"
 const EVENT = "corephia-patient-session-change"
 
 // A cheap, synchronous, per-browser hint of whether a patient is signed in —
-// used only to decide what the header shows ("Log in" vs "My account").
+// used only to decide what the header shows (sign-in panel vs. straight to the portal).
 // Deliberately has no Firebase import, so components that only need the
 // label (Header) never trigger the Firebase Auth SDK download that
 // components needing the real session (LoginPanel, Account) already pull in.
