@@ -60,7 +60,33 @@ Patient side built 2026-10-05 (plan `docs/superpowers/plans/2026-10-05-client-po
   add `patientAccounts/{that uid}` by hand with the four fields. **Deploy the rules first**
   (`firebase deploy --only firestore:rules`): the live project still has the old rule, which
   refuses the patient read, so the portal shows the error state until then.
-- **Not built yet:** `/portal/setup` and the invite email (EmailJS, Louie 2026-10-05).
+- **Admin invites, built 2026-10-05** (plan `docs/superpowers/plans/2026-10-05-portal-invites-admin.md`,
+  spec `docs/superpowers/specs/2026-10-05-portal-invites-emailjs-design.md`): a **Patient
+  portal** card on each chart shows the intake email and the invite status, with **Send
+  portal invite** / **Resend invite** for roles that can admit. The dialog's subject and
+  message are editable; co-admin and up can save them as the default template
+  (`settings/portalInvite`). Invites are stored in `patients/{chartId}/invites` and sent
+  through EmailJS (`src/admin/lib/emailjs.js`). Activity log: "Sent a portal invite".
+- **Not built yet:** `/portal/setup` (where the invite link lands), the login panel's
+  "Forgot password?" view and `/portal/reset`. **Invites sent before `/portal/setup` exists
+  link to a page that isn't there yet.**
+
+### EmailJS setup (once)
+
+1. Email Services → Add New Service → connect the `info@corephia.com` mailbox → copy the
+   **Service ID**.
+2. Email Templates → Create New Template: To Email `{{to_email}}`, From Name `CorePhia`,
+   Reply To `info@corephia.com`, Subject `{{subject}}`, and in the HTML content
+   `{{{message_html}}}` (triple braces: the site sends it already escaped, with `<br>` line
+   breaks), then a button linking `{{setup_link}}` ("Set up your portal"), then
+   "CorePhia Health · Tampa, Florida". Copy the **Template ID**.
+3. Account → General → copy the **Public Key**.
+4. Account → Security: restrict to `corephia.com` and `localhost`, and set a rate limit if
+   offered. The public key ships to browsers.
+5. `.env.local`: `VITE_EMAILJS_SERVICE_ID`, `VITE_EMAILJS_TEMPLATE_ID`,
+   `VITE_EMAILJS_PUBLIC_KEY`, then restart the dev server (and rebuild for hosting). Without
+   them the dialog says "Email sending isn't set up yet." Demo mode fakes a send.
+6. Deploy the rules (`firebase deploy --only firestore:rules`) or invite saves are refused.
 - **Admin:** lists intake records, opens one, sets a status (pending / admitted / declined)
   and a short staff note (`adminNote`). Same Firebase project as the patient login.
 - **`firestore.rules`:** role-based staff access, audit log, and the "only your own data"
