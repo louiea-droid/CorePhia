@@ -1,8 +1,8 @@
 // firestore.rules tests for charts, notes (all four types), amendments, staff
-// roles, appointments, patient portal links and portal invites.
+// roles, appointments, patient portal links, portal invites and setup links.
 //
 // Run: npm run test:rules
-// Needs Java 21+ for the Firestore emulator (firebase-tools starts it). All 92
+// Needs Java 21+ for the Firestore emulator (firebase-tools starts it). All 96
 // passed on 2026-10-05. Run them before every rules deploy.
 import { readFileSync } from "node:fs"
 import { after, before, beforeEach, describe, test } from "node:test"
@@ -68,6 +68,8 @@ beforeEach(async () => {
     const invite = { to: "pat@x.co", firstName: "Pat", subject: "s", message: "m", createdBy: { uid: "provider", name: "provider" }, createdAt: new Date() }
     await setDoc(doc(db, "patients/chart1/invites/sent1"), { ...invite, status: "sent", sentAt: new Date() })
     await setDoc(doc(db, "patients/chart1/invites/ready1"), { ...invite, status: "ready" })
+    await setDoc(doc(db, "patients/chart1/invites/old1"), { ...invite, status: "sent", sentAt: new Date(Date.now() - 8 * 86400000) })
+    await setDoc(doc(db, "patientAccounts", "p2"), { email: "pat@x.co", intakeId: "chart1", firstName: "Pat", inviteId: "sent1", linkedAt: new Date() })
     await setDoc(doc(db, "patients", "inactive1"), { intakeRecordId: "inactive1", status: "inactive" })
     await setDoc(doc(db, "intakeRecords", "inactive1"), { status: "declined", demographics: { email: "pat@x.co" } })
     await setDoc(doc(db, "patientAccounts", "patient1"), { email: "p1@x.co", intakeId: "chart1", firstName: "Pat", linkedAt: new Date() })
@@ -662,5 +664,31 @@ describe("portal invites", () => {
     await assertFails(setDoc(doc(as("provider"), "settings", "portalInvite"), template("provider")))
     await assertFails(setDoc(doc(as("coadmin"), "settings", "portalInvite"), template("admin")))
     await assertSucceeds(getDoc(doc(as("provider"), "settings", "portalInvite")))
+  })
+})
+
+describe("portal setup links", () => {
+  const asPatient = (uid, email = "pat@x.co") => env.authenticatedContext(uid, { email }).firestore()
+  const link = (overrides = {}) => ({ email: "pat@x.co", intakeId: "chart1", firstName: "Pat", inviteId: "sent1", linkedAt: serverTimestamp(), ...overrides })
+
+  test("a patient links their own login to a sent invite", async () => {
+    await assertSucceeds(setDoc(doc(asPatient("p1"), "patientAccounts", "p1"), link()))
+  })
+  test("the link must match the invite: email, freshness, status and name", async () => {
+    await assertFails(setDoc(doc(asPatient("p1", "other@x.co"), "patientAccounts", "p1"), link({ email: "other@x.co" })))
+    await assertFails(setDoc(doc(asPatient("p1"), "patientAccounts", "p1"), link({ inviteId: "old1" })))
+    await assertFails(setDoc(doc(asPatient("p1"), "patientAccounts", "p1"), link({ inviteId: "ready1" })))
+    await assertFails(setDoc(doc(asPatient("p1"), "patientAccounts", "p1"), link({ firstName: "Sam" })))
+    const { inviteId: _omit, ...withoutInvite } = link()
+    await assertFails(setDoc(doc(asPatient("p1"), "patientAccounts", "p1"), withoutInvite))
+  })
+  test("a patient can't link someone else's uid or link twice", async () => {
+    await assertFails(setDoc(doc(asPatient("p1"), "patientAccounts", "someoneElse"), link()))
+    await assertFails(setDoc(doc(asPatient("p2"), "patientAccounts", "p2"), link()))
+  })
+  test("signed out, an expired invite can't be read", async () => {
+    const anon = env.unauthenticatedContext().firestore()
+    await assertFails(getDoc(doc(anon, "patients/chart1/invites/old1")))
+    await assertSucceeds(getDoc(doc(anon, "patients/chart1/invites/sent1")))
   })
 })

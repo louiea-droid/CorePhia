@@ -257,16 +257,35 @@ service cloud.firestore {
     }
 
     // One doc per patient login, linking it to their intake record:
-    // { email, intakeId, firstName, linkedAt }. Named patientAccounts so it
-    // can't be confused with patients/{chartId}, the clinical charts. Written
-    // only by hand in the Firebase console for now, never by a browser, so
-    // nobody can link themselves to someone else's intake. Self sign-up is
-    // gone (invite-only, Louie 2026-10-02); old sign-up docs without an
-    // intakeId read as "portal not set up yet" in Account.jsx. A patient reads
-    // only their own; clinical staff read them for the chart's portal status.
+    // { email, intakeId, firstName, inviteId, linkedAt }. Named patientAccounts
+    // so it can't be confused with patients/{chartId}, the clinical charts.
+    // Self sign-up is gone (invite-only, Louie 2026-10-02); old sign-up docs
+    // without an intakeId read as "portal not set up yet" in Account.jsx. A
+    // patient reads only their own; clinical staff read them for the chart's
+    // portal status.
     match /patientAccounts/{uid} {
+      // A patient links their own login from /portal/setup, only against a
+      // sent, unexpired invite to the same email, copying its name. Knowing
+      // the invite's id (from the emailed link) is the proof. Once written, a
+      // link never changes.
+      function isOwnInviteLink() {
+        let data = request.resource.data;
+        let invite = get(/databases/$(database)/documents/patients/$(data.intakeId)/invites/$(data.inviteId)).data;
+        return request.auth != null
+          && request.auth.uid == uid
+          && data.keys().hasAll(['email', 'intakeId', 'firstName', 'inviteId', 'linkedAt'])
+          && data.keys().hasOnly(['email', 'intakeId', 'firstName', 'inviteId', 'linkedAt'])
+          && data.intakeId is string && data.inviteId is string
+          && data.email == request.auth.token.email
+          && data.linkedAt == request.time
+          && invite.status == 'sent'
+          && invite.to == request.auth.token.email
+          && request.time < invite.sentAt + duration.value(7, 'd')
+          && data.firstName == invite.firstName;
+      }
       allow read: if (request.auth != null && request.auth.uid == uid) || isClinical();
-      allow create, update, delete: if false;
+      allow create: if isOwnInviteLink();
+      allow update, delete: if false;
     }
 
     // --- Patient charts ------------------------------------------------------
@@ -407,7 +426,7 @@ service cloud.firestore {
       // Portal invites (Louie, 2026-10-05): the admin saves one as 'ready',
       // sends it through EmailJS, then marks it 'sent' or 'failed'. The id is
       // 128 random bits; the signed-out /portal/setup page may get a sent one
-      // by its id (the emailed link is the proof), never list them.
+      // by its id for 7 days (the emailed link is the proof), never list them.
       match /invites/{inviteId} {
         function isNewInvite() {
           let data = request.resource.data;
@@ -433,7 +452,8 @@ service cloud.firestore {
              || (changed.hasOnly(['status', 'error']) && request.resource.data.status == 'failed'
                  && request.resource.data.error is string && request.resource.data.error.size() <= 300));
         }
-        allow get: if isClinical() || resource.data.status == 'sent';
+        allow get: if isClinical()
+          || (resource.data.status == 'sent' && request.time < resource.data.sentAt + duration.value(7, 'd'));
         allow list: if isClinical();
         allow create: if isAdmitter() && isNewInvite();
         allow update: if isAdmitter() && isSendResult();
