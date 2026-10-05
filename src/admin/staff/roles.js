@@ -48,6 +48,8 @@ const NOTE_WRITERS = {
 
 export const canWriteNote = (type, role) => NOTE_WRITERS[type]?.includes(role) ?? false
 export const canAdmit = (role) => PRESCRIBERS.includes(role)
+// The default portal-invite wording. Mirrors settings/portalInvite (isStaff) in firestore.rules.
+export const canEditInviteTemplate = (role) => STAFF_ROLES.includes(role)
 // A dietitian adds addenda only to dietitian notes, so they can't add text
 // to a medical record. Everyone else clinical: any signed note.
 export const canAmend = (noteType, role) => isClinicalRole(role) && (role !== "dietitian" || noteType === "dietitian")

@@ -3,6 +3,7 @@
 import assert from "node:assert/strict"
 import {
   canAdmit,
+  canEditInviteTemplate,
   canAmend,
   canManageMember,
   canOpen,
@@ -31,6 +32,9 @@ assert.equal(canWriteNote("unknown", "admin"), false)
 // Admitting and declining: everyone clinical except the dietitian.
 assert.equal(canAdmit("dietitian"), false)
 assert.equal(canAdmit("provider"), true)
+// The portal-invite template: co-admin and up (settings/portalInvite in firestore.rules).
+for (const role of ["coAdmin", "admin", "superAdmin"]) assert.equal(canEditInviteTemplate(role), true, role)
+for (const role of ["provider", "dietitian", ""]) assert.equal(canEditInviteTemplate(role), false, role)
 assert.equal(canAdmit(null), false)
 
 // Addenda: a dietitian only on dietitian notes; others on anything.

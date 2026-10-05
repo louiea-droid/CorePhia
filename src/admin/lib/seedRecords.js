@@ -109,7 +109,7 @@ function buildSeedRecords(count) {
         dateOfBirth: `19${60 + Math.floor(random() * 40)}-0${1 + Math.floor(random() * 9)}-1${Math.floor(random() * 9)}`,
         sexAssignedAtBirth: random() > 0.55 ? "Female" : "Male",
         phone: "",
-        email: "",
+        email: `${firstName}.${lastName}@example.com`.toLowerCase(),
         address: { line1: "", city: "Tampa", state: pick(STATES), postalCode: "" },
       },
       emergencyContact: { name: "", relationship: "", phone: "" },
@@ -164,7 +164,10 @@ function buildSeedRecords(count) {
   return records.sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))
 }
 
-// Six admitted, so demo mode has patient charts (seedCharts.js) to show.
+// Six admitted, so demo mode has patient charts (seedCharts.js) to show. The
+// last has no email, so the chart's "No email on this intake" shows too.
 export const seedRecords = buildSeedRecords(48).map((record, index) =>
-  index % 8 === 1 ? { ...record, status: "admitted" } : record,
+  index % 8 !== 1
+    ? record
+    : { ...record, status: "admitted", ...(index === 41 && { demographics: { ...record.demographics, email: "" } }) },
 )

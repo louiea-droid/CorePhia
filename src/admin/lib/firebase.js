@@ -62,6 +62,7 @@ export const AUDIT_ACTIONS = {
   moveAppointment: "move_appointment",
   cancelAppointment: "cancel_appointment",
   updateAppointmentStatus: "update_appointment_status",
+  sendPortalInvite: "send_portal_invite",
 }
 
 // A record with no status field yet (every one submitted before this feature

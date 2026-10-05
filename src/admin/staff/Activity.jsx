@@ -27,6 +27,7 @@ const ACTION_LABELS = {
   [AUDIT_ACTIONS.moveAppointment]: "Changed an appointment",
   [AUDIT_ACTIONS.cancelAppointment]: "Cancelled an appointment",
   [AUDIT_ACTIONS.updateAppointmentStatus]: "Marked an appointment",
+  [AUDIT_ACTIONS.sendPortalInvite]: "Sent a portal invite",
 }
 
 const DESTRUCTIVE_ACTIONS = new Set([AUDIT_ACTIONS.deleteIntake, AUDIT_ACTIONS.deleteMessage, AUDIT_ACTIONS.deleteStaff])
