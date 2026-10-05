@@ -9,6 +9,7 @@ import {
   inviteStatus,
   isInviteUsable,
   newInviteId,
+  retryOnce,
   toTemplate,
 } from "./inviteMath.js"
 
@@ -53,5 +54,12 @@ assert.equal(escapeMessage(`a"b'c\r\nd`), "a&quot;b&#39;c<br>d")
 const id = newInviteId()
 assert.match(id, /^[0-9a-f]{32}$/)
 assert.notEqual(id, newInviteId())
+
+// retryOnce: a second try after one failure; false only if both fail.
+let calls = 0
+assert.equal(await retryOnce(async () => { calls++; if (calls === 1) throw new Error("blip") }), true)
+assert.equal(calls, 2)
+assert.equal(await retryOnce(async () => { throw new Error("down") }), false)
+assert.equal(await retryOnce(async () => {}), true)
 
 console.log("inviteMath: all checks passed")

@@ -33,10 +33,16 @@ export default function PortalAccess({ chart, intake, actor }) {
   const [composing, setComposing] = useState(false)
 
   const reload = useCallback(() => {
-    loadPortalAccess(chart.id).then(setAccess, (cause) => {
-      console.error("Could not load portal access:", cause.code ?? cause.message)
-      setFailed(true)
-    })
+    loadPortalAccess(chart.id).then(
+      (next) => {
+        setAccess(next)
+        setFailed(false)
+      },
+      (cause) => {
+        console.error("Could not load portal access:", cause.code ?? cause.message)
+        setFailed(true)
+      },
+    )
   }, [chart.id])
 
   useEffect(reload, [reload])

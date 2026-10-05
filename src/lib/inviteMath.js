@@ -81,3 +81,16 @@ export function escapeMessage(text) {
 export function newInviteId() {
   return Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) => byte.toString(16).padStart(2, "0")).join("")
 }
+
+// Runs a write, and once more if it fails. false = both failed.
+export async function retryOnce(write) {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      await write()
+      return true
+    } catch {
+      /* try again, then give up */
+    }
+  }
+  return false
+}

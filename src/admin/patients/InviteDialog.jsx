@@ -60,7 +60,11 @@ export default function InviteDialog({ chartId, patientName, firstName, to, acto
         onSent()
         return
       }
-      setError(`The email didn't send: ${invite.error}`)
+      setError(
+        invite.status === "unrecorded"
+          ? "The email went out, but saving it failed, so its link won't work. Send the invite again."
+          : `The email didn't send: ${invite.error}`,
+      )
     } catch (cause) {
       setError(cause?.code === "permission-denied" ? "Your role can't send invites for this chart." : "Couldn't save the invite. Nothing was sent.")
     }

@@ -15,7 +15,7 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore"
-import { DEFAULT_INVITE, escapeMessage, newInviteId } from "../../lib/inviteMath"
+import { DEFAULT_INVITE, escapeMessage, newInviteId, retryOnce } from "../../lib/inviteMath"
 import { db, usingSeedData } from "../lib/firebase"
 import { emailjsConfigured, sendEmail } from "../lib/emailjs"
 import { PATIENTS_COLLECTION, getDemoStore } from "./chartStore"
@@ -47,7 +47,8 @@ export async function loadPortalAccess(chartId) {
 }
 
 // Saves the invite, emails it, and records how that went. Resolves with the
-// final invite ('sent' or 'failed'); throws only if the first save fails.
+// final invite (sent, failed, or unrecorded: emailed but its status didn't save);
+// throws only if the first save fails.
 export async function sendInvite({ chartId, to, firstName, subject, message }, actor) {
   const id = newInviteId()
   const invite = { to: to.trim().toLowerCase(), firstName, subject, message, status: "ready", createdBy: { uid: actor.uid, name: actor.name } }
@@ -80,9 +81,12 @@ export async function sendInvite({ chartId, to, firstName, subject, message }, a
     await updateDoc(ref, { status: "failed", error }).catch(() => {})
     return { id, ...invite, status: "failed", error, createdAt: new Date() }
   }
-  // The email is out even if this write fails; the box would then say "Not
-  // sent yet", which a resend fixes.
-  await updateDoc(ref, { status: "sent", sentAt: serverTimestamp() }).catch(() => {})
+  // The email is out, but its link only works once the invite reads 'sent'.
+  // If that write fails twice, say so: the box would show "Not sent yet" and
+  // the patient's link would be dead, so a new invite is the fix.
+  if (!(await retryOnce(() => updateDoc(ref, { status: "sent", sentAt: serverTimestamp() })))) {
+    return { id, ...invite, status: "unrecorded", createdAt: new Date() }
+  }
   return { id, ...invite, status: "sent", sentAt: new Date(), createdAt: new Date() }
 }
 

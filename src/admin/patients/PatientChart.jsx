@@ -381,7 +381,7 @@ export default function PatientChart({ actor }) {
         </div>
 
         <div className="space-y-4">
-          <PortalAccess chart={chart} intake={intake} actor={actor} />
+          <PortalAccess key={chart.id} chart={chart} intake={intake} actor={actor} />
           <Card title="Current prescriptions">
             {current.length === 0 ? (
               <p className="text-sm text-ink-950/55">None. Prescriptions appear here once a note that adds one is signed.</p>
