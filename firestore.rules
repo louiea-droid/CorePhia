@@ -256,27 +256,17 @@ service cloud.firestore {
       allow delete: if role() == 'superAdmin';
     }
 
-    // One doc per patient login account, written once at sign-up
-    // (src/lib/patientAuth.js) to record the email against the Auth uid. Named
-    // patientAccounts so it can't be confused with patients/{chartId}, the
-    // clinical charts. This is account/contact data, not
-    // a clinical record — it holds none of the intake's medical history, so it
-    // does not carry the same BAA requirement intakeRecords does. A patient may
-    // create only their own doc, only with the email their token already proves
-    // is theirs, and never edit or delete it afterward.
-    //
-    // Read is staff-only, same as every other collection here — nothing in the
-    // app currently reads this doc back as the patient (patientAuth.js only
-    // ever writes it; Account.jsx gets the email from the Auth object itself,
-    // not Firestore), so there is no self-read left to preserve.
+    // One doc per patient login, linking it to their intake record:
+    // { email, intakeId, firstName, linkedAt }. Named patientAccounts so it
+    // can't be confused with patients/{chartId}, the clinical charts. Written
+    // only by hand in the Firebase console for now, never by a browser, so
+    // nobody can link themselves to someone else's intake. Self sign-up is
+    // gone (invite-only, Louie 2026-10-02); old sign-up docs without an
+    // intakeId read as "portal not set up yet" in Account.jsx. A patient reads
+    // only their own; clinical staff read them for the chart's portal status.
     match /patientAccounts/{uid} {
-      allow read: if isStaff();
-      allow create: if request.auth != null
-        && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['email', 'createdAt'])
-        && request.resource.data.email == request.auth.token.email
-        && request.resource.data.createdAt == request.time;
-      allow update, delete: if false;
+      allow read: if (request.auth != null && request.auth.uid == uid) || isClinical();
+      allow create, update, delete: if false;
     }
 
     // --- Patient charts ------------------------------------------------------

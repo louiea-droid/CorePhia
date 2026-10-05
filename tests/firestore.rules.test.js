@@ -1,9 +1,9 @@
 // firestore.rules tests for charts, notes (all four types), amendments, staff
-// roles and appointments.
+// roles, appointments and patient portal links.
 //
 // Run: npm run test:rules
-// Needs Java 21+ for the Firestore emulator (firebase-tools starts it). All 66
-// passed on 2026-10-02. Run them before every rules deploy.
+// Needs Java 21+ for the Firestore emulator (firebase-tools starts it). All 86
+// passed on 2026-10-05. Run them before every rules deploy.
 import { readFileSync } from "node:fs"
 import { after, before, beforeEach, describe, test } from "node:test"
 import { assertFails, assertSucceeds, initializeTestEnvironment } from "@firebase/rules-unit-testing"
@@ -65,6 +65,8 @@ beforeEach(async () => {
     await setDoc(doc(db, "patients/chart1/notes/draft1"), draft("provider", "provider"))
     await setDoc(doc(db, "patients/chart1/notes/diet1"), { ...draft("admin", "admin", { type: "dietitian" }), status: "signed" })
     await setDoc(doc(db, "contactMessages", "m1"), { name: "x" })
+    await setDoc(doc(db, "patientAccounts", "patient1"), { email: "p1@x.co", intakeId: "chart1", firstName: "Pat", linkedAt: new Date() })
+    await setDoc(doc(db, "patientAccounts", "patient2"), { email: "p2@x.co", intakeId: "pending1", firstName: "Sam", linkedAt: new Date() })
   })
 })
 
@@ -572,5 +574,32 @@ describe("last sign in", () => {
   })
   test("an admin can't set someone's sign-in time", async () => {
     await assertFails(setDoc(doc(as("admin"), "user", "newbie"), { role: "provider", name: "N", lastSignInAt: serverTimestamp() }))
+  })
+})
+
+describe("patient accounts", () => {
+  const asPatient = (uid, email) => env.authenticatedContext(uid, { email, email_verified: true }).firestore()
+
+  test("a patient reads their own link doc", async () => {
+    await assertSucceeds(getDoc(doc(asPatient("patient1", "p1@x.co"), "patientAccounts", "patient1")))
+  })
+  test("a patient can't read another patient's link doc", async () => {
+    await assertFails(getDoc(doc(asPatient("patient1", "p1@x.co"), "patientAccounts", "patient2")))
+  })
+  test("signed-out visitors can't read link docs", async () => {
+    await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), "patientAccounts", "patient1")))
+  })
+  test("a patient can't create, change or delete a link doc", async () => {
+    const db = asPatient("newbie", "n@x.co")
+    await assertFails(setDoc(doc(db, "patientAccounts", "newbie"), { email: "n@x.co", createdAt: serverTimestamp() }))
+    await assertFails(setDoc(doc(db, "patientAccounts", "newbie"), { email: "n@x.co", intakeId: "chart1", firstName: "N", linkedAt: serverTimestamp() }))
+    const own = asPatient("patient1", "p1@x.co")
+    await assertFails(updateDoc(doc(own, "patientAccounts", "patient1"), { intakeId: "pending1" }))
+    await assertFails(deleteDoc(doc(own, "patientAccounts", "patient1")))
+  })
+  test("clinical staff read link docs; nobody writes them from the client", async () => {
+    await assertSucceeds(getDoc(doc(as("provider"), "patientAccounts", "patient1")))
+    await assertSucceeds(getDocs(query(collection(as("provider"), "patientAccounts"), where("intakeId", "==", "chart1"))))
+    await assertFails(setDoc(doc(as("super"), "patientAccounts", "x"), { email: "x@x.co", intakeId: "chart1", firstName: "X", linkedAt: serverTimestamp() }))
   })
 })
