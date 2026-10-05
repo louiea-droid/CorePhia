@@ -21,6 +21,8 @@ const AdminApp = lazy(() => import("./admin/AdminApp"))
 // lib/patientAuth, so it stays out of the bundle until someone actually
 // navigates to /account.
 const Account = lazy(() => import("./pages/Account"))
+const PortalSetup = lazy(() => import("./pages/PortalSetup"))
+const PortalReset = lazy(() => import("./pages/PortalReset"))
 
 function ScrollManager() {
   const { pathname, hash } = useLocation()
@@ -86,6 +88,22 @@ function App() {
             element={
               <Suspense fallback={null}>
                 <Account />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/portal/setup"
+            element={
+              <Suspense fallback={null}>
+                <PortalSetup />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/portal/reset"
+            element={
+              <Suspense fallback={null}>
+                <PortalReset />
               </Suspense>
             }
           />
