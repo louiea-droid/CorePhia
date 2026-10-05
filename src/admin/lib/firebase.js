@@ -74,8 +74,20 @@ export const isConfigured = Boolean(config.apiKey && config.projectId)
 // Demo mode exists so the dashboard can be reviewed before a BAA is signed and
 // real records exist. import.meta.env.DEV is replaced with `false` at build
 // time, so a production bundle cannot reach the seeded branch — the dashboard
-// there is unreachable without a real signed-in Firebase user.
-export const usingSeedData = import.meta.env.DEV && !isConfigured
+// there is unreachable without a real signed-in Firebase user. In dev, ?demo=1
+// on an /admin URL also switches it on with the Firebase keys set (kept for
+// the tab in sessionStorage; ?demo=0 switches back to live data).
+function demoRequested() {
+  try {
+    const asked = new URLSearchParams(window.location.search).get("demo")
+    if (asked === "1") sessionStorage.setItem("corephia-demo-data", "1")
+    if (asked === "0") sessionStorage.removeItem("corephia-demo-data")
+    return sessionStorage.getItem("corephia-demo-data") === "1"
+  } catch {
+    return false
+  }
+}
+export const usingSeedData = import.meta.env.DEV && (!isConfigured || demoRequested())
 
 const app = isConfigured ? initializeApp(config) : null
 const auth = app ? getAuth(app) : null

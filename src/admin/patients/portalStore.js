@@ -64,7 +64,8 @@ export async function sendInvite({ chartId, to, firstName, subject, message }, a
     const entry = { id, ...invite, createdAt: new Date() }
     list.unshift(entry)
     try {
-      if (emailjsConfigured) await sendEmail(params)
+      // Seeded demo patients have made-up @example.com addresses: never email them.
+      if (emailjsConfigured && !invite.to.endsWith("@example.com")) await sendEmail(params)
       Object.assign(entry, { status: "sent", sentAt: new Date() })
     } catch (cause) {
       Object.assign(entry, { status: "failed", error: String(cause.message).slice(0, 300) })
