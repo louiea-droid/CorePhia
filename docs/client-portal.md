@@ -1,7 +1,8 @@
 # Client portal: notes for later
 
-Status: **parked** (Louie, 2026-10-01). Nothing below is built yet. Pick it up from
-"Open decision" at the bottom.
+Status: **login and invites being built** (Louie, 2026-10-05). Spec:
+`docs/superpowers/specs/2026-10-05-client-portal-login-design.md`. Sending email and the
+Cloud Function are on hold; invites are saved as "Ready to send" until then.
 
 Per Louie, Elation is set aside for this: build what Dr. Antonious asked for in the
 meeting, with the site as the system. Revisit if Elation is signed, since EMRs usually
@@ -142,3 +143,11 @@ in the admin searches by it. Batch alerts if bots ever flood the intake.
 Decided 2026-10-02 (Louie): **invite-only**. Section order Updates → Track progress →
 Messages (Membership waits on billing) is agreed but on hold; **the invite-only login is
 built first**.
+
+## Next: the Updates section (saved 2026-10-05)
+
+Agreed as the next portal build after the login (Louie, 2026-10-05). Staff post a dated
+update on the patient chart; the patient sees it on their portal; once the Cloud Function
+exists it emails "you have a new update, check your portal" with no details. Data idea:
+`patients/{chartId}/updates/{id}` `{ body, createdBy, createdAt }`, read by the patient
+through their `patientAccounts/{uid}.intakeId` link. Size: small. Its own short design first.
