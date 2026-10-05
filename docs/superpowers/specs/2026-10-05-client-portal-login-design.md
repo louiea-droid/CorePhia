@@ -4,6 +4,26 @@
 `docs/client-portal.md` (invite-only, login first) and the existing patient login
 (`src/components/LoginPanel.jsx`, `src/lib/patientAuth.js`, `src/pages/Account.jsx`).
 
+> **Revised 2026-10-05 (Louie): invites are sent with EmailJS, not a Cloud Function.**
+> The patient side below is built. The admin side and the sections that say "function" are
+> superseded by this, and get their own spec update before they are built:
+> - The admin saves an invite whose id is a 128-bit random value, sends it through EmailJS's
+>   REST endpoint with a plain `fetch` (no new dependency; template vars `to_email`,
+>   `subject`, `message`, `setup_link`), then marks it `sent`, or `failed` with the error.
+>   The button says **Send invite**.
+> - The link opens a new **`/portal/setup?c={chartId}&i={inviteId}`** page. The patient
+>   chooses a password; the browser creates their Auth account with the invite's email and
+>   writes their own `patientAccounts/{uid}`. A patient who already has a login signs in
+>   there instead and is linked the same way.
+> - Rules replace the server: a patient may create their own link only if the invite
+>   exists, its `to` equals their token email, it was sent under 7 days ago, and
+>   `intakeId`/`firstName` copy the invite. Staff may move an invite `ready` → `sent` |
+>   `failed` only. Resend makes a new invite; older links work until they expire.
+> - Placeholder `VITE_EMAILJS_*` values until the client's EmailJS account exists.
+> - Open risks: EmailJS likely signs no BAA, and an invite reveals a patient relationship;
+>   the public key can send our template to any address (use EmailJS allowed origins and
+>   rate limits); whoever holds an invite link can read that invite.
+
 ## What and why
 
 The patient login becomes the CorePhia client portal, and only admitted patients can
