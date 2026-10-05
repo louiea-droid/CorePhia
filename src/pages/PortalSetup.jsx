@@ -136,9 +136,11 @@ export default function PortalSetup() {
   const state =
     invite === undefined || user === undefined
       ? "loading"
-      : invite === null || refused
+      : invite === null
         ? "invalid"
-        : user && !sameUser && !busy
+        : refused
+          ? "refused"
+          : user && !sameUser && !busy
           ? "other"
           : sameUser && !busy
             ? link === undefined
@@ -168,6 +170,18 @@ export default function PortalSetup() {
           <h1 className="font-serif text-3xl text-ink-950">This invite link has expired or isn't valid</h1>
           <p className="mt-3 text-ink-950/70">
             Contact us and we'll send you a new one. <ContactLine />
+          </p>
+        </div>
+      )}
+
+      {/* The login exists but the link save was refused: the invite expired
+          while the page was open, or the live rules are behind. Not "expired". */}
+      {state === "refused" && (
+        <div className={cardClass}>
+          <h1 className="font-serif text-3xl text-ink-950">We couldn't connect your login</h1>
+          <p className="mt-3 text-ink-950/70">
+            Your login was created, but we couldn't connect it to your portal. Contact us and we'll sort it out.{" "}
+            <ContactLine />
           </p>
         </div>
       )}
