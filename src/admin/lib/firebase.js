@@ -103,9 +103,21 @@ export async function signOutAdmin() {
   if (auth) await signOut(auth)
 }
 
+// Firebase's reset email, coming back to the admin after the CorePhia
+// /portal/reset page. If the domain isn't on Firebase's authorised list,
+// send without the continue URL rather than not at all.
+export async function sendStaffResetEmail(email) {
+  try {
+    await sendPasswordResetEmail(auth, email, { url: `${window.location.origin}/admin` })
+  } catch (cause) {
+    if (cause.code !== "auth/unauthorized-continue-uri") throw cause
+    await sendPasswordResetEmail(auth, email)
+  }
+}
+
 export async function resetAdminPassword(email) {
   if (!auth) throw new Error("Firebase is not configured.")
-  await sendPasswordResetEmail(auth, email)
+  await sendStaffResetEmail(email)
 }
 
 // Changing a password needs a fresh sign-in, so the current password is

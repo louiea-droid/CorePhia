@@ -5,7 +5,7 @@
 // functions run against an in-memory store seeded by seedCharts.js, so the
 // whole flow can be tried before a BAA and real records exist.
 import { deleteApp, initializeApp } from "firebase/app"
-import { createUserWithEmailAndPassword, getAuth, sendPasswordResetEmail, signOut } from "firebase/auth"
+import { createUserWithEmailAndPassword, getAuth, signOut } from "firebase/auth"
 import {
   addDoc,
   collection,
@@ -22,7 +22,7 @@ import {
   where,
   writeBatch,
 } from "firebase/firestore"
-import { auth, config, db, INTAKE_COLLECTION, USERS_COLLECTION, usingSeedData } from "../lib/firebase"
+import { config, db, INTAKE_COLLECTION, sendStaffResetEmail, USERS_COLLECTION, usingSeedData } from "../lib/firebase"
 
 export const PATIENTS_COLLECTION = "patients"
 const NOTES = "notes"
@@ -366,7 +366,7 @@ export async function addStaff({ name, email, role }, actor) {
     const { user } = await createUserWithEmailAndPassword(inviteAuth, email, randomPassword())
     await signOut(inviteAuth)
     await setDoc(doc(database, USERS_COLLECTION, user.uid), { ...record, addedAt: serverTimestamp() })
-    await sendPasswordResetEmail(auth, email)
+    await sendStaffResetEmail(email)
     return { uid: user.uid, ...record, addedAt: new Date() }
   } finally {
     await deleteApp(invite)
