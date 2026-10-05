@@ -53,6 +53,17 @@ export async function signInPatient(email, password) {
   return credential.user
 }
 
+// The patientAccounts/{uid} doc that links this login to an intake record.
+// Written only by the server or the console (see firestore.rules). null =
+// not linked yet, which includes old self sign-up docs with no intakeId.
+export async function getMyPortalLink(uid) {
+  if (!db) return null
+  const snap = await getDoc(doc(db, "patientAccounts", uid))
+  const data = snap.data()
+  if (!data?.intakeId) return null
+  return { intakeId: data.intakeId, firstName: (data.firstName ?? "").trim() }
+}
+
 export async function resetPatientPassword(email) {
   if (!auth) throw new Error("Firebase is not configured.")
   await sendPasswordResetEmail(auth, email)
