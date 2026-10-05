@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- No new dependencies. Site tokens only; hover = colour; copy: "CorePhia", no em dashes, no provider name, "Log in" wording in the panel (Louie 2026-10-05).
+- No new dependencies. Site tokens only; hover = colour; copy: "CorePhia", no em dashes, no provider name. Keep the panel's existing wording.
 - Passwords: minimum 8 characters, Confirm must match, show/hide toggle.
 - Never reveal whether an email has an account: the reset request always answers "If that email has a portal login, we've sent a link to reset your password."
 - `INVITE_DAYS` (7) and `isInviteUsable` come from `src/lib/inviteMath.js`; don't redefine them.
