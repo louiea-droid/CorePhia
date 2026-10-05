@@ -67,9 +67,32 @@ Patient side built 2026-10-05 (plan `docs/superpowers/plans/2026-10-05-client-po
   message are editable; co-admin and up can save them as the default template
   (`settings/portalInvite`). Invites are stored in `patients/{chartId}/invites` and sent
   through EmailJS (`src/admin/lib/emailjs.js`). Activity log: "Sent a portal invite".
-- **Not built yet:** `/portal/setup` (where the invite link lands), the login panel's
-  "Forgot password?" view and `/portal/reset`. **Invites sent before `/portal/setup` exists
-  link to a page that isn't there yet.**
+- **Portal setup and forgot password, built 2026-10-05** (plan
+  `docs/superpowers/plans/2026-10-05-portal-setup-and-reset.md`):
+  - `/portal/setup?c={chartId}&i={inviteId}` is where the invite link lands. The patient
+    chooses a password; the page creates their login and writes their own
+    `patientAccounts/{uid}` link. The rules accept that only against a sent invite under 7
+    days old, to the same email, with the same first name. Already have a login: they enter
+    its password to connect. Signed in as someone else: told to log out first. Expired or
+    made-up link: "This invite link has expired or isn't valid" with contact details.
+  - The login panel has "Forgot password?": email, Send reset link, then always "If that
+    email has a portal login, we've sent a link…" (no probing for accounts).
+  - `/portal/reset` takes Firebase's reset link (`mode=resetPassword&oobCode=…`), asks for
+    a new password and sends them on to `continueUrl` (same site only; patients `/account`,
+    staff `/admin`).
+
+### Firebase console for forgot password (once, after deploying)
+
+Authentication → Templates → Password reset → edit:
+- Sender name `CorePhia`, reply-to `info@corephia.com`, subject `Reset your CorePhia
+  password`, your own message (keep `%LINK%`).
+- **Customize action URL:** `https://corephia.com/portal/reset`. Only after the site with
+  that page is deployed. This applies to the whole project, so staff invites and staff
+  resets land there too, and continue to `/admin`.
+- Optional: SMTP settings, so it sends from `info@corephia.com`.
+
+Authentication → Settings → Authorized domains: `corephia.com` and `localhost`. If the site's
+domain is missing, reset emails still send, just without the "continue" step.
 
 ### EmailJS setup (once)
 
