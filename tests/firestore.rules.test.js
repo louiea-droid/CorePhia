@@ -1,8 +1,8 @@
 // firestore.rules tests for charts, notes (all four types), amendments, staff
-// roles, appointments and patient portal links.
+// roles, appointments, patient portal links and portal invites.
 //
 // Run: npm run test:rules
-// Needs Java 21+ for the Firestore emulator (firebase-tools starts it). All 86
+// Needs Java 21+ for the Firestore emulator (firebase-tools starts it). All 92
 // passed on 2026-10-05. Run them before every rules deploy.
 import { readFileSync } from "node:fs"
 import { after, before, beforeEach, describe, test } from "node:test"
@@ -59,12 +59,17 @@ beforeEach(async () => {
     const db = context.firestore()
     for (const [uid, role] of Object.entries(ROLES)) await setDoc(doc(db, "user", uid), { role, name: uid })
     await setDoc(doc(db, "intakeRecords", "pending1"), { status: "pending" })
-    await setDoc(doc(db, "intakeRecords", "chart1"), { status: "admitted" })
+    await setDoc(doc(db, "intakeRecords", "chart1"), { status: "admitted", demographics: { email: "Pat@X.co " } })
     await setDoc(doc(db, "patients", "chart1"), { intakeRecordId: "chart1", status: "active" })
     await setDoc(doc(db, "patients/chart1/notes/signed1"), { ...draft("provider", "provider"), status: "signed" })
     await setDoc(doc(db, "patients/chart1/notes/draft1"), draft("provider", "provider"))
     await setDoc(doc(db, "patients/chart1/notes/diet1"), { ...draft("admin", "admin", { type: "dietitian" }), status: "signed" })
     await setDoc(doc(db, "contactMessages", "m1"), { name: "x" })
+    const invite = { to: "pat@x.co", firstName: "Pat", subject: "s", message: "m", createdBy: { uid: "provider", name: "provider" }, createdAt: new Date() }
+    await setDoc(doc(db, "patients/chart1/invites/sent1"), { ...invite, status: "sent", sentAt: new Date() })
+    await setDoc(doc(db, "patients/chart1/invites/ready1"), { ...invite, status: "ready" })
+    await setDoc(doc(db, "patients", "inactive1"), { intakeRecordId: "inactive1", status: "inactive" })
+    await setDoc(doc(db, "intakeRecords", "inactive1"), { status: "declined", demographics: { email: "pat@x.co" } })
     await setDoc(doc(db, "patientAccounts", "patient1"), { email: "p1@x.co", intakeId: "chart1", firstName: "Pat", linkedAt: new Date() })
     await setDoc(doc(db, "patientAccounts", "patient2"), { email: "p2@x.co", intakeId: "pending1", firstName: "Sam", linkedAt: new Date() })
   })
@@ -601,5 +606,61 @@ describe("patient accounts", () => {
     await assertSucceeds(getDoc(doc(as("provider"), "patientAccounts", "patient1")))
     await assertSucceeds(getDocs(query(collection(as("provider"), "patientAccounts"), where("intakeId", "==", "chart1"))))
     await assertFails(setDoc(doc(as("super"), "patientAccounts", "x"), { email: "x@x.co", intakeId: "chart1", firstName: "X", linkedAt: serverTimestamp() }))
+  })
+})
+
+describe("portal invites", () => {
+  const newInvite = (uid = "provider", overrides = {}) => ({
+    to: "pat@x.co",
+    firstName: "Pat",
+    subject: "Set up your portal",
+    message: "Hi Pat",
+    status: "ready",
+    createdBy: { uid, name: uid },
+    createdAt: serverTimestamp(),
+    ...overrides,
+  })
+  const inviteRef = (db, id, chart = "chart1") => doc(db, `patients/${chart}/invites/${id}`)
+  const seedReady = (id) =>
+    env.withSecurityRulesDisabled((c) => setDoc(inviteRef(c.firestore(), id), { ...newInvite(), createdAt: new Date() }))
+
+  test("a provider saves a ready invite to the intake email", async () => {
+    await assertSucceeds(setDoc(inviteRef(as("provider"), "new1"), newInvite()))
+  })
+  test("an invite must go to the intake email, start ready, and be made by its creator", async () => {
+    const db = as("provider")
+    await assertFails(setDoc(inviteRef(db, "x1"), newInvite("provider", { to: "other@x.co" })))
+    await assertFails(setDoc(inviteRef(db, "x2"), newInvite("provider", { status: "sent" })))
+    await assertFails(setDoc(inviteRef(db, "x3"), newInvite("provider", { createdBy: { uid: "admin", name: "admin" } })))
+    await assertFails(setDoc(inviteRef(db, "x4"), newInvite("provider", { extra: 1 })))
+    await assertFails(setDoc(inviteRef(db, "x5", "inactive1"), newInvite()))
+  })
+  test("a dietitian can't send invites", async () => {
+    await assertFails(setDoc(inviteRef(as("dietitian"), "d1"), newInvite("dietitian")))
+  })
+  test("a ready invite becomes sent or failed, nothing else", async () => {
+    const db = as("provider")
+    await assertSucceeds(updateDoc(inviteRef(db, "ready1"), { status: "sent", sentAt: serverTimestamp() }))
+    await seedReady("ready2")
+    await assertSucceeds(updateDoc(inviteRef(db, "ready2"), { status: "failed", error: "Bad template" }))
+    await assertFails(updateDoc(inviteRef(db, "sent1"), { status: "failed", error: "x" }))
+    await seedReady("ready3")
+    await assertFails(updateDoc(inviteRef(db, "ready3"), { message: "changed" }))
+    await assertFails(updateDoc(inviteRef(db, "ready3"), { status: "sent", sentAt: new Date("2020-01-01") }))
+    await assertFails(deleteDoc(inviteRef(db, "ready3")))
+  })
+  test("signed out, a sent invite can be read by its id but never listed", async () => {
+    const anon = env.unauthenticatedContext().firestore()
+    await assertSucceeds(getDoc(inviteRef(anon, "sent1")))
+    await assertFails(getDoc(inviteRef(anon, "ready1")))
+    await assertFails(getDocs(collection(anon, "patients/chart1/invites")))
+    await assertSucceeds(getDocs(collection(as("provider"), "patients/chart1/invites")))
+  })
+  test("co-admins and up save the invite template; clinicians read it", async () => {
+    const template = (uid) => ({ subject: "s", message: "m", updatedBy: { uid, name: uid }, updatedAt: serverTimestamp() })
+    await assertSucceeds(setDoc(doc(as("coadmin"), "settings", "portalInvite"), template("coadmin")))
+    await assertFails(setDoc(doc(as("provider"), "settings", "portalInvite"), template("provider")))
+    await assertFails(setDoc(doc(as("coadmin"), "settings", "portalInvite"), template("admin")))
+    await assertSucceeds(getDoc(doc(as("provider"), "settings", "portalInvite")))
   })
 })

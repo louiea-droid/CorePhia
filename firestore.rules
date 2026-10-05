@@ -403,6 +403,54 @@ service cloud.firestore {
           allow update, delete: if false;
         }
       }
+
+      // Portal invites (Louie, 2026-10-05): the admin saves one as 'ready',
+      // sends it through EmailJS, then marks it 'sent' or 'failed'. The id is
+      // 128 random bits; the signed-out /portal/setup page may get a sent one
+      // by its id (the emailed link is the proof), never list them.
+      match /invites/{inviteId} {
+        function isNewInvite() {
+          let data = request.resource.data;
+          let chart = get(/databases/$(database)/documents/patients/$(chartId)).data;
+          let intake = get(/databases/$(database)/documents/intakeRecords/$(chartId)).data;
+          return data.keys().hasOnly(['to', 'firstName', 'subject', 'message', 'status', 'createdBy', 'createdAt'])
+            && chart.status == 'active'
+            && data.status == 'ready'
+            && data.to == intake.demographics.email.lower().trim()
+            && data.firstName is string && data.firstName.size() <= 100
+            && data.subject is string && data.subject.size() > 0 && data.subject.size() <= 200
+            && data.message is string && data.message.size() > 0 && data.message.size() <= 5000
+            && data.createdBy.keys().hasOnly(['uid', 'name'])
+            && data.createdBy.uid == request.auth.uid
+            && data.createdBy.name == myName()
+            && data.createdAt == request.time;
+        }
+        function isSendResult() {
+          let changed = request.resource.data.diff(resource.data).affectedKeys();
+          return resource.data.status == 'ready'
+            && ((changed.hasOnly(['status', 'sentAt']) && request.resource.data.status == 'sent'
+                 && request.resource.data.sentAt == request.time)
+             || (changed.hasOnly(['status', 'error']) && request.resource.data.status == 'failed'
+                 && request.resource.data.error is string && request.resource.data.error.size() <= 300));
+        }
+        allow get: if isClinical() || resource.data.status == 'sent';
+        allow list: if isClinical();
+        allow create: if isAdmitter() && isNewInvite();
+        allow update: if isAdmitter() && isSendResult();
+        allow delete: if false;
+      }
+    }
+
+    // The default portal-invite wording. Co-admin and up change it.
+    match /settings/portalInvite {
+      allow read: if isClinical();
+      allow write: if isStaff()
+        && request.resource.data.keys().hasOnly(['subject', 'message', 'updatedBy', 'updatedAt'])
+        && request.resource.data.subject is string && request.resource.data.subject.size() > 0 && request.resource.data.subject.size() <= 200
+        && request.resource.data.message is string && request.resource.data.message.size() > 0 && request.resource.data.message.size() <= 5000
+        && request.resource.data.updatedBy.keys().hasOnly(['uid', 'name'])
+        && request.resource.data.updatedBy.uid == request.auth.uid
+        && request.resource.data.updatedAt == request.time;
     }
 
     // --- Appointments --------------------------------------------------------
