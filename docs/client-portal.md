@@ -203,10 +203,25 @@ Decided 2026-10-02 (Louie): **invite-only**. Section order Updates → Track pro
 Messages (Membership waits on billing) is agreed but on hold; **the invite-only login is
 built first**.
 
-## Next: the Updates section (saved 2026-10-05)
+## Where we left off (2026-10-05)
 
-Agreed as the next portal build after the login (Louie, 2026-10-05). Staff post a dated
-update on the patient chart; the patient sees it on their portal; once the Cloud Function
-exists it emails "you have a new update, check your portal" with no details. Data idea:
-`patients/{chartId}/updates/{id}` `{ body, createdBy, createdAt }`, read by the patient
-through their `patientAccounts/{uid}.intakeId` link. Size: small. Its own short design first.
+**Next: build Updates.** Spec approved by Louie:
+`docs/superpowers/specs/2026-10-05-portal-updates-design.md` (staff write updates or share
+a signed note as a pre-filled, editable update; email tick box on by default; author shown
+as name and role; Remove hides from the patient, kept on the chart). Next step: write the
+implementation plan (superpowers:writing-plans), then build natively and run one fresh
+review at the end.
+
+Still open from the login work:
+- **Final review** of the setup/reset batch (`2026-10-05-portal-setup-and-reset.md`) has not
+  run yet. Its ledger is in `.superpowers/sdd/2026-10-05-portal-setup-and-reset/`.
+- **Re-run `invite-check`** in a browser: it was last updated for the `?demo=1` switch,
+  which Louie removed (commit 5cb9d35), so it needs its demo-mode override back.
+- **Parked by Louie until after Updates:** on the chart's Patient portal card, once the
+  portal is active, hide Resend invite and Earlier invites and show "Portal active since
+  {date}".
+- **Rules:** the live rules now include the link-save rule (Louie Test reached "Portal
+  active"). Redeploy after Updates adds its rules.
+- **Test data in the live project:** intake/chart `CrGNdu6shN9jh7M1MF7z` (Louie Test,
+  louiea@hyacinthindustriesllc.com), its invites and portal login. Delete when testing is
+  done.
