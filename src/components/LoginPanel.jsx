@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useId, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { Link, useNavigate } from "react-router-dom"
 import { signInPatient } from "../lib/patientAuth"
@@ -14,6 +14,8 @@ const fieldClass =
 // sign-up or Google. Staff invite admitted patients from the admin.
 export default function LoginPanel({ open, onClose }) {
   const closeButtonRef = useRef(null)
+  // Header and Account can each mount a panel, so the id must be unique per instance.
+  const passwordId = useId()
   const navigate = useNavigate()
 
   const [email, setEmail] = useState("")
@@ -109,12 +111,12 @@ export default function LoginPanel({ open, onClose }) {
               />
             </label>
             <div>
-              <label htmlFor="patient-password" className={labelClass}>
+              <label htmlFor={passwordId} className={labelClass}>
                 Password
               </label>
               <div className="relative">
                 <input
-                  id="patient-password"
+                  id={passwordId}
                   type={showPassword ? "text" : "password"}
                   required
                   autoComplete="current-password"
