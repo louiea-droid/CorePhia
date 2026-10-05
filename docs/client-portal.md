@@ -45,16 +45,26 @@ full medical record.
 
 ## What exists today
 
-- **Login:** `LoginPanel.jsx` + `lib/patientAuth.js` (Firebase Auth): email and password,
-  Google sign-in, password reset. Header "Log in" / "My account", account icon in the
-  mobile menu. **Anyone can sign up**, and the account is not linked to an intake record.
-- **`/account`** (`pages/Account.jsx`): shows the email, a "Coming soon" list (Manage your
-  membership, Track your progress, Message your care team) and Sign out. Nothing else.
+Patient side built 2026-10-05 (plan `docs/superpowers/plans/2026-10-05-client-portal-patient-side.md`):
+
+- **Entry:** header and mobile menu say **Patient portal** (signed in or not). The login panel
+  (`LoginPanel.jsx`) is sign-in only: email and password. No sign-up, no Google.
+- **`/account`** (`pages/Account.jsx`) is the portal page: signed out ("Sign in to your patient
+  portal" + Get started), not linked ("Your portal isn't set up yet", contact details), load
+  error (Try again), or linked ("Welcome back, {firstName}" + four "Coming soon" cards:
+  Updates, Track progress, Messages, Membership).
+- **The link:** `patientAccounts/{uid}` = `{ email, intakeId, firstName, linkedAt }`. Rules: a
+  patient reads only their own, clinical staff read all, no client writes. Old self sign-up
+  docs (`{ email, createdAt }`, no `intakeId`) show "not set up yet".
+- **To test now:** create the patient's login in the Firebase console (Authentication), then
+  add `patientAccounts/{that uid}` by hand with the four fields. **Deploy the rules first**
+  (`firebase deploy --only firestore:rules`): the live project still has the old rule, which
+  refuses the patient read, so the portal shows the error state until then.
+- **Not built yet:** `/portal/setup` and the invite email (EmailJS, Louie 2026-10-05).
 - **Admin:** lists intake records, opens one, sets a status (pending / admitted / declined)
   and a short staff note (`adminNote`). Same Firebase project as the patient login.
 - **`firestore.rules`:** role-based staff access, audit log, and the "only your own data"
   pattern the portal needs.
-- **Dead links:** `#forgot-password` and `#create-account` (CLAUDE.md, known gaps).
 
 A hide switch was tried and reverted on 2026-10-01: the login stays visible for now.
 
