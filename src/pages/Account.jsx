@@ -25,39 +25,43 @@ const inlineLink = "font-medium text-ink-950 underline underline-offset-2"
 // in the console for now); old self sign-ups without a link see "not set up".
 export default function Account() {
   const [user, setUser] = useState(undefined) // undefined = auth not known yet
-  const [link, setLink] = useState(undefined) // undefined = loading, null = not linked
-  const [failed, setFailed] = useState(false)
   const [attempt, setAttempt] = useState(0)
+  // The answer for one (user, attempt) pair: { key, link } or { key, failed }.
+  // A result whose key isn't the current one is stale, which reads as loading.
+  const [result, setResult] = useState(null)
   const [loginOpen, setLoginOpen] = useState(false)
 
   useEffect(() => watchPatientUser(setUser), [])
 
+  const key = user ? `${user.uid}:${attempt}` : null
+
   useEffect(() => {
-    if (!user) return
+    if (!key) return
     let live = true
-    setLink(undefined)
-    setFailed(false)
     getMyPortalLink(user.uid).then(
-      (next) => live && setLink(next),
+      (link) => live && setResult({ key, link }),
       (cause) => {
         console.error("Could not load portal link:", cause.code ?? cause.message)
-        if (live) setFailed(true)
+        if (live) setResult({ key, failed: true })
       },
     )
     return () => {
       live = false
     }
-  }, [user, attempt])
+  }, [key, user])
+
+  const current = result?.key === key ? result : null
+  const link = current?.link
 
   const state =
     user === undefined
       ? "checking"
       : user === null
         ? "signedOut"
-        : failed
-          ? "error"
-          : link === undefined
-            ? "checking"
+        : !current
+          ? "checking"
+          : current.failed
+            ? "error"
             : link === null
               ? "notLinked"
               : "linked"
