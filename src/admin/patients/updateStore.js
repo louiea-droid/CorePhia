@@ -6,7 +6,7 @@
 import { collection, doc, getDocs, orderBy, query, serverTimestamp, setDoc, updateDoc } from "firebase/firestore"
 import { retryOnce } from "../../lib/inviteMath"
 import { db, usingSeedData } from "../lib/firebase"
-import { sendEmail, UPDATE_TEMPLATE_ID, updateEmailConfigured } from "../lib/emailjs"
+import { PORTAL_TEMPLATE_ID, portalEmailConfigured, sendEmail } from "../../lib/emailjs"
 import { PATIENTS_COLLECTION, demoId, getDemoStore } from "./chartStore"
 
 const UPDATES = "updates"
@@ -24,7 +24,12 @@ const demoUpdates = async (chartId) => {
   return store.updates.get(chartId)
 }
 
-const emailParams = (to) => ({ to_email: to, subject: UPDATE_SUBJECT, portal_link: `${window.location.origin}/account` })
+const emailParams = (to) => ({
+  to_email: to,
+  subject: UPDATE_SUBJECT,
+  notice: "Your CorePhia care team posted an update. Log in to your portal to read it.",
+  portal_link: `${window.location.origin}/account`,
+})
 
 // Newest first, removed ones included (the chart shows them greyed).
 export async function loadUpdates(chartId) {
@@ -52,7 +57,7 @@ export async function postUpdate({ chartId, to, body, fromNoteId = null, email }
     ;(await demoUpdates(chartId)).unshift(entry)
     if (wantsEmail) {
       try {
-        if (updateEmailConfigured) await sendEmail(emailParams(to), UPDATE_TEMPLATE_ID)
+        if (portalEmailConfigured) await sendEmail(emailParams(to), PORTAL_TEMPLATE_ID)
         entry.email = "sent"
       } catch {
         entry.email = "failed"
@@ -65,7 +70,7 @@ export async function postUpdate({ chartId, to, body, fromNoteId = null, email }
   await setDoc(ref, { ...update, createdAt: serverTimestamp() })
   let emailed = "none"
   if (wantsEmail) {
-    emailed = await sendEmail(emailParams(to), UPDATE_TEMPLATE_ID).then(
+    emailed = await sendEmail(emailParams(to), PORTAL_TEMPLATE_ID).then(
       () => "sent",
       () => "failed",
     )

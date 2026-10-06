@@ -103,19 +103,27 @@ domain is missing, reset emails still send, just without the "continue" step.
    `{{{message_html}}}` (triple braces: the site sends it already escaped, with `<br>` line
    breaks), then a button linking `{{setup_link}}` ("Set up your portal"), then
    "CorePhia Health · Tampa, Florida". Copy the **Template ID**.
-   A second template for portal updates: To Email `{{to_email}}`, From Name `CorePhia`,
-   Reply To `info@corephia.com`, Subject `{{subject}}`, body "Your CorePhia care team
-   posted an update. Log in to your portal to read it." and a button **Open your portal**
-   linking `{{portal_link}}`, then "CorePhia Health · Tampa, Florida". It never carries
-   the update's text. Copy its id too.
+   A **portal notice** template (Updates and Messages): To Email `{{to_email}}`, From Name
+   `CorePhia`, Reply To `info@corephia.com`, Subject `{{subject}}`, body `{{notice}}`, a
+   button **Open your portal** linking `{{portal_link}}`, then "CorePhia Health · Tampa,
+   Florida". The site fills in the sentence ("…posted an update…" or "…sent you a
+   message…"); it never carries the update's or message's text. Copy its id.
+
+   A **staff notice** template (a patient sent a message): To Email
+   **info@corephia.com typed in the template** (never `{{…}}`, so the site can't send it
+   anywhere else; add Dr. Antonious here later), Subject "New patient message", body "A
+   patient sent a message in the CorePhia portal. Log in to the admin to read it.", a
+   button **Open Messages** linking `{{admin_link}}`. Copy its id.
 3. Account → General → copy the **Public Key**.
 4. Account → Security: restrict to `corephia.com` and `localhost`, and set a rate limit if
-   offered. The public key ships to browsers.
-5. `.env.local`: `VITE_EMAILJS_SERVICE_ID`, `VITE_EMAILJS_TEMPLATE_ID`,
-   `VITE_EMAILJS_UPDATE_TEMPLATE_ID`, `VITE_EMAILJS_PUBLIC_KEY`, then restart the dev server (and rebuild for hosting). Without
-   them the dialogs say "Email sending isn't set up yet." (an update still posts, without the
-   email). Demo mode fakes a send.
-6. Deploy the rules (`firebase deploy --only firestore:rules`) or invite and update saves are refused.
+   offered. The public key ships to browsers: the admin, and the patient portal (for the
+   staff notice).
+5. `.env.local`: `VITE_EMAILJS_SERVICE_ID`, `VITE_EMAILJS_TEMPLATE_ID` (invites),
+   `VITE_EMAILJS_PORTAL_TEMPLATE_ID`, `VITE_EMAILJS_STAFF_TEMPLATE_ID`,
+   `VITE_EMAILJS_PUBLIC_KEY`, then restart the dev server (and rebuild for hosting). Without
+   them the admin says "Email sending isn't set up yet." (updates and messages still send,
+   without the email). Demo mode fakes a send.
+6. Deploy the rules (`firebase deploy --only firestore:rules`) or invite, update and message saves are refused.
 - **Admin:** lists intake records, opens one, sets a status (pending / admitted / declined)
   and a short staff note (`adminNote`). Same Firebase project as the patient login.
 - **`firestore.rules`:** role-based staff access, audit log, and the "only your own data"

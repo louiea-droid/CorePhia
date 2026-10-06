@@ -17,7 +17,7 @@ import {
 } from "firebase/firestore"
 import { DEFAULT_INVITE, escapeMessage, newInviteId, retryOnce } from "../../lib/inviteMath"
 import { db, usingSeedData } from "../lib/firebase"
-import { emailjsConfigured, sendEmail } from "../lib/emailjs"
+import { emailjsConfigured, sendEmail } from "../../lib/emailjs"
 import { PATIENTS_COLLECTION, getDemoStore } from "./chartStore"
 
 const INVITES = "invites"

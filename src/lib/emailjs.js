@@ -1,15 +1,20 @@
 // Sends one email through EmailJS's REST endpoint (no SDK, so no new
-// dependency). The public key ships in the admin bundle by design; limit what
-// it can do in the EmailJS dashboard (allowed origins, rate limit).
+// dependency). The public key ships in the admin bundle and, for the staff
+// notice, the patient portal by design; limit it in the EmailJS dashboard
+// (allowed origins, rate limit).
 // See docs/client-portal.md for the templates it expects.
 const SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID
 const TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID
-export const UPDATE_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_UPDATE_TEMPLATE_ID
+// One "portal notice" template for Updates and Messages (the sentence comes
+// in as {{notice}}), and a "staff notice" template whose recipient
+// (info@corephia.com) is fixed in EmailJS, never sent from here.
+export const PORTAL_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_PORTAL_TEMPLATE_ID
+export const STAFF_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_STAFF_TEMPLATE_ID
 const PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY
 
 export const emailjsConfigured = Boolean(SERVICE_ID && TEMPLATE_ID && PUBLIC_KEY)
-// The portal "new update" email has its own template.
-export const updateEmailConfigured = Boolean(SERVICE_ID && UPDATE_TEMPLATE_ID && PUBLIC_KEY)
+export const portalEmailConfigured = Boolean(SERVICE_ID && PORTAL_TEMPLATE_ID && PUBLIC_KEY)
+export const staffEmailConfigured = Boolean(SERVICE_ID && STAFF_TEMPLATE_ID && PUBLIC_KEY)
 
 // Throws with EmailJS's own error text (or "Network error") so the dialog can
 // show why it didn't send. templateId defaults to the invite template.

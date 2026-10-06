@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { fillTemplate, toTemplate } from "../../lib/inviteMath"
 import { SUPPORT_PHONE } from "../../lib/siteContact"
-import { emailjsConfigured } from "../lib/emailjs"
+import { emailjsConfigured } from "../../lib/emailjs"
 import { AUDIT_ACTIONS, recordAuditEvent, usingSeedData } from "../lib/firebase"
 import { canEditInviteTemplate } from "../staff/roles"
 import Modal from "../ui/Modal"
