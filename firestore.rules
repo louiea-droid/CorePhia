@@ -459,6 +459,56 @@ service cloud.firestore {
         allow update: if isAdmitter() && isSendResult();
         allow delete: if false;
       }
+
+      // Portal updates (spec 2026-10-05-portal-updates-design): short dated
+      // messages from staff that the patient reads in the portal. Posted by a
+      // clinician as themselves; afterwards only two changes: the author
+      // records whether the "new update" email went out, and the author or
+      // co-admin and up removes it from the patient's view. Never edited,
+      // never deleted. The linked patient reads only updates not removed, so
+      // their list query must filter removed == false.
+      match /updates/{updateId} {
+        function isNewUpdate() {
+          let data = request.resource.data;
+          return data.keys().hasOnly(['body', 'author', 'createdAt', 'email', 'fromNoteId', 'removed'])
+            && data.keys().hasAll(['body', 'author', 'createdAt', 'email', 'fromNoteId', 'removed'])
+            && get(/databases/$(database)/documents/patients/$(chartId)).data.status == 'active'
+            && data.body is string && data.body.size() > 0 && data.body.size() <= 2000
+            && data.author.keys().hasOnly(['uid', 'name', 'role'])
+            && data.author.uid == request.auth.uid
+            && data.author.name == myName()
+            && data.author.role == role()
+            && data.createdAt == request.time
+            && data.email == 'none'
+            && (data.fromNoteId == null || (data.fromNoteId is string && data.fromNoteId.size() <= 200))
+            && data.removed == false;
+        }
+        function isEmailResult() {
+          return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['email'])
+            && resource.data.email == 'none'
+            && request.resource.data.email in ['sent', 'failed']
+            && resource.data.author.uid == request.auth.uid;
+        }
+        function isRemoval() {
+          let removed = request.resource.data.removed;
+          return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['removed'])
+            && resource.data.removed == false
+            && removed is map
+            && removed.keys().hasOnly(['by', 'at'])
+            && removed.by.keys().hasOnly(['uid', 'name'])
+            && removed.by.uid == request.auth.uid
+            && removed.by.name == myName()
+            && removed.at == request.time
+            && (resource.data.author.uid == request.auth.uid || isStaff());
+        }
+        allow read: if isClinical()
+          || (request.auth != null
+              && resource.data.removed == false
+              && get(/databases/$(database)/documents/patientAccounts/$(request.auth.uid)).data.intakeId == chartId);
+        allow create: if isClinical() && isNewUpdate();
+        allow update: if isClinical() && (isEmailResult() || isRemoval());
+        allow delete: if false;
+      }
     }
 
     // The default portal-invite wording. Co-admin and up change it.

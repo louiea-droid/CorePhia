@@ -1,9 +1,9 @@
 // firestore.rules tests for charts, notes (all four types), amendments, staff
-// roles, appointments, patient portal links, portal invites and setup links.
+// roles, appointments, patient portal links, portal invites, setup links and portal updates.
 //
 // Run: npm run test:rules
-// Needs Java 21+ for the Firestore emulator (firebase-tools starts it). All 96
-// passed on 2026-10-05. Run them before every rules deploy.
+// Needs Java 21+ for the Firestore emulator (firebase-tools starts it). All 102
+// passed on 2026-10-06. Run them before every rules deploy.
 import { readFileSync } from "node:fs"
 import { after, before, beforeEach, describe, test } from "node:test"
 import { assertFails, assertSucceeds, initializeTestEnvironment } from "@firebase/rules-unit-testing"
@@ -690,5 +690,82 @@ describe("portal setup links", () => {
     const anon = env.unauthenticatedContext().firestore()
     await assertFails(getDoc(doc(anon, "patients/chart1/invites/old1")))
     await assertSucceeds(getDoc(doc(anon, "patients/chart1/invites/sent1")))
+  })
+})
+
+describe("portal updates", () => {
+  const newUpdate = (uid = "provider", role = "provider", overrides = {}) => ({
+    body: "Your plan is ready.",
+    author: { uid, name: uid, role },
+    createdAt: serverTimestamp(),
+    email: "none",
+    fromNoteId: null,
+    removed: false,
+    ...overrides,
+  })
+  const updateRef = (db, id, chart = "chart1") => doc(db, `patients/${chart}/updates/${id}`)
+  const seed = (id, overrides = {}, chart = "chart1") =>
+    env.withSecurityRulesDisabled((c) =>
+      setDoc(updateRef(c.firestore(), id, chart), { ...newUpdate(), createdAt: new Date(), ...overrides }),
+    )
+  const asPatient = (uid, email) => env.authenticatedContext(uid, { email }).firestore()
+  const removal = (uid) => ({ removed: { by: { uid, name: uid }, at: serverTimestamp() } })
+
+  test("a clinician posts an update as themselves", async () => {
+    await assertSucceeds(setDoc(updateRef(as("provider"), "u1"), newUpdate()))
+    await assertSucceeds(setDoc(updateRef(as("dietitian"), "u2"), newUpdate("dietitian", "dietitian", { fromNoteId: "diet1" })))
+  })
+  test("a new update is well formed, on an active chart, by its author", async () => {
+    const db = as("provider")
+    const bad = (id, overrides, chart) => assertFails(setDoc(updateRef(db, id, chart), newUpdate("provider", "provider", overrides)))
+    await assertFails(setDoc(updateRef(db, "x1", "inactive1"), newUpdate()))
+    await assertFails(setDoc(updateRef(db, "x2"), newUpdate("admin", "admin")))
+    await bad("x3", { author: { uid: "provider", name: "provider", role: "admin" } })
+    await bad("x4", { body: "" })
+    await bad("x5", { body: "x".repeat(2001) })
+    await bad("x6", { removed: true })
+    await bad("x7", { email: "sent" })
+    await bad("x8", { extra: 1 })
+    await bad("x9", { createdAt: new Date("2020-01-01") })
+    await bad("x10", { fromNoteId: "x".repeat(201) })
+  })
+  test("patients and signed-out visitors can't post", async () => {
+    await assertFails(setDoc(updateRef(asPatient("patient1", "p1@x.co"), "p1"), newUpdate("patient1", "")))
+    await assertFails(setDoc(updateRef(env.unauthenticatedContext().firestore(), "p2"), newUpdate()))
+  })
+  test("only the author records the email result, once, from none", async () => {
+    await seed("e1")
+    await assertFails(updateDoc(updateRef(as("admin"), "e1"), { email: "sent" }))
+    await assertFails(updateDoc(updateRef(as("provider"), "e1"), { email: "sent", body: "changed" }))
+    await assertFails(updateDoc(updateRef(as("provider"), "e1"), { email: "none" }))
+    await assertSucceeds(updateDoc(updateRef(as("provider"), "e1"), { email: "sent" }))
+    await assertFails(updateDoc(updateRef(as("provider"), "e1"), { email: "failed" }))
+  })
+  test("the author or co-admin and up remove it; nobody else, and never back", async () => {
+    await seed("r1")
+    await seed("r2")
+    await seed("r3")
+    await assertSucceeds(updateDoc(updateRef(as("provider"), "r1"), removal("provider")))
+    await assertSucceeds(updateDoc(updateRef(as("coadmin"), "r2"), removal("coadmin")))
+    await assertFails(updateDoc(updateRef(as("provider2"), "r3"), removal("provider2")))
+    await assertFails(updateDoc(updateRef(as("coadmin"), "r3"), removal("provider")))
+    await assertFails(updateDoc(updateRef(as("coadmin"), "r1"), { removed: false }))
+    await assertFails(updateDoc(updateRef(as("coadmin"), "r3"), { ...removal("coadmin"), body: "changed" }))
+    await assertFails(deleteDoc(updateRef(as("super"), "r3")))
+  })
+  test("a patient reads their own chart's live updates, nothing else", async () => {
+    await seed("live1")
+    await seed("gone1", { removed: { by: { uid: "provider", name: "provider" }, at: new Date() } })
+    await seed("other1", {}, "pending1")
+    const db = asPatient("patient1", "p1@x.co")
+    await assertSucceeds(getDoc(updateRef(db, "live1")))
+    await assertFails(getDoc(updateRef(db, "gone1")))
+    await assertSucceeds(getDocs(query(collection(db, "patients/chart1/updates"), where("removed", "==", false))))
+    await assertFails(getDocs(collection(db, "patients/chart1/updates")))
+    await assertFails(getDoc(updateRef(db, "other1", "pending1")))
+    await assertFails(getDoc(updateRef(asPatient("patient2", "p2@x.co"), "live1")))
+    await assertFails(getDoc(updateRef(asPatient("stranger", "s@x.co"), "live1")))
+    await assertFails(getDoc(updateRef(env.unauthenticatedContext().firestore(), "live1")))
+    await assertSucceeds(getDocs(collection(as("dietitian"), "patients/chart1/updates")))
   })
 })
