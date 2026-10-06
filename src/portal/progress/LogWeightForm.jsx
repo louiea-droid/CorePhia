@@ -8,7 +8,11 @@ const field =
 
 export default function LogWeightForm({ intakeId, onSaved, onCancel }) {
   // Fixed when the form opens, so the window doesn't shift while it's open.
-  const [{ today, earliest }] = useState(() => ({ today: isoDay(new Date()), earliest: isoDay(new Date(Date.now() - 30 * 86_400_000)) }))
+  const [{ today, earliest }] = useState(() => {
+    const back = new Date()
+    back.setDate(back.getDate() - 30) // calendar days, so a clock change doesn't shift it
+    return { today: isoDay(new Date()), earliest: isoDay(back) }
+  })
   const [weight, setWeight] = useState("")
   const [date, setDate] = useState(today)
   const [busy, setBusy] = useState(false)

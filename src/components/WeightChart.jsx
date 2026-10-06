@@ -31,8 +31,10 @@ export default function WeightChart({ points, goalLb = null }) {
   const low = Math.floor(Math.min(...weights) - 5)
   const high = Math.ceil(Math.max(...weights) + 5)
   const first = utc(points[0].date)
+  // Every point on one day (a first visit and a weigh-in, say): centre them.
+  const oneDay = utc(points.at(-1).date) === first
   const span = Math.max(utc(points.at(-1).date) - first, 1)
-  const x = (iso) => (points.length === 1 ? (PAD.left + W - PAD.right) / 2 : PAD.left + ((utc(iso) - first) / span) * (W - PAD.left - PAD.right))
+  const x = (iso) => (oneDay ? (PAD.left + W - PAD.right) / 2 : PAD.left + ((utc(iso) - first) / span) * (W - PAD.left - PAD.right))
   const y = (lb) => PAD.top + ((high - lb) / (high - low)) * (H - PAD.top - PAD.bottom)
   const ticks = [high, Math.round((high + low) / 2), low]
   const shown = points[active ?? points.length - 1]
@@ -65,12 +67,16 @@ export default function WeightChart({ points, goalLb = null }) {
             className="stroke-accent-dark"
           />
         )}
+        {/* Hover and focus highlight with a soft halo, never a size change. */}
+        {active != null && (
+          <circle cx={x(points[active].date)} cy={y(points[active].weightLb)} r="11" aria-hidden="true" className="fill-accent-dark/25" />
+        )}
         {points.map((point, index) => (
           <circle
             key={point.id}
             cx={x(point.date)}
             cy={y(point.weightLb)}
-            r={index === active ? 7 : 5}
+            r="5"
             strokeWidth="2"
             tabIndex={0}
             aria-label={`${longLabel(point.date)}, ${point.weightLb} lbs, ${SOURCE[point.source]}`}
@@ -81,10 +87,10 @@ export default function WeightChart({ points, goalLb = null }) {
             className={`cursor-pointer stroke-accent-dark outline-none ${point.source === "home" ? "fill-white" : "fill-accent-dark"}`}
           />
         ))}
-        <text x={PAD.left} y={H - 8} className="fill-ink-950/50 text-[11px]">
+        <text x={oneDay ? x(points[0].date) : PAD.left} y={H - 8} textAnchor={oneDay ? "middle" : "start"} className="fill-ink-950/50 text-[11px]">
           {label(points[0].date)}
         </text>
-        {points.length > 1 && (
+        {!oneDay && (
           <text x={W - PAD.right} y={H - 8} textAnchor="end" className="fill-ink-950/50 text-[11px]">
             {label(points.at(-1).date)}
           </text>

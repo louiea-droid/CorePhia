@@ -237,7 +237,11 @@ patient's progress in the same save; the patient also logs their own weight and 
 it (staff still see it, marked deleted). Both show on one chart on `/account` and in the
 chart page's Progress card. The starting, goal weight and height are copied from the intake
 the first time staff open the chart. Visit numbers start from notes signed after this
-ships; nothing is back-filled. Needs the same rules deploy before it works live.
+ships; nothing is back-filled.
+
+**Deploy the rules BEFORE the site** (`firebase deploy --only firestore:rules`, then
+hosting). Signing a note with any vitals now also writes its progress entry in the same
+save; with the old rules live, that save is refused and the note can't be signed at all.
 
 The portal now lives in `src/portal/` (`PortalHome.jsx` is `/account`); sections still to
 come are listed in `COMING_SOON` there. Next in the agreed order: Messages.

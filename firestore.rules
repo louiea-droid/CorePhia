@@ -525,9 +525,12 @@ service cloud.firestore {
         function isRecentDay(day) {
           let parts = day.split('-');
           let at = timestamp.date(int(parts[0]), int(parts[1]), int(parts[2]));
+          // `at` is UTC midnight of a local calendar day. Two days of slack on
+          // the early side: the form's earliest date (30 local days back) is
+          // 31+ days back by UTC every evening in the US.
           return day.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
             && at <= request.time + duration.value(1, 'd')
-            && at >= request.time - duration.value(31, 'd');
+            && at >= request.time - duration.value(32, 'd');
         }
         function isVisitEntry() {
           let data = request.resource.data;
@@ -551,6 +554,10 @@ service cloud.firestore {
           return data.keys().hasOnly(['source', 'date', 'weightLb', 'createdAt', 'removed'])
             && data.keys().hasAll(['source', 'date', 'weightLb', 'createdAt', 'removed'])
             && data.source == 'home'
+            // The baseline and visit ids are reserved: a weigh-in there would
+            // block the real baseline or a note's signing for good.
+            && entryId != 'baseline'
+            && !entryId.matches('visit-.*')
             && data.weightLb is number && data.weightLb >= 50 && data.weightLb <= 800
             && data.date is string && isRecentDay(data.date)
             && data.createdAt == request.time

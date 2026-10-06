@@ -2,7 +2,7 @@
 // roles, appointments, patient portal links, portal invites, setup links, portal updates and portal progress.
 //
 // Run: npm run test:rules
-// Needs Java 21+ for the Firestore emulator (firebase-tools starts it). All 109
+// Needs Java 21+ for the Firestore emulator (firebase-tools starts it). All 111
 // passed on 2026-10-06. Run them before every rules deploy.
 import { readFileSync } from "node:fs"
 import { after, before, beforeEach, describe, test } from "node:test"
@@ -819,6 +819,14 @@ describe("portal progress", () => {
     await assertFails(setDoc(ref(db, "x9"), home({ removed: true })))
     await assertFails(setDoc(ref(as("provider"), "x10"), home()))
     await assertFails(setDoc(ref(asPatient("stranger", "s@x.co"), "x11"), home()))
+  })
+  test("the earliest date the form offers is accepted all evening (31 days back by UTC)", async () => {
+    await assertSucceeds(setDoc(ref(asPatient("patient1", "p1@x.co"), "early"), home({ date: day(-31) })))
+  })
+  test("a patient can't take the baseline or a visit id for a weigh-in", async () => {
+    const db = asPatient("patient1", "p1@x.co")
+    await assertFails(setDoc(ref(db, "baseline"), home()))
+    await assertFails(setDoc(ref(db, "visit-draft1"), home()))
   })
   test("a patient deletes their own weigh-in once, and nothing else", async () => {
     await seed("h1", { ...home(), createdAt: new Date() })
