@@ -1,14 +1,15 @@
 // firestore.rules tests for charts, notes (all four types), amendments, staff
-// roles, appointments, patient portal links, portal invites, setup links, portal updates and portal progress.
+// roles, appointments, patient portal links, portal invites, setup links, portal updates, portal progress and portal messages.
 //
 // Run: npm run test:rules
-// Needs Java 21+ for the Firestore emulator (firebase-tools starts it). All 111
+// Needs Java 21+ for the Firestore emulator (firebase-tools starts it). All 125
 // passed on 2026-10-06. Run them before every rules deploy.
 import { readFileSync } from "node:fs"
 import { after, before, beforeEach, describe, test } from "node:test"
 import { assertFails, assertSucceeds, initializeTestEnvironment } from "@firebase/rules-unit-testing"
 import {
   collection,
+  collectionGroup,
   deleteDoc,
   doc,
   getDoc,
@@ -865,5 +866,148 @@ describe("portal progress", () => {
     await assertFails(getDoc(ref(db, "other", "pending1")))
     await assertFails(getDoc(ref(env.unauthenticatedContext().firestore(), "live")))
     await assertSucceeds(getDocs(collection(as("dietitian"), "patients/chart1/progress")))
+  })
+})
+
+describe("portal messages", () => {
+  const asPatient = (uid, email) => env.authenticatedContext(uid, { email }).firestore()
+  const topicRef = (db, id = "t1", chart = "chart1") => doc(db, `patients/${chart}/topics/${id}`)
+  const msgRef = (db, topic, id, chart = "chart1") => doc(db, `patients/${chart}/topics/${topic}/messages/${id}`)
+  const staffFrom = (uid = "provider", role = "provider", name = uid) => ({ kind: "staff", uid, name, role })
+  const patientFrom = (uid = "patient1") => ({ kind: "patient", uid })
+  const newTopic = (side, overrides = {}) => ({
+    subject: "About my plan",
+    status: "open",
+    startedBy: side,
+    createdAt: serverTimestamp(),
+    lastMessageAt: serverTimestamp(),
+    lastFrom: side,
+    lastMessageId: "m1",
+    patientReadAt: side === "patient" ? serverTimestamp() : null,
+    staffReadAt: side === "staff" ? serverTimestamp() : null,
+    closed: null,
+    ...overrides,
+  })
+  const newMessage = (from, overrides = {}) => ({ body: "Hello", from, createdAt: serverTimestamp(), email: "none", ...overrides })
+  const start = (db, side, from, { topic = {}, message = {}, chart = "chart1" } = {}) => {
+    const batch = writeBatch(db)
+    batch.set(topicRef(db, "t1", chart), newTopic(side, topic))
+    batch.set(msgRef(db, "t1", "m1", chart), newMessage(from, message))
+    return batch.commit()
+  }
+  const reply = (db, side, from, messageId, { topic = {}, message = {} } = {}) => {
+    const batch = writeBatch(db)
+    batch.update(topicRef(db), {
+      lastMessageAt: serverTimestamp(),
+      lastFrom: side,
+      lastMessageId: messageId,
+      status: "open",
+      closed: null,
+      [side === "staff" ? "staffReadAt" : "patientReadAt"]: serverTimestamp(),
+      ...topic,
+    })
+    batch.set(msgRef(db, "t1", messageId), newMessage(from, message))
+    return batch.commit()
+  }
+  const seedTopic = (overrides = {}) =>
+    env.withSecurityRulesDisabled((c) =>
+      setDoc(topicRef(c.firestore()), {
+        ...newTopic("patient"),
+        createdAt: new Date(),
+        lastMessageAt: new Date(),
+        patientReadAt: new Date(),
+        ...overrides,
+      }),
+    )
+  const seedMessage = (id, data) => env.withSecurityRulesDisabled((c) => setDoc(msgRef(c.firestore(), "t1", id), data))
+
+  test("a patient or a clinician starts a topic with its first message", async () => {
+    await assertSucceeds(start(asPatient("patient1", "p1@x.co"), "patient", patientFrom()))
+  })
+  test("staff start topics as themselves; the dietitian too", async () => {
+    await assertSucceeds(start(as("dietitian"), "staff", staffFrom("dietitian", "dietitian")))
+  })
+  test("a topic or a message alone is refused", async () => {
+    const db = asPatient("patient1", "p1@x.co")
+    await assertFails(setDoc(topicRef(db), newTopic("patient")))
+    await assertFails(setDoc(msgRef(db, "t1", "m1"), newMessage(patientFrom())))
+  })
+  test("starting is refused on an inactive or someone else's chart, or with a fake sender", async () => {
+    await assertFails(start(as("provider"), "staff", staffFrom(), { chart: "inactive1" }))
+    await assertFails(start(asPatient("patient1", "p1@x.co"), "patient", patientFrom(), { chart: "pending1" }))
+    await assertFails(start(as("provider"), "staff", staffFrom("provider", "provider", "Dr. Somebody")))
+    await assertFails(start(as("provider"), "staff", staffFrom("admin", "admin")))
+    await assertFails(start(asPatient("patient1", "p1@x.co"), "patient", patientFrom("patient2")))
+    await assertFails(start(as("provider"), "patient", patientFrom("provider")))
+  })
+  test("subject and message lengths are checked", async () => {
+    await assertFails(start(as("provider"), "staff", staffFrom(), { topic: { subject: "" } }))
+    await assertFails(start(as("provider"), "staff", staffFrom(), { topic: { subject: "x".repeat(121) } }))
+    await assertFails(start(as("provider"), "staff", staffFrom(), { message: { body: "x".repeat(2001) } }))
+    await assertFails(start(as("provider"), "staff", staffFrom(), { message: { email: "sent" } }))
+  })
+  test("a reply moves the topic in the same save; two replies in a row both work", async () => {
+    await seedTopic()
+    await assertSucceeds(reply(as("provider"), "staff", staffFrom(), "m2"))
+    await assertSucceeds(reply(as("coadmin"), "staff", staffFrom("coadmin", "coAdmin"), "m3"))
+    await assertSucceeds(reply(asPatient("patient1", "p1@x.co"), "patient", patientFrom(), "m4"))
+  })
+  test("a reply without moving the topic, or a move without a message, is refused", async () => {
+    await seedTopic()
+    await assertFails(setDoc(msgRef(as("provider"), "t1", "m2"), newMessage(staffFrom())))
+    await assertFails(
+      updateDoc(topicRef(as("provider")), { lastMessageAt: serverTimestamp(), lastFrom: "staff", lastMessageId: "m9", staffReadAt: serverTimestamp() }),
+    )
+    await assertFails(reply(as("provider"), "patient", staffFrom(), "m2"))
+  })
+  test("replying in a closed topic reopens it", async () => {
+    await seedTopic({ status: "closed", closed: { by: "patient", name: "", at: new Date() } })
+    await assertSucceeds(reply(asPatient("patient1", "p1@x.co"), "patient", patientFrom(), "m2"))
+  })
+  test("each side only moves its own read marker", async () => {
+    await seedTopic()
+    await assertSucceeds(updateDoc(topicRef(asPatient("patient1", "p1@x.co")), { patientReadAt: serverTimestamp() }))
+    await assertFails(updateDoc(topicRef(asPatient("patient1", "p1@x.co")), { staffReadAt: serverTimestamp() }))
+    await assertSucceeds(updateDoc(topicRef(as("dietitian")), { staffReadAt: serverTimestamp() }))
+    await assertFails(updateDoc(topicRef(as("provider")), { staffReadAt: new Date("2020-01-01") }))
+    await assertFails(updateDoc(topicRef(as("provider")), { subject: "Changed" }))
+  })
+  test("either side closes a topic as itself, once", async () => {
+    await seedTopic()
+    await assertFails(updateDoc(topicRef(as("provider")), { status: "closed", closed: { by: "staff", name: "admin", at: serverTimestamp() } }))
+    await assertSucceeds(updateDoc(topicRef(as("provider")), { status: "closed", closed: { by: "staff", name: "provider", at: serverTimestamp() } }))
+    await assertFails(updateDoc(topicRef(as("admin")), { status: "closed", closed: { by: "staff", name: "admin", at: serverTimestamp() } }))
+    await seedTopic()
+    await assertFails(updateDoc(topicRef(asPatient("patient1", "p1@x.co")), { status: "closed", closed: { by: "staff", name: "", at: serverTimestamp() } }))
+    await assertSucceeds(updateDoc(topicRef(asPatient("patient1", "p1@x.co")), { status: "closed", closed: { by: "patient", name: "", at: serverTimestamp() } }))
+  })
+  test("only the staff author records the email result, once", async () => {
+    await seedTopic()
+    await seedMessage("s1", { ...newMessage(staffFrom()), createdAt: new Date() })
+    await assertFails(updateDoc(msgRef(as("admin"), "t1", "s1"), { email: "sent" }))
+    await assertSucceeds(updateDoc(msgRef(as("provider"), "t1", "s1"), { email: "sent" }))
+    await assertFails(updateDoc(msgRef(as("provider"), "t1", "s1"), { email: "failed" }))
+  })
+  test("nothing is edited or deleted", async () => {
+    await seedTopic()
+    await seedMessage("p1", { ...newMessage(patientFrom()), createdAt: new Date() })
+    await assertFails(updateDoc(msgRef(asPatient("patient1", "p1@x.co"), "t1", "p1"), { body: "Edited" }))
+    await assertFails(deleteDoc(msgRef(as("super"), "t1", "p1")))
+    await assertFails(deleteDoc(topicRef(as("super"))))
+  })
+  test("reads: the patient's own chart only; staff across charts", async () => {
+    await seedTopic()
+    await seedMessage("p1", { ...newMessage(patientFrom()), createdAt: new Date() })
+    const db = asPatient("patient1", "p1@x.co")
+    await assertSucceeds(getDocs(collection(db, "patients/chart1/topics")))
+    await assertSucceeds(getDocs(collection(db, "patients/chart1/topics/t1/messages")))
+    await assertFails(getDocs(collection(asPatient("patient2", "p2@x.co"), "patients/chart1/topics")))
+    await assertFails(getDocs(collection(env.unauthenticatedContext().firestore(), "patients/chart1/topics")))
+    await assertSucceeds(getDocs(collectionGroup(as("dietitian"), "topics")))
+    await assertFails(getDocs(collectionGroup(db, "topics")))
+  })
+  test("a patient reads their own chart record, not anyone else's", async () => {
+    await assertSucceeds(getDoc(doc(asPatient("patient1", "p1@x.co"), "patients", "chart1")))
+    await assertFails(getDoc(doc(asPatient("patient1", "p1@x.co"), "patients", "inactive1")))
   })
 })
