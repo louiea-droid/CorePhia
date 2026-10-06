@@ -398,6 +398,28 @@ body {
   animation: page-in 300ms var(--ease-out-smooth) both;
 }
 
+/* Weight chart (WeightChart.jsx, portal only): the line draws itself left to
+   right once (pathLength="1", so 1 = the whole line), the dots fade in as it
+   finishes, and the hover card fades in. */
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+
+.animate-draw {
+  stroke-dasharray: 1;
+  animation: draw 800ms var(--ease-out-smooth) both;
+}
+
+.animate-dots-in {
+  animation: fade-in 300ms var(--ease-out-smooth) 600ms both;
+}
+
+.animate-tip-in {
+  animation: fade-in 150ms var(--ease-out-smooth) both;
+}
+
 .animate-fade-in {
   animation: fade-in 250ms var(--ease-out-smooth) both;
 }
@@ -411,8 +433,15 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .animate-page-in,
   .animate-fade-in,
+  .animate-dots-in,
+  .animate-tip-in,
   .skeleton {
     animation: none;
+  }
+
+  .animate-draw {
+    animation: none;
+    stroke-dasharray: none;
   }
 }
 

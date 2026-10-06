@@ -140,7 +140,7 @@ export default function PortalProgress({ intakeId, compact = false }) {
               )}
             </div>
           </div>
-          {!compact && <WeightChart points={points} goalLb={numbers.goalLb} />}
+          {!compact && <WeightChart points={points} goalLb={numbers.goalLb} animate />}
 
           {!compact && visits.length + weighIns.length > 0 && (
             <div className="mt-2">

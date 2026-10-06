@@ -27,7 +27,10 @@ const sourceLine = (point) => {
 // Hover anywhere over the chart (or tap, or focus a point with the keyboard):
 // the nearest weight gets a guide line and a halo, and a card beside the
 // cursor gives its date, weight and source.
-export default function WeightChart({ points, goalLb = null }) {
+//
+// `animate` (the portal): the line draws in once, then the dots fade in; the
+// hover card fades in. The staff chart stays still.
+export default function WeightChart({ points, goalLb = null, animate = false }) {
   const [tip, setTip] = useState(null) // { index, px, py } in px from the figure's top left
   const [announced, setAnnounced] = useState("") // keyboard focus only, so hovering stays quiet
   const [W, setW] = useState(600)
@@ -134,7 +137,8 @@ export default function WeightChart({ points, goalLb = null }) {
             fill="none"
             strokeWidth="2"
             strokeLinejoin="round"
-            className="stroke-accent-dark"
+            pathLength="1"
+            className={`stroke-accent-dark ${animate ? "animate-draw" : ""}`}
           />
         )}
         {/* The picked point gets a soft halo, never a size change. */}
@@ -154,7 +158,7 @@ export default function WeightChart({ points, goalLb = null }) {
               setAnnounced(describe(point))
             }}
             onBlur={() => setTip(null)}
-            className={`cursor-pointer stroke-accent-dark outline-none ${point.source === "home" ? "fill-white" : "fill-accent-dark"}`}
+            className={`cursor-pointer stroke-accent-dark outline-none ${point.source === "home" ? "fill-white" : "fill-accent-dark"} ${animate ? "animate-dots-in" : ""}`}
           />
         ))}
         <text x={oneDay ? x(points[0].date) : PAD.left} y={H - 8} textAnchor={oneDay ? "middle" : "start"} className="fill-ink-950/50 text-[11px]">
@@ -171,7 +175,7 @@ export default function WeightChart({ points, goalLb = null }) {
         <div
           role="tooltip"
           style={{ left: tipLeft, top: tipTop, width: TIP_WIDTH }}
-          className="pointer-events-none absolute z-10 -translate-y-1/2 rounded-xl border border-ink-950/10 bg-white px-3 py-2 text-xs shadow-lg"
+          className={`pointer-events-none absolute z-10 -translate-y-1/2 rounded-xl border border-ink-950/10 bg-white px-3 py-2 text-xs shadow-lg ${animate ? "animate-tip-in" : ""}`}
         >
           <p className="text-ink-950/60">{longLabel(tipPoint.date)}</p>
           <p className="mt-0.5 text-sm font-semibold text-ink-950">{tipPoint.weightLb} lbs</p>
