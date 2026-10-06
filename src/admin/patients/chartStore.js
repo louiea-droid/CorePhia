@@ -23,6 +23,7 @@ import {
   writeBatch,
 } from "firebase/firestore"
 import { config, db, INTAKE_COLLECTION, sendStaffResetEmail, USERS_COLLECTION, usingSeedData } from "../lib/firebase"
+import { visitEntryFor } from "../../lib/progressMath"
 
 export const PATIENTS_COLLECTION = "patients"
 const NOTES = "notes"
@@ -255,6 +256,13 @@ export async function signNote(chartId, noteId, type, fields, actor) {
       updatedAt: signedAt,
     })
     Object.assign(store.charts.get(chartId), { lastNote: { type, signedAt }, updatedAt: signedAt })
+    const entry = visitEntryFor({ ...fields, id: noteId })
+    if (entry) {
+      const { demoProgress } = await import("./progressStore")
+      const list = await demoProgress(chartId)
+      // A first read just now already built it from the signed notes.
+      if (!list.some((existing) => existing.id === `visit-${noteId}`)) list.push({ id: `visit-${noteId}`, ...entry, createdAt: signedAt })
+    }
     return
   }
   const database = requireDb()
@@ -270,6 +278,10 @@ export async function signNote(chartId, noteId, type, fields, actor) {
     lastNote: { type, signedAt: serverTimestamp() },
     updatedAt: serverTimestamp(),
   })
+  // The patient's progress gets this visit's numbers in the same commit, so a
+  // signed note and its entry can't disagree (firestore.rules checks they match).
+  const entry = visitEntryFor({ ...fields, id: noteId })
+  if (entry) batch.set(doc(database, PATIENTS_COLLECTION, chartId, "progress", `visit-${noteId}`), { ...entry, createdAt: serverTimestamp() })
   await batch.commit()
 }
 
