@@ -4,6 +4,7 @@ import assert from "node:assert/strict"
 import {
   canAdmit,
   canEditInviteTemplate,
+  canRemoveUpdate,
   canAmend,
   canManageMember,
   canOpen,
@@ -61,5 +62,13 @@ assert.equal(staffDisplayName({ name: "", email: "ProviderMD@CorePhia.com" }), "
 assert.equal(staffDisplayName({ email: "test@gmail.com" }), "test")
 assert.equal(staffDisplayName({ name: "ProviderMD@CorePhia.com" }), "ProviderMD")
 assert.equal(staffDisplayName({}), "")
+
+// The author or co-admin and up take an update out of the portal, once.
+const posted = { author: { uid: "p1" }, removed: false }
+assert.equal(canRemoveUpdate(posted, { uid: "p1", role: "provider" }), true)
+assert.equal(canRemoveUpdate(posted, { uid: "d1", role: "dietitian" }), false)
+assert.equal(canRemoveUpdate(posted, { uid: "p2", role: "provider" }), false)
+assert.equal(canRemoveUpdate(posted, { uid: "c1", role: "coAdmin" }), true)
+assert.equal(canRemoveUpdate({ ...posted, removed: { by: { uid: "p1" } } }, { uid: "p1", role: "provider" }), false)
 
 console.log("roles: all checks passed")

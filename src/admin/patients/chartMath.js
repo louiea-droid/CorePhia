@@ -140,3 +140,40 @@ export function ageFrom(dateOfBirth, now = new Date()) {
   if (now.getMonth() + 1 < month || (now.getMonth() + 1 === month && now.getDate() < day)) age -= 1
   return age
 }
+
+export const INTENSITIES = [
+  ["light", "Light"],
+  ["moderate", "Moderate"],
+  ["vigorous", "Vigorous"],
+]
+
+// "4 days a week, moderate, 30 min per session, Walking", or "" when empty.
+export function exercisePlanLine(plan) {
+  if (!plan) return ""
+  return [
+    plan.daysPerWeek != null && `${plan.daysPerWeek} ${plan.daysPerWeek === 1 ? "day" : "days"} a week`,
+    INTENSITIES.find(([value]) => value === plan.intensity)?.[1].toLowerCase(),
+    plan.minutesPerSession != null && `${plan.minutesPerSession} min per session`,
+    plan.kind?.trim(),
+  ]
+    .filter(Boolean)
+    .join(", ")
+}
+
+// What "Then share an update with the patient" pre-fills from a note just
+// signed: the part the patient acts on. Staff edit it before posting, so
+// nothing clinical goes out unread. "" opens the dialog empty.
+export function updatePrefill(note) {
+  if (!note) return ""
+  const sections = note.sections ?? {}
+  const parts =
+    note.type === "dietitian"
+      ? [sections.goals, sections.mealPlan]
+      : note.type === "exercise"
+        ? [exercisePlanLine(note.exercisePlan), note.exercisePlan?.notes]
+        : [sections.plan]
+  return parts
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join("\n\n")
+}

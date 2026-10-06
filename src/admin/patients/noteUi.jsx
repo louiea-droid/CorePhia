@@ -2,6 +2,7 @@
 // reads the same wherever it's shown.
 /* oxlint-disable react/only-export-components */
 import { asDate } from "./chartMath"
+export { INTENSITIES, exercisePlanLine } from "./chartMath"
 import { ROLE_LABELS } from "../staff/roles"
 
 // Every note type, in the order "New note" offers them. Dietitian and
@@ -45,25 +46,6 @@ export const SECTION_FIELDS = {
     ["limitations", "Limitations and injuries"],
     ["goals", "Goals"],
   ],
-}
-
-export const INTENSITIES = [
-  ["light", "Light"],
-  ["moderate", "Moderate"],
-  ["vigorous", "Vigorous"],
-]
-
-// "4 days a week, moderate, 30 min per session, Walking", or "" when empty.
-export function exercisePlanLine(plan) {
-  if (!plan) return ""
-  return [
-    plan.daysPerWeek != null && `${plan.daysPerWeek} ${plan.daysPerWeek === 1 ? "day" : "days"} a week`,
-    INTENSITIES.find(([value]) => value === plan.intensity)?.[1].toLowerCase(),
-    plan.minutesPerSession != null && `${plan.minutesPerSession} min per session`,
-    plan.kind?.trim(),
-  ]
-    .filter(Boolean)
-    .join(", ")
 }
 
 export const inputClass =

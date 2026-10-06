@@ -12,6 +12,7 @@ import {
   dueTasks,
   latestSignedByDiscipline,
   nextFollowUps,
+  updatePrefill,
 } from "./chartMath.js"
 
 const signed = (signedAt, prescriptions) => ({ status: "signed", signedAt, prescriptions })
@@ -233,5 +234,20 @@ assert.equal(
   dueTasks([visit("2026-09-01", { prescriptions: [start("a", "Med A", "2026-10-02")] })], "2026-10-01")[0].discipline,
   "medical",
 )
+
+// Sharing a signed note pre-fills the update with the part the patient acts on.
+const shared = (type, sections = {}, exercisePlan = null) => ({ type, sections, exercisePlan })
+assert.equal(updatePrefill(shared("progress", { plan: " Walk daily. ", assessment: "Stable" })), "Walk daily.")
+assert.equal(updatePrefill(shared("consultation", { plan: "Start the program." })), "Start the program.")
+assert.equal(updatePrefill(shared(undefined, { plan: "Older note, no type" })), "Older note, no type")
+assert.equal(updatePrefill(shared("dietitian", { goals: "Less sugar", mealPlan: "Oats at breakfast" })), "Less sugar\n\nOats at breakfast")
+assert.equal(updatePrefill(shared("dietitian", { goals: "  ", mealPlan: "Oats" })), "Oats")
+assert.equal(
+  updatePrefill(shared("exercise", {}, { daysPerWeek: 4, intensity: "moderate", minutesPerSession: 30, kind: "Walking", notes: "Start slow" })),
+  "4 days a week, moderate, 30 min per session, Walking\n\nStart slow",
+)
+assert.equal(updatePrefill(shared("exercise", { goals: "Run a 5k" }, null)), "")
+assert.equal(updatePrefill(shared("progress", {})), "")
+assert.equal(updatePrefill(null), "")
 
 console.log("chartMath: all checks passed")
