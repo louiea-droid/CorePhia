@@ -1,11 +1,7 @@
 import { useEffect, useState } from "react"
 import { ClipboardCheckIcon } from "../../components/icons"
+import { patientRoleLabel } from "../../lib/messageMath"
 import { getMyUpdates } from "../lib/patientAuth"
-
-// How staff roles read to a patient: the admin is Dr. Antonious, so
-// "Provider"; co-admins and super admins aren't necessarily clinicians, so
-// "Care team".
-const AUTHOR_ROLES = { provider: "Provider", dietitian: "Dietitian", admin: "Provider", coAdmin: "Care team", superAdmin: "Care team" }
 
 const asDate = (value) => (typeof value?.toDate === "function" ? value.toDate() : value instanceof Date ? value : null)
 const dayOf = (value) => asDate(value)?.toLocaleDateString("en-US", { month: "short", day: "numeric" }) ?? ""
@@ -77,7 +73,7 @@ export default function PortalUpdates({ intakeId }) {
               <div className={`relative border-l border-ink-950/15 pl-5 ${index === current.updates.length - 1 ? "pb-0" : "pb-8"}`}>
                 <span aria-hidden="true" className="absolute top-1.5 -left-[5px] size-[9px] rounded-full bg-accent-dark" />
                 <p className="text-sm text-ink-950/60">
-                  From {update.author?.name} ({AUTHOR_ROLES[update.author?.role] ?? "Care team"})
+                  From {update.author?.name} ({patientRoleLabel(update.author?.role)})
                 </p>
                 <p className="mt-1.5 max-w-prose whitespace-pre-line wrap-break-word leading-relaxed text-ink-950">{update.body}</p>
               </div>
