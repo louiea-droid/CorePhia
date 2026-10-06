@@ -1,8 +1,8 @@
 // firestore.rules tests for charts, notes (all four types), amendments, staff
-// roles, appointments, patient portal links, portal invites, setup links and portal updates.
+// roles, appointments, patient portal links, portal invites, setup links, portal updates and portal progress.
 //
 // Run: npm run test:rules
-// Needs Java 21+ for the Firestore emulator (firebase-tools starts it). All 102
+// Needs Java 21+ for the Firestore emulator (firebase-tools starts it). All 109
 // passed on 2026-10-06. Run them before every rules deploy.
 import { readFileSync } from "node:fs"
 import { after, before, beforeEach, describe, test } from "node:test"
@@ -767,5 +767,95 @@ describe("portal updates", () => {
     await assertFails(getDoc(updateRef(asPatient("stranger", "s@x.co"), "live1")))
     await assertFails(getDoc(updateRef(env.unauthenticatedContext().firestore(), "live1")))
     await assertSucceeds(getDocs(collection(as("dietitian"), "patients/chart1/updates")))
+  })
+})
+
+describe("portal progress", () => {
+  const ref = (db, id, chart = "chart1") => doc(db, `patients/${chart}/progress/${id}`)
+  const asPatient = (uid, email) => env.authenticatedContext(uid, { email }).firestore()
+  const day = (offsetDays) => new Date(Date.now() + offsetDays * 86400000).toISOString().slice(0, 10)
+  const home = (overrides = {}) => ({ source: "home", date: day(0), weightLb: 182.5, createdAt: serverTimestamp(), removed: false, ...overrides })
+  const seed = (id, data, chart = "chart1") => env.withSecurityRulesDisabled((c) => setDoc(ref(c.firestore(), id, chart), data))
+  const vitals = { weightLb: 190, systolic: 120, diastolic: 80, heartRate: null }
+  const visit = (overrides = {}) => ({ source: "visit", date: "2026-10-01", ...vitals, noteId: "draft1", createdAt: serverTimestamp(), removed: false, ...overrides })
+  const signBatch = (db, entry, noteVitals = vitals) => {
+    const batch = writeBatch(db)
+    batch.update(doc(db, "patients/chart1/notes/draft1"), {
+      vitals: noteVitals,
+      status: "signed",
+      signedAt: serverTimestamp(),
+      signedBy: { uid: "provider", name: "provider", role: "provider" },
+      updatedAt: serverTimestamp(),
+    })
+    batch.set(ref(db, "visit-draft1"), entry)
+    return batch.commit()
+  }
+
+  test("a visit entry is written with the signature, matching the note", async () => {
+    await assertSucceeds(signBatch(as("provider"), visit()))
+  })
+  test("a visit entry that doesn't match the note, or isn't signed with it, is refused", async () => {
+    await assertFails(signBatch(as("provider"), visit({ weightLb: 150 })))
+    await assertFails(signBatch(as("provider"), visit({ date: "2026-09-01" })))
+    await assertFails(setDoc(ref(as("provider"), "visit-draft1"), visit()))
+    await assertFails(setDoc(ref(as("provider"), "visit-other"), visit()))
+    await assertFails(setDoc(ref(asPatient("patient1", "p1@x.co"), "visit-draft1"), visit()))
+  })
+  test("the linked patient logs a home weigh-in", async () => {
+    await assertSucceeds(setDoc(ref(asPatient("patient1", "p1@x.co"), "h1"), home()))
+    await assertSucceeds(setDoc(ref(asPatient("patient1", "p1@x.co"), "h2"), home({ date: day(-1) })))
+    await assertSucceeds(setDoc(ref(asPatient("patient1", "p1@x.co"), "h3"), home({ date: day(-30), weightLb: 50 })))
+  })
+  test("home weigh-ins are checked: chart, range, date, shape, who", async () => {
+    const db = asPatient("patient1", "p1@x.co")
+    await assertFails(setDoc(ref(db, "x1", "pending1"), home()))
+    await assertFails(setDoc(ref(db, "x2"), home({ weightLb: 49 })))
+    await assertFails(setDoc(ref(db, "x3"), home({ weightLb: 801 })))
+    await assertFails(setDoc(ref(db, "x4"), home({ weightLb: "180" })))
+    await assertFails(setDoc(ref(db, "x5"), home({ date: day(-33) })))
+    await assertFails(setDoc(ref(db, "x6"), home({ date: day(3) })))
+    await assertFails(setDoc(ref(db, "x7"), home({ date: "10/06/2026" })))
+    await assertFails(setDoc(ref(db, "x8"), home({ extra: 1 })))
+    await assertFails(setDoc(ref(db, "x9"), home({ removed: true })))
+    await assertFails(setDoc(ref(as("provider"), "x10"), home()))
+    await assertFails(setDoc(ref(asPatient("stranger", "s@x.co"), "x11"), home()))
+  })
+  test("a patient deletes their own weigh-in once, and nothing else", async () => {
+    await seed("h1", { ...home(), createdAt: new Date() })
+    await seed("v1", { ...visit(), createdAt: new Date() })
+    const db = asPatient("patient1", "p1@x.co")
+    await assertFails(updateDoc(ref(db, "h1"), { removed: serverTimestamp(), weightLb: 100 }))
+    await assertSucceeds(updateDoc(ref(db, "h1"), { removed: serverTimestamp() }))
+    await assertFails(updateDoc(ref(db, "h1"), { removed: serverTimestamp() }))
+    await assertFails(updateDoc(ref(db, "v1"), { removed: serverTimestamp() }))
+    await assertFails(deleteDoc(ref(db, "v1")))
+    await assertFails(updateDoc(ref(as("admin"), "v1"), { weightLb: 1 }))
+  })
+  test("the baseline matches the intake and never changes", async () => {
+    await env.withSecurityRulesDisabled((c) =>
+      setDoc(doc(c.firestore(), "intakeRecords", "chart1"), {
+        status: "admitted",
+        demographics: { email: "Pat@X.co " },
+        vitals: { heightFeet: "5", heightInches: "10", currentWeightLb: "210", goalWeightLb: "" },
+      }),
+    )
+    const baseline = { source: "baseline", heightFeet: "5", heightInches: "10", currentWeightLb: "210", goalWeightLb: "", removed: false }
+    await assertFails(setDoc(ref(as("provider"), "baseline"), { ...baseline, currentWeightLb: "200" }))
+    await assertFails(setDoc(ref(asPatient("patient1", "p1@x.co"), "baseline"), baseline))
+    await assertSucceeds(setDoc(ref(as("dietitian"), "baseline"), baseline))
+    await assertFails(updateDoc(ref(as("admin"), "baseline"), { goalWeightLb: "180" }))
+  })
+  test("a patient reads their own live entries; staff read everything", async () => {
+    await seed("live", { ...home(), createdAt: new Date() })
+    await seed("gone", { ...home(), createdAt: new Date(), removed: new Date() })
+    await seed("other", { ...home(), createdAt: new Date() }, "pending1")
+    const db = asPatient("patient1", "p1@x.co")
+    await assertSucceeds(getDoc(ref(db, "live")))
+    await assertFails(getDoc(ref(db, "gone")))
+    await assertSucceeds(getDocs(query(collection(db, "patients/chart1/progress"), where("removed", "==", false))))
+    await assertFails(getDocs(collection(db, "patients/chart1/progress")))
+    await assertFails(getDoc(ref(db, "other", "pending1")))
+    await assertFails(getDoc(ref(env.unauthenticatedContext().firestore(), "live")))
+    await assertSucceeds(getDocs(collection(as("dietitian"), "patients/chart1/progress")))
   })
 })
