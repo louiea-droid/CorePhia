@@ -2,83 +2,26 @@ import { useEffect, useState } from "react"
 import { Helmet } from "react-helmet-async"
 import { Link } from "react-router-dom"
 import LoginPanel from "../components/LoginPanel"
-import { BadgeCheckIcon, ChevronRightIcon, ClipboardCheckIcon, MailIcon, TrendingUpIcon } from "../components/icons"
-import { getMyPortalLink, getMyUpdates, signOutPatient, watchPatientUser } from "./lib/patientAuth"
+import { BadgeCheckIcon, ChevronRightIcon, MailIcon, PhoneIcon, TrendingUpIcon } from "../components/icons"
+import { getMyPortalLink, signOutPatient, watchPatientUser } from "./lib/patientAuth"
+import PortalUpdates from "./updates/PortalUpdates"
 import { SUPPORT_PHONE } from "../lib/siteContact"
 
-const sections = [
-  { Icon: ClipboardCheckIcon, title: "Updates", line: "What your care team has shared with you." },
+// Sections still being built, one by one (Louie, 2026-10-06). When one
+// ships, take it off this list and give it its own panel on the page.
+const COMING_SOON = [
   { Icon: TrendingUpIcon, title: "Track progress", line: "Your weight and the measures your care team follows." },
   { Icon: MailIcon, title: "Messages", line: "Write to your care team and read their replies." },
   { Icon: BadgeCheckIcon, title: "Membership", line: "Your plan and what it includes." },
 ]
 
+const sideCard = "rounded-3xl border border-ink-950/10 bg-white p-6"
 const cardClass = "rounded-3xl border border-ink-950/10 bg-white p-8"
 const primaryButton =
   "inline-flex rounded-full bg-ink-950 px-6 py-3 text-sm font-semibold text-paper-50 transition-colors duration-200 ease-out-smooth hover:bg-ink-900"
 const secondaryButton =
   "rounded-full border border-ink-950/15 px-6 py-3 text-sm font-semibold text-ink-950 transition-colors duration-200 ease-out-smooth hover:bg-paper-100"
 const inlineLink = "font-medium text-ink-950 underline underline-offset-2"
-
-// How staff roles read to a patient: the admin is Dr. Antonious, so
-// "Provider"; co-admins and super admins aren't necessarily clinicians, so
-// "Care team".
-const AUTHOR_ROLES = { provider: "Provider", dietitian: "Dietitian", admin: "Provider", coAdmin: "Care team", superAdmin: "Care team" }
-
-const updateDay = (value) => {
-  const date = typeof value?.toDate === "function" ? value.toDate() : value instanceof Date ? value : null
-  return date ? date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : ""
-}
-
-function PortalUpdates({ intakeId }) {
-  const [attempt, setAttempt] = useState(0)
-  const [result, setResult] = useState(null) // { attempt, updates } | { attempt, failed }
-
-  useEffect(() => {
-    let live = true
-    getMyUpdates(intakeId).then(
-      (updates) => live && setResult({ attempt, updates }),
-      (cause) => {
-        console.error("Could not load updates:", cause.code ?? cause.message)
-        if (live) setResult({ attempt, failed: true })
-      },
-    )
-    return () => {
-      live = false
-    }
-  }, [intakeId, attempt])
-
-  const current = result?.attempt === attempt ? result : null
-
-  return (
-    <section id="updates" className="mt-10 scroll-mt-24 border-t border-ink-950/10 pt-8">
-      <h2 className="font-serif text-2xl text-ink-950">Updates</h2>
-      {!current ? (
-        <p className="mt-4 text-sm text-ink-950/60">Loading your updates…</p>
-      ) : current.failed ? (
-        <div className="mt-4">
-          <p className="text-ink-950/70">We couldn't load your updates.</p>
-          <button type="button" onClick={() => setAttempt((n) => n + 1)} className={`mt-4 ${secondaryButton}`}>
-            Try again
-          </button>
-        </div>
-      ) : current.updates.length === 0 ? (
-        <p className="mt-4 text-ink-950/70">Updates from your care team will show up here.</p>
-      ) : (
-        <ol className="mt-4 space-y-4">
-          {current.updates.map((update) => (
-            <li key={update.id} className="rounded-2xl bg-paper-100 p-5">
-              <p className="text-sm text-ink-950/60">
-                {updateDay(update.createdAt)} · From {update.author?.name} ({AUTHOR_ROLES[update.author?.role] ?? "Care team"})
-              </p>
-              <p className="mt-2 whitespace-pre-line wrap-break-word leading-relaxed text-ink-950">{update.body}</p>
-            </li>
-          ))}
-        </ol>
-      )}
-    </section>
-  )
-}
 
 // Invite-only (Louie, 2026-10-02): a login only opens the portal once
 // patientAccounts/{uid} links it to an intake record. Staff link it (by hand
@@ -133,7 +76,7 @@ export default function PortalHome() {
   )
 
   return (
-    <section className="mx-auto max-w-3xl px-4 py-20 sm:px-6">
+    <section className={`mx-auto px-4 py-20 sm:px-6 ${state === "linked" ? "max-w-5xl" : "max-w-3xl"}`}>
       <Helmet>
         <title>Patient portal | CorePhia</title>
         <meta name="robots" content="noindex, nofollow" />
@@ -196,49 +139,74 @@ export default function PortalHome() {
       )}
 
       {state === "linked" && (
-        <div className={cardClass}>
-          <h1 className="font-serif text-4xl text-ink-950">
-            {link.firstName ? `Welcome back, ${link.firstName}` : "Welcome back"}
-          </h1>
-          <p className="mt-3 text-ink-950/70">Your updates are below. More is on the way.</p>
+        <div>
+          <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+            <div>
+              <h1 className="font-serif text-4xl text-ink-950">
+                {link.firstName ? `Welcome back, ${link.firstName}` : "Welcome back"}
+              </h1>
+              <p className="mt-2 text-ink-950/70">Here's what your care team has shared with you.</p>
+            </div>
+            <div className="flex items-center gap-3 text-sm">
+              <span className="break-all text-ink-950/60">Signed in as {user.email}</span>
+              <button
+                type="button"
+                onClick={() => signOutPatient()}
+                className="cursor-pointer font-semibold whitespace-nowrap text-ink-950 underline-offset-4 transition-colors duration-200 hover:text-accent-dark hover:underline"
+              >
+                Sign out
+              </button>
+            </div>
+          </header>
 
-          <ul className="mt-8 grid gap-4 sm:grid-cols-2">
-            {sections.map(({ Icon, title, line }) => {
-              const live = title === "Updates"
-              const inner = (
-                <>
-                  <div className="flex items-start justify-between gap-3">
-                    <Icon className="size-6 text-accent-dark" aria-hidden="true" />
-                    {!live && (
-                      <span className="rounded-full bg-paper-50 px-2.5 py-0.5 text-xs font-medium text-ink-950/70">Coming soon</span>
-                    )}
-                  </div>
-                  <h2 className="mt-4 font-serif text-xl text-ink-950">{title}</h2>
-                  <p className="mt-1 text-sm leading-relaxed text-ink-950/70">{line}</p>
-                </>
-              )
-              return (
-                <li key={title}>
-                  {live ? (
+          <div className="mt-8 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+            <PortalUpdates intakeId={link.intakeId} />
+
+            <aside className="space-y-6">
+              <section aria-labelledby="care-team-heading" className={sideCard}>
+                <h2 id="care-team-heading" className="font-serif text-xl text-ink-950">
+                  Your care team
+                </h2>
+                <p className="mt-1 text-sm text-ink-950/70">Questions about your care? Call or email us.</p>
+                <ul className="mt-4 space-y-1 text-sm">
+                  <li>
                     <a
-                      href="#updates"
-                      className="block h-full rounded-2xl bg-paper-100 p-5 transition-colors duration-200 ease-out-smooth hover:bg-paper-200"
+                      href={`tel:${SUPPORT_PHONE.replace(/\D/g, "")}`}
+                      className="-mx-2 flex items-center gap-3 rounded-xl px-2 py-2 font-medium text-ink-950 transition-colors duration-200 hover:bg-paper-100"
                     >
-                      {inner}
+                      <PhoneIcon className="size-4 shrink-0 text-accent-dark" aria-hidden="true" />
+                      {SUPPORT_PHONE}
                     </a>
-                  ) : (
-                    <div className="h-full rounded-2xl bg-paper-100 p-5">{inner}</div>
-                  )}
-                </li>
-              )
-            })}
-          </ul>
+                  </li>
+                  <li>
+                    <a
+                      href="mailto:info@corephia.com"
+                      className="-mx-2 flex items-center gap-3 rounded-xl px-2 py-2 font-medium break-all text-ink-950 transition-colors duration-200 hover:bg-paper-100"
+                    >
+                      <MailIcon className="size-4 shrink-0 text-accent-dark" aria-hidden="true" />
+                      info@corephia.com
+                    </a>
+                  </li>
+                </ul>
+              </section>
 
-          <PortalUpdates intakeId={link.intakeId} />
-
-          <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-ink-950/10 pt-6">
-            <p className="text-sm text-ink-950/60">Signed in as {user.email}</p>
-            {signOutButton}
+              <section aria-labelledby="coming-heading" className={sideCard}>
+                <h2 id="coming-heading" className="font-serif text-xl text-ink-950">
+                  Coming to your portal
+                </h2>
+                <ul className="mt-4 space-y-4">
+                  {COMING_SOON.map(({ Icon, title, line }) => (
+                    <li key={title} className="flex gap-3">
+                      <Icon className="mt-0.5 size-5 shrink-0 text-ink-950/40" aria-hidden="true" />
+                      <div>
+                        <p className="text-sm font-medium text-ink-950/80">{title}</p>
+                        <p className="text-sm leading-relaxed text-ink-950/60">{line}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            </aside>
           </div>
         </div>
       )}
