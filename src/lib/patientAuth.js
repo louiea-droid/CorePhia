@@ -9,7 +9,7 @@ import {
   signOut,
   verifyPasswordResetCode,
 } from "firebase/auth"
-import { doc, getDoc, getFirestore, serverTimestamp, setDoc } from "firebase/firestore"
+import { collection, doc, getDoc, getDocs, getFirestore, query, serverTimestamp, setDoc, where } from "firebase/firestore"
 import { isInviteUsable } from "./inviteMath"
 import { setPatientSessionHint } from "./patientSessionHint"
 
@@ -67,6 +67,17 @@ export async function getMyPortalLink(uid) {
   const data = snap.data()
   if (!data?.intakeId) return null
   return { intakeId: data.intakeId, firstName: String(data.firstName ?? "").trim() }
+}
+
+// The patient's portal updates, newest first. The rules only let a patient
+// read updates not removed, so the query must say removed == false. Sorted
+// here rather than by Firestore so no composite index is needed; a patient
+// has tens of updates at most.
+export async function getMyUpdates(intakeId) {
+  if (!db) return []
+  const snap = await getDocs(query(collection(db, "patients", intakeId, "updates"), where("removed", "==", false)))
+  const millis = (value) => value?.toMillis?.() ?? 0
+  return snap.docs.map((entry) => ({ id: entry.id, ...entry.data() })).sort((a, b) => millis(b.createdAt) - millis(a.createdAt))
 }
 
 // --- Portal setup (the invite link) ------------------------------------------
