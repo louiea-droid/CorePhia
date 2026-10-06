@@ -28,6 +28,7 @@ const PAGE_ROLES = {
   patients: CLINICAL_ROLES,
   todo: CLINICAL_ROLES,
   calendar: CLINICAL_ROLES,
+  inbox: CLINICAL_ROLES,
   messages: STAFF_ROLES,
   analytics: STAFF_ROLES,
   staff: STAFF_ROLES,

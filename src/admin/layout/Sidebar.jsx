@@ -4,6 +4,7 @@ import {
   ActivityIcon,
   ApplicantsIcon,
   CalendarIcon,
+  ChatIcon,
   ChevronLeftIcon,
   CloseIcon,
   DashboardIcon,
@@ -16,6 +17,8 @@ import {
 import { canOpen } from "../staff/roles"
 import { isNewMessage } from "../messages/recentMessages"
 import { useContactMessages } from "../messages/useContactMessages"
+import { useTopics } from "../inbox/useTopics"
+import { needsReply } from "../../lib/messageMath"
 
 // `page` keys into roles.js, which mirrors firestore.rules rather than adding
 // a second source of truth: someone following a URL directly is still refused
@@ -27,6 +30,7 @@ const NAV_ITEMS = [
   // chart under Patients.
   { label: "Applicants", icon: ApplicantsIcon, to: "/admin/applicants", page: "applicants" },
   { label: "Patients", icon: PatientsIcon, to: "/admin/patients", page: "patients" },
+  { label: "Messages", icon: ChatIcon, to: "/admin/messages", page: "inbox" },
   { label: "To-do", icon: TodoIcon, to: "/admin/todo", page: "todo" },
   { label: "Calendar", icon: CalendarIcon, to: "/admin/calendar", page: "calendar" },
   { label: "Queries", icon: MailIcon, to: "/admin/queries", page: "messages" },
@@ -70,6 +74,9 @@ export default function Sidebar({
   const { messages } = useContactMessages({ enabled: canOpen("messages", role) })
   const [now] = useState(() => Date.now())
   const newMessageCount = messages?.filter((message) => isNewMessage(message, now, messagesViewedAt)).length ?? 0
+  // Patient topics waiting on the care team, live.
+  const { topics } = useTopics({ enabled: canOpen("inbox", role) })
+  const needsReplyCount = topics?.filter(needsReply).length ?? 0
 
   return (
     <>
@@ -125,7 +132,7 @@ export default function Sidebar({
               // A chart (/admin/patients/:id) keeps Patients highlighted.
               const current =
                 location.pathname === item.to || (item.to !== "/admin" && location.pathname.startsWith(`${item.to}/`))
-              const count = item.to === "/admin/queries" ? newMessageCount : 0
+              const count = item.to === "/admin/queries" ? newMessageCount : item.to === "/admin/messages" ? needsReplyCount : 0
               return (
                 <li key={item.label}>
                   <Link

@@ -71,4 +71,9 @@ assert.equal(canRemoveUpdate(posted, { uid: "p2", role: "provider" }), false)
 assert.equal(canRemoveUpdate(posted, { uid: "c1", role: "coAdmin" }), true)
 assert.equal(canRemoveUpdate({ ...posted, removed: { by: { uid: "p1" } } }, { uid: "p1", role: "provider" }), false)
 
+// The patient Messages inbox is for every clinical role.
+assert.equal(canOpen("inbox", "dietitian"), true)
+assert.equal(canOpen("inbox", "provider"), true)
+assert.equal(canOpen("inbox", ""), false)
+
 console.log("roles: all checks passed")

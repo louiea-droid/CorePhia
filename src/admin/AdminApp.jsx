@@ -23,6 +23,7 @@ import Security from "./staff/Security"
 import Sidebar from "./layout/Sidebar"
 import SiteTraffic from "./analytics/SiteTraffic"
 import { useAdminTheme } from "./lib/useAdminTheme"
+import PatientMessages from "./inbox/MessagesPage"
 import { useIdleTimeout } from "./lib/useIdleTimeout"
 
 // Chart access sits behind these two on top of the password: idle staff get
@@ -75,8 +76,7 @@ function AdminRoutes({ role, signerName, user, displayName, onDisplayNameChange,
       />
       <Route path="/admin/analytics" element={guard("analytics", <SiteTraffic />)} />
       <Route path="/admin/traffic" element={<Navigate to="/admin/analytics" replace />} />
-      {/* Messages were renamed Queries (Louie, 2026-10-02); old links still work. */}
-      <Route path="/admin/messages" element={<Navigate to="/admin/queries" replace />} />
+      <Route path="/admin/messages" element={guard("inbox", <PatientMessages actor={actor} />)} />
       <Route path="/admin/staff" element={guard("staff", <Staff actor={actor} />)} />
       <Route path="/admin/activity" element={guard("activity", <Activity role={role} />)} />
       <Route

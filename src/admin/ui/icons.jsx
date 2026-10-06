@@ -98,6 +98,14 @@ export function MailIcon(props) {
   )
 }
 
+export function ChatIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5h-7l-4 3v-3H5A1.5 1.5 0 0 1 3.5 15V7A1.5 1.5 0 0 1 5 5.5z" />
+    </svg>
+  )
+}
+
 export function MenuIcon(props) {
   return (
     <svg {...base} {...props}>
