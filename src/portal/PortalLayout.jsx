@@ -1,4 +1,5 @@
-import { NavLink, Outlet } from "react-router-dom"
+import { useLayoutEffect, useRef, useState } from "react"
+import { NavLink, Outlet, useLocation } from "react-router-dom"
 import { BadgeCheckIcon, MailIcon, PhoneIcon } from "../components/icons"
 import { unreadFor } from "../lib/messageMath"
 import { SUPPORT_PHONE } from "../lib/siteContact"
@@ -25,6 +26,24 @@ const sideCard = "rounded-3xl border border-ink-950/10 bg-white p-6"
 export default function PortalLayout({ user, link }) {
   const { topics } = useMyTopics(link.intakeId)
   const newReplies = topics?.filter((topic) => unreadFor(topic, "patient")).length ?? 0
+  const { pathname } = useLocation()
+
+  // The underline under the active tab, measured so it can glide between tabs.
+  // No transition on the first placement, so it doesn't sweep in from the left.
+  const tabList = useRef(null)
+  const [bar, setBar] = useState(null) // { left, width, glide }
+  useLayoutEffect(() => {
+    const list = tabList.current
+    if (!list) return
+    const place = () => {
+      const active = list.querySelector('[aria-current="page"]')
+      if (active) setBar((previous) => ({ left: active.offsetLeft, width: active.offsetWidth, glide: Boolean(previous) }))
+    }
+    place()
+    const observer = new ResizeObserver(place)
+    observer.observe(list)
+    return () => observer.disconnect()
+  }, [pathname, newReplies])
 
   return (
     <div>
@@ -34,7 +53,7 @@ export default function PortalLayout({ user, link }) {
       </header>
 
       <nav aria-label="Portal" className="-mx-4 mt-6 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-        <ul className="flex gap-1 border-b border-ink-950/10 whitespace-nowrap">
+        <ul ref={tabList} className="relative flex gap-1 border-b border-ink-950/10 whitespace-nowrap">
           {TABS.map(([to, label]) => (
             <li key={to}>
               <NavLink
@@ -42,7 +61,7 @@ export default function PortalLayout({ user, link }) {
                 end={to === "/account"}
                 className={({ isActive }) =>
                   `-mb-px inline-block border-b-2 px-4 py-3 text-sm font-semibold transition-colors duration-200 ${
-                    isActive ? "border-accent-dark text-ink-950" : "border-transparent text-ink-950/60 hover:text-ink-950"
+                    isActive ? "border-transparent text-ink-950" : "border-transparent text-ink-950/60 hover:text-ink-950"
                   }`
                 }
               >
@@ -56,12 +75,24 @@ export default function PortalLayout({ user, link }) {
               </NavLink>
             </li>
           ))}
+          {bar && (
+            <li
+              aria-hidden="true"
+              data-tab-indicator
+              style={{ left: bar.left, width: bar.width }}
+              className={`pointer-events-none absolute bottom-0 h-0.5 rounded-full bg-accent-dark ${
+                bar.glide ? "transition-[left,width] duration-300 ease-out-smooth motion-reduce:duration-0" : "duration-0"
+              }`}
+            />
+          )}
         </ul>
       </nav>
 
       <div className="mt-8 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
-        <div data-portal-main className="min-w-0 space-y-6">
-          <Outlet context={{ user, link }} />
+        <div data-portal-main className="min-w-0">
+          <div key={pathname} data-portal-page className="animate-page-in space-y-6">
+            <Outlet context={{ user, link }} />
+          </div>
         </div>
 
         <aside className="space-y-6 lg:sticky lg:top-24">

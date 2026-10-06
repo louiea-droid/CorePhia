@@ -369,6 +369,53 @@ body {
   }
 }
 
+/* Patient portal (src/portal): a page opened from a tab fades in with a short
+   rise (it answers a tap; the no-movement rule is for hover). Messages and
+   loaded content only fade. Loading placeholders shimmer gently. */
+@keyframes page-in {
+  from {
+    opacity: 0;
+    translate: 0 0.5rem;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+.animate-page-in {
+  animation: page-in 300ms var(--ease-out-smooth) both;
+}
+
+.animate-fade-in {
+  animation: fade-in 250ms var(--ease-out-smooth) both;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--color-paper-100) 25%, var(--color-paper-50) 50%, var(--color-paper-100) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-page-in,
+  .animate-fade-in,
+  .skeleton {
+    animation: none;
+  }
+}
+
 /* Intake splash (PatientIntakeForm.jsx): each piece surfaces out of a soft
    blur, slowly, like the Hims intro. Opacity and blur only; nothing moves.
    Delays are set inline so the second line arrives word by word. */

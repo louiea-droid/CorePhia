@@ -6,6 +6,7 @@ const when = (value) => {
   return date ? date.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""
 }
 import { useCanWrite, useMyTopics } from "./useMyTopics"
+import { Loading, Skeleton } from "../Skeleton"
 
 // The portal home's Messages box: the 3 latest conversations.
 export default function MessagesBox({ intakeId }) {
@@ -37,7 +38,14 @@ export default function MessagesBox({ intakeId }) {
           </button>
         </div>
       ) : !topics ? (
-        <p className="mt-6 text-sm text-ink-950/60">Loading your messages…</p>
+        <Loading label="Loading your messages…" className="mt-4">
+          {[0, 1, 2].map((row) => (
+            <div key={row} className="flex items-center justify-between gap-4 border-b border-ink-950/10 py-3.5 last:border-0">
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-3.5 w-12" />
+            </div>
+          ))}
+        </Loading>
       ) : latest.length === 0 ? (
         <p className="mt-6 text-ink-950/70">Questions about your care? Send your care team a message.</p>
       ) : (

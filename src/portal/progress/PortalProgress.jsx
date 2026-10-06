@@ -4,6 +4,8 @@ import WeightChart from "../../components/WeightChart"
 import { series, summary, vitalsText } from "../../lib/progressMath"
 import { deleteWeighIn, getMyProgress } from "../lib/patientAuth"
 import LogWeightForm from "./LogWeightForm"
+import Collapse from "../../components/Collapse"
+import { Loading, Skeleton } from "../Skeleton"
 
 const dayLabel = (iso) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
@@ -97,7 +99,7 @@ export default function PortalProgress({ intakeId, compact = false }) {
         )}
       </div>
 
-      {logging && (
+      <Collapse open={logging}>
         <LogWeightForm
           intakeId={intakeId}
           onCancel={() => setLogging(false)}
@@ -106,10 +108,14 @@ export default function PortalProgress({ intakeId, compact = false }) {
             reload()
           }}
         />
-      )}
+      </Collapse>
 
       {!current ? (
-        <p className="mt-6 text-sm text-ink-950/60">Loading your progress…</p>
+        <Loading label="Loading your progress…">
+          <Skeleton className="h-10 w-40" />
+          <Skeleton className="mt-3 h-4 w-56" />
+          {!compact && <Skeleton className="mt-6 h-52 w-full rounded-2xl" />}
+        </Loading>
       ) : current.failed ? (
         <div className="mt-6">
           <p className="text-ink-950/75">We couldn't load your progress.</p>
@@ -190,7 +196,7 @@ export default function PortalProgress({ intakeId, compact = false }) {
         ref={dialogRef}
         aria-labelledby="delete-weigh-in-title"
         onClose={() => setDeleting(null)}
-        className="m-auto w-[calc(100%-2rem)] max-w-sm rounded-3xl bg-white p-6 shadow-2xl backdrop:bg-ink-950/50"
+        className="animate-sheet-in m-auto w-[calc(100%-2rem)] max-w-sm rounded-3xl bg-white p-6 shadow-2xl backdrop:bg-ink-950/50"
       >
         <p id="delete-weigh-in-title" className="font-serif text-xl text-ink-950">
           Delete this weigh-in?

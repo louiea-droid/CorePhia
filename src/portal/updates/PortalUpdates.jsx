@@ -3,6 +3,7 @@ import { Link } from "react-router-dom"
 import { ClipboardCheckIcon } from "../../components/icons"
 import { patientRoleLabel } from "../../lib/messageMath"
 import { getMyUpdates } from "../lib/patientAuth"
+import { Loading, Skeleton } from "../Skeleton"
 
 const asDate = (value) => (typeof value?.toDate === "function" ? value.toDate() : value instanceof Date ? value : null)
 const dayOf = (value) => asDate(value)?.toLocaleDateString("en-US", { month: "short", day: "numeric" }) ?? ""
@@ -49,7 +50,18 @@ export default function PortalUpdates({ intakeId, latestOnly = false }) {
       </div>
 
       {!current ? (
-        <p className="mt-6 text-sm text-ink-950/60">Loading your updates…</p>
+        <Loading label="Loading your updates…">
+          {[0, 1].map((row) => (
+            <div key={row} className="grid grid-cols-[4.25rem_1fr] gap-x-4 pb-6 sm:grid-cols-[5rem_1fr]">
+              <Skeleton className="ml-auto h-4 w-12" />
+              <div className="space-y-2">
+                <Skeleton className="h-3.5 w-44" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+              </div>
+            </div>
+          ))}
+        </Loading>
       ) : current.failed ? (
         <div className="mt-6">
           <p className="text-ink-950/75">We couldn't load your updates.</p>

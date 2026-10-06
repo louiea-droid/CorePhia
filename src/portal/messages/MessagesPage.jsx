@@ -4,6 +4,8 @@ import { unreadFor } from "../../lib/messageMath"
 import ConversationView from "./ConversationView"
 import NewConversationForm from "./NewConversationForm"
 import { useCanWrite, useMyTopics } from "./useMyTopics"
+import Collapse from "../../components/Collapse"
+import { Loading, Skeleton } from "../Skeleton"
 
 const when = (value) => {
   const date = typeof value?.toDate === "function" ? value.toDate() : value instanceof Date ? value : null
@@ -31,7 +33,11 @@ export default function MessagesPage() {
           </button>
         </div>
       ) : (
-        <p className="text-ink-950/60">Loading…</p>
+        <Loading label="Loading your conversation…" className="rounded-3xl border border-ink-950/10 bg-white p-6 sm:p-8">
+          <Skeleton className="h-7 w-2/3" />
+          <Skeleton className="mt-6 h-16 w-3/4 rounded-2xl" />
+          <Skeleton className="mt-3 ml-auto h-12 w-2/3 rounded-2xl" />
+        </Loading>
       )
     if (!topic) return <p className="text-ink-950/70">That conversation couldn't be found. <Link to="/account/messages" className="underline">All messages</Link></p>
     return <ConversationView intakeId={link.intakeId} uid={user.uid} topic={topic} canWrite={canWrite} />
@@ -50,11 +56,11 @@ export default function MessagesPage() {
           </button>
         )}
       </div>
-      {composing && (
-        <div className="mt-6">
+      <Collapse open={composing}>
+        <div className="pt-6">
           <NewConversationForm intakeId={link.intakeId} uid={user.uid} onCancel={() => setComposing(false)} onStarted={(id) => navigate(`/account/messages/${id}`)} />
         </div>
-      )}
+      </Collapse>
       <div role="tablist" aria-label="Conversations" className="mt-6 flex gap-2">
         {[
           ["open", "Open"],
@@ -80,7 +86,14 @@ export default function MessagesPage() {
           </button>
         </div>
       ) : !topics ? (
-        <p className="mt-6 text-sm text-ink-950/60">Loading…</p>
+        <Loading label="Loading your messages…" className="mt-4">
+          {[0, 1, 2].map((row) => (
+            <div key={row} className="flex items-center justify-between gap-4 border-b border-ink-950/10 py-3.5 last:border-0">
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-3.5 w-12" />
+            </div>
+          ))}
+        </Loading>
       ) : listed.length === 0 ? (
         <p className="mt-6 text-ink-950/70">{tab === "open" ? "No open conversations." : "No closed conversations."}</p>
       ) : (

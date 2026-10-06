@@ -4,6 +4,7 @@ import { patientRoleLabel, unreadFor } from "../../lib/messageMath"
 import { SUPPORT_PHONE } from "../../lib/siteContact"
 import { closeConversation, listenMyMessages, markConversationRead, replyInConversation } from "../lib/messageStore"
 import { UrgentLine } from "./NewConversationForm"
+import { Skeleton } from "../Skeleton"
 
 const stamp = (value) => {
   const date = typeof value?.toDate === "function" ? value.toDate() : value instanceof Date ? value : null
@@ -94,12 +95,16 @@ export default function ConversationView({ intakeId, uid, topic, canWrite }) {
             </button>
           </li>
         ) : !messages ? (
-          <li className="text-sm text-ink-950/60">Loading…</li>
+          <li role="status">
+            <span className="sr-only">Loading your messages…</span>
+            <Skeleton className="h-16 w-3/4 rounded-2xl" />
+            <Skeleton className="mt-3 ml-auto h-12 w-2/3 rounded-2xl" />
+          </li>
         ) : (
           messages.map((message) => {
             const mine = message.from?.kind === "patient"
             return (
-              <li key={message.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+              <li key={message.id} className={`animate-fade-in flex ${mine ? "justify-end" : "justify-start"}`}>
                 <div className={`max-w-[85%] rounded-2xl px-4 py-3 ${mine ? "bg-accent/15" : "bg-paper-100"}`}>
                   <p className="text-xs text-ink-950/55">
                     {mine ? "You" : `${message.from.name} (${patientRoleLabel(message.from.role)})`}, {stamp(message.createdAt)}
@@ -141,7 +146,7 @@ export default function ConversationView({ intakeId, uid, topic, canWrite }) {
         </p>
       ) : null}
 
-      <dialog ref={dialogRef} aria-labelledby="close-conversation-title" className="m-auto w-[calc(100%-2rem)] max-w-sm rounded-3xl bg-white p-6 shadow-2xl backdrop:bg-ink-950/50">
+      <dialog ref={dialogRef} aria-labelledby="close-conversation-title" className="animate-sheet-in m-auto w-[calc(100%-2rem)] max-w-sm rounded-3xl bg-white p-6 shadow-2xl backdrop:bg-ink-950/50">
         <p id="close-conversation-title" className="font-serif text-xl text-ink-950">
           Close this conversation?
         </p>
