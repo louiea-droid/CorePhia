@@ -41,7 +41,7 @@
 **Interfaces:**
 - Produces: the shapes in the spec. A topic is created only in a batch with its first message (`lastMessageId`); a message only in a batch that moves its topic (`lastMessageId == messageId`, `lastMessageAt == request.time`).
 
-- [ ] **Step 1: Write the failing tests.** Add `collectionGroup` to the `firebase/firestore` import list. Append:
+- [x] **Step 1: Write the failing tests.** Add `collectionGroup` to the `firebase/firestore` import list. Append:
 
 ```js
 describe("portal messages", () => {
@@ -189,9 +189,9 @@ describe("portal messages", () => {
 ```
 
 
-- [ ] **Step 2: Run, see the allow-cases fail.** `npm run test:rules` > a log; read the summary. Expected: every `assertSucceeds` test FAILS; the pure-deny tests pass.
+- [x] **Step 2: Run, see the allow-cases fail.** `npm run test:rules` > a log; read the summary. Expected: every `assertSucceeds` test FAILS; the pure-deny tests pass.
 
-- [ ] **Step 3: Add the rules.**
+- [x] **Step 3: Add the rules.**
 
 At database level, after `myName()`:
 
@@ -317,9 +317,9 @@ At database level, just before the final catch-all `match /{document=**}`:
     }
 ```
 
-- [ ] **Step 4: Run.** `npm run test:rules`. Expected: all pass (111 + 14 = 125). If the rules fail to compile, read the "Error compiling rules" line in the log. Update the test-file header ("portal messages", "All 125 passed on <today>").
+- [x] **Step 4: Run.** `npm run test:rules`. Expected: all pass (111 + 14 = 125). If the rules fail to compile, read the "Error compiling rules" line in the log. Update the test-file header ("portal messages", "All 125 passed on <today>").
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add firestore.rules tests/firestore.rules.test.js
@@ -337,7 +337,7 @@ git commit -m "Rules: portal messages (topics with their first message, replies 
 **Interfaces:**
 - Produces: `needsReply(topic) → bool`; `unreadFor(topic, side: "staff"|"patient") → bool`; `notifiesStaff(topicBefore | null) → bool`; `topicCounts(topics) → { needsReply, open, closed }`; `byLatest(a, b)` sort comparator (newest activity first); `PATIENT_ROLE_LABELS`; `patientRoleLabel(role) → string` ("Care team" fallback).
 
-- [ ] **Step 1: Write the failing check** `src/lib/messageMath.check.js`:
+- [x] **Step 1: Write the failing check** `src/lib/messageMath.check.js`:
 
 ```js
 // Self-check for messageMath.js: `npm run check`. Plain node:assert.
@@ -390,9 +390,9 @@ console.log("messageMath: all checks passed")
 
 Append ` && node src/lib/messageMath.check.js` to the `check` script.
 
-- [ ] **Step 2: Run.** `npm run check`. Expected: FAIL, cannot find `./messageMath.js`.
+- [x] **Step 2: Run.** `npm run check`. Expected: FAIL, cannot find `./messageMath.js`.
 
-- [ ] **Step 3: Implement** `src/lib/messageMath.js`:
+- [x] **Step 3: Implement** `src/lib/messageMath.js`:
 
 ```js
 // Messages arithmetic shared by the admin inbox and the patient portal. No
@@ -429,9 +429,9 @@ export const patientRoleLabel = (role) => PATIENT_ROLE_LABELS[role] ?? "Care tea
 
 In `src/portal/updates/PortalUpdates.jsx`, delete the `AUTHOR_ROLES` constant and its comment, import `patientRoleLabel` from `../../lib/messageMath`, and replace `AUTHOR_ROLES[update.author?.role] ?? "Care team"` with `patientRoleLabel(update.author?.role)`.
 
-- [ ] **Step 4: Run.** `npm run check` → all pass. `npm run lint` clean.
+- [x] **Step 4: Run.** `npm run check` → all pass. `npm run lint` clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/messageMath.js src/lib/messageMath.check.js package.json src/portal/updates/PortalUpdates.jsx
@@ -451,7 +451,7 @@ git commit -m "Messages: messageMath (needs a reply, unread, staff notice rule, 
 - Produces from `src/lib/emailjs.js`: `sendEmail(params, templateId = TEMPLATE_ID)`, `emailjsConfigured` (invites), `PORTAL_TEMPLATE_ID`, `portalEmailConfigured`, `STAFF_TEMPLATE_ID`, `staffEmailConfigured`.
 - `updateStore.postUpdate` sends `{ to_email, subject, notice, portal_link }` with `PORTAL_TEMPLATE_ID`.
 
-- [ ] **Step 1: Update the browser check first.** In `<scratchpad>/updates-check.mjs`, change the stub route `**/src/admin/lib/emailjs.js*` to `**/src/lib/emailjs.js*` and the stub body to:
+- [x] **Step 1: Update the browser check first.** In `<scratchpad>/updates-check.mjs`, change the stub route `**/src/admin/lib/emailjs.js*` to `**/src/lib/emailjs.js*` and the stub body to:
 
 ```js
 export const PORTAL_TEMPLATE_ID = "t"
@@ -464,7 +464,7 @@ export async function sendEmail() { throw new Error("Bad template") }
 
 Run it: expected FAIL on the "Email not sent" case (the app still loads the old path, so the stub doesn't apply and the demo send succeeds).
 
-- [ ] **Step 2: Move and rename.** `git mv src/admin/lib/emailjs.js src/lib/emailjs.js`. In it, replace the `UPDATE_TEMPLATE_ID` and `updateEmailConfigured` lines with:
+- [x] **Step 2: Move and rename.** `git mv src/admin/lib/emailjs.js src/lib/emailjs.js`. In it, replace the `UPDATE_TEMPLATE_ID` and `updateEmailConfigured` lines with:
 
 ```js
 // One "portal notice" template for Updates and Messages (the sentence comes
@@ -496,7 +496,7 @@ const emailParams = (to) => ({
 
 `.env.example`: replace `VITE_EMAILJS_UPDATE_TEMPLATE_ID=` with `VITE_EMAILJS_PORTAL_TEMPLATE_ID=` and add `VITE_EMAILJS_STAFF_TEMPLATE_ID=`.
 
-- [ ] **Step 3: Docs.** In `docs/client-portal.md` "EmailJS setup (once)", replace the "A second template for portal updates" step with:
+- [x] **Step 3: Docs.** In `docs/client-portal.md` "EmailJS setup (once)", replace the "A second template for portal updates" step with:
 
 ```markdown
    A **portal notice** template (Updates and Messages): To Email `{{to_email}}`, From Name
@@ -514,9 +514,9 @@ const emailParams = (to) => ({
 
 and update the env step to list `VITE_EMAILJS_PORTAL_TEMPLATE_ID` and `VITE_EMAILJS_STAFF_TEMPLATE_ID` instead of `VITE_EMAILJS_UPDATE_TEMPLATE_ID`, noting the public key now also ships with the patient portal.
 
-- [ ] **Step 4: Verify.** `updates-check.mjs` all pass; `npm run lint`, `npm run build`, `npm run check` clean; `grep -rn "admin/lib/emailjs\|UPDATE_TEMPLATE_ID\|updateEmailConfigured" src` returns nothing.
+- [x] **Step 4: Verify.** `updates-check.mjs` all pass; `npm run lint`, `npm run build`, `npm run check` clean; `grep -rn "admin/lib/emailjs\|UPDATE_TEMPLATE_ID\|updateEmailConfigured" src` returns nothing.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A src/lib/emailjs.js src/admin .env.example docs/client-portal.md
@@ -544,7 +544,7 @@ No unit test (Firebase imports, same ruling as the other stores). Shapes are pin
   - `useTopics({ enabled }) → { topics: Topic[] | null, error }`
   - `emailed` is `'none' | 'sent' | 'failed'`; `actor = { uid, name, role }`.
 
-- [ ] **Step 1: `topicStore.js`:**
+- [x] **Step 1: `topicStore.js`:**
 
 ```js
 // Patient messages on the staff side (spec 2026-10-06-portal-messages-design):
@@ -805,7 +805,7 @@ export async function markTopicRead(chartId, topicId) {
 }
 ```
 
-- [ ] **Step 2: `useTopics.js`:**
+- [x] **Step 2: `useTopics.js`:**
 
 ```js
 import { useEffect, useState } from "react"
@@ -833,9 +833,9 @@ export function useTopics({ enabled = true } = {}) {
 }
 ```
 
-- [ ] **Step 3: Verify.** `npm run lint` (no new errors), `npm run build`.
+- [x] **Step 3: Verify.** `npm run lint` (no new errors), `npm run build`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/admin/inbox/topicStore.js src/admin/inbox/useTopics.js
@@ -855,7 +855,7 @@ git commit -m "Messages: staff topic store (live topics and messages, start, rep
 - Consumes: Task 2 (`needsReply`, `unreadFor`, `topicCounts`, `byLatest`), Task 4 (store + `useTopics`), `loadCharts`, `loadIntakeRecord` (chartStore), `ROLE_LABELS`, `formatRelativeTime` (`../lib/relativeTime`), `formatStamp`, `inputClass`, `labelClass` (`../patients/noteUi`), `Modal`, `ConfirmDialog`, `portalEmailConfigured`, `usingSeedData`.
 - Produces: route `/admin/messages` (query params `topic`, `patient`), page key `inbox`.
 
-- [ ] **Step 1: roles check first.** In `roles.check.js` add:
+- [x] **Step 1: roles check first.** In `roles.check.js` add:
 
 ```js
 assert.equal(canOpen("inbox", "dietitian"), true)
@@ -865,7 +865,7 @@ assert.equal(canOpen("inbox", ""), false)
 
 Run `npm run check` → FAIL. Add `inbox: CLINICAL_ROLES,` to `PAGE_ROLES` → PASS.
 
-- [ ] **Step 2: Browser check first.** `<scratchpad>/inbox-check.mjs`, same demo harness as `updates-check.mjs` (route `firebase.js` to force `usingSeedData`, `?demoRole=`, `addInitScript` for dark, fresh context per case). Open `/admin/messages` with client-side navigation from `/admin`. Cases:
+- [x] **Step 2: Browser check first.** `<scratchpad>/inbox-check.mjs`, same demo harness as `updates-check.mjs` (route `firebase.js` to force `usingSeedData`, `?demoRole=`, `addInitScript` for dark, fresh context per case). Open `/admin/messages` with client-side navigation from `/admin`. Cases:
   1. Sidebar shows "Messages" with a count of 1 (the seeded patient topic); Queries still present.
   2. The list (filter "Needs a reply") shows one row, bold, tagged "Needs a reply"; "All" shows two.
   3. Click the row → topic shows both patient messages on the left, the subject, the patient name linking to `/admin/patients/{id}`; afterwards the row is no longer bold (read).
@@ -880,7 +880,7 @@ Run `npm run check` → FAIL. Add `inbox: CLINICAL_ROLES,` to `PAGE_ROLES` → P
 
 Run: FAIL (no page).
 
-- [ ] **Step 3: `ChatIcon`** in `src/admin/ui/icons.jsx`, after `MailIcon`:
+- [x] **Step 3: `ChatIcon`** in `src/admin/ui/icons.jsx`, after `MailIcon`:
 
 ```jsx
 export function ChatIcon(props) {
@@ -892,7 +892,7 @@ export function ChatIcon(props) {
 }
 ```
 
-- [ ] **Step 4: `NewTopicDialog.jsx`:**
+- [x] **Step 4: `NewTopicDialog.jsx`:**
 
 ```jsx
 import { useEffect, useState } from "react"
@@ -1001,7 +1001,7 @@ export default function NewTopicDialog({ actor, initialChartId = "", onClose, on
 }
 ```
 
-- [ ] **Step 5: `TopicView.jsx`:**
+- [x] **Step 5: `TopicView.jsx`:**
 
 ```jsx
 import { useEffect, useRef, useState } from "react"
@@ -1199,7 +1199,7 @@ export default function TopicView({ topic, chart, actor, onBack }) {
 }
 ```
 
-- [ ] **Step 6: `MessagesPage.jsx`:**
+- [x] **Step 6: `MessagesPage.jsx`:**
 
 ```jsx
 import { useEffect, useMemo, useState } from "react"
@@ -1392,7 +1392,7 @@ export default function MessagesPage({ actor }) {
 
 (The list's message preview is left out: the topic document doesn't hold the last message's text, and reading every topic's messages for the list would be one read per topic. Subject + time is enough to triage. Ledger this as a ruling.)
 
-- [ ] **Step 7: Sidebar and route.**
+- [x] **Step 7: Sidebar and route.**
 
 `Sidebar.jsx`: import `ChatIcon` and `useTopics` (`../inbox/useTopics`) and `needsReply` (`../../lib/messageMath`). Add after the Patients item:
 
@@ -1419,9 +1419,9 @@ and change the count line to:
       <Route path="/admin/messages" element={guard("inbox", <PatientMessages actor={actor} />)} />
 ```
 
-- [ ] **Step 8: Run the browser check** → all pass; read screenshots. `npm run lint`, `npm run build`, `npm run check`.
+- [x] **Step 8: Run the browser check** → all pass; read screenshots. `npm run lint`, `npm run build`, `npm run check`.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add src/admin
@@ -1439,9 +1439,9 @@ git commit -m "Admin: Messages page (shared inbox, topics, replies with email, c
 **Interfaces:**
 - Consumes: `useTopics`, `needsReply`.
 
-- [ ] **Step 1: Check first.** Add to `inbox-check.mjs`: open the seeded patient's chart → a "Messages" region shows "1 topic, 1 needs a reply" and a link to `/admin/messages?patient={id}`; a chart with none shows "No messages yet". Run → FAIL.
+- [x] **Step 1: Check first.** Add to `inbox-check.mjs`: open the seeded patient's chart → a "Messages" region shows "1 topic, 1 needs a reply" and a link to `/admin/messages?patient={id}`; a chart with none shows "No messages yet". Run → FAIL.
 
-- [ ] **Step 2: Implement.** In `PatientChart.jsx` import `useTopics` from `../inbox/useTopics` and `needsReply` from `../../lib/messageMath`. In the component body:
+- [x] **Step 2: Implement.** In `PatientChart.jsx` import `useTopics` from `../inbox/useTopics` and `needsReply` from `../../lib/messageMath`. In the component body:
 
 ```js
   const { topics: allTopics } = useTopics()
@@ -1473,9 +1473,9 @@ Under `<UpdatesCard … />`, before `<ProgressCard … />`:
 
 (`useTopics` must be called before the component's early returns, next to the other hooks.)
 
-- [ ] **Step 3: Run** the check → pass. Lint, build.
+- [x] **Step 3: Run** the check → pass. Lint, build.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/admin/patients/PatientChart.jsx
@@ -1494,9 +1494,9 @@ git commit -m "Chart: Messages line linking to the patient's topics"
 **Interfaces:**
 - Produces: `PortalApp` (default export) handling sign-in states and routes; `PortalHome({ user, link })`; `export { db }` from `patientAuth.js`. Task 8 adds `messages` routes under it.
 
-- [ ] **Step 1: Stubs first.** Add `export const db = null` to the stubs in both portal checks. Run both → still ALL PASS (nothing reads `db` yet).
+- [x] **Step 1: Stubs first.** Add `export const db = null` to the stubs in both portal checks. Run both → still ALL PASS (nothing reads `db` yet).
 
-- [ ] **Step 2: `PortalApp.jsx`.** Move everything from `PortalHome.jsx` except the `state === "linked"` block, `COMING_SOON` and `sideCard`, into a new `PortalApp`:
+- [x] **Step 2: `PortalApp.jsx`.** Move everything from `PortalHome.jsx` except the `state === "linked"` block, `COMING_SOON` and `sideCard`, into a new `PortalApp`:
 
 ```jsx
 import { useEffect, useState } from "react"
@@ -1571,9 +1571,9 @@ export default function PortalHome({ user, link }) {
 
 `App.jsx`: `const PortalApp = lazy(() => import("./portal/PortalApp"))` replaces the `PortalHome` lazy import; the route becomes `path="/account/*"` with `<PortalApp />`. Update the comment above the lazy import to say "the portal".
 
-- [ ] **Step 3: Run** both portal checks → ALL PASS (no behaviour change). Lint, build.
+- [x] **Step 3: Run** both portal checks → ALL PASS (no behaviour change). Lint, build.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/portal src/App.jsx
@@ -1600,7 +1600,7 @@ git commit -m "Portal: PortalApp handles sign-in and routes /account/*; PortalHo
   - `closeConversation(intakeId, topicId) → Promise<void>`
   - `markConversationRead(intakeId, topicId) → Promise<void>`
 
-- [ ] **Step 1: Browser check first.** `<scratchpad>/portal-messages-check.mjs`: stub `**/src/portal/lib/patientAuth.js*` (as `portal-progress-check.mjs`, plus `export const db = null`) and `**/src/portal/lib/messageStore.js*` with an in-page store:
+- [x] **Step 1: Browser check first.** `<scratchpad>/portal-messages-check.mjs`: stub `**/src/portal/lib/patientAuth.js*` (as `portal-progress-check.mjs`, plus `export const db = null`) and `**/src/portal/lib/messageStore.js*` with an in-page store:
 
 ```js
 const messagesStub = (mode) => `
@@ -1674,7 +1674,7 @@ Also add `await page.route("**/src/portal/lib/messageStore.js*", …)` with an e
 
 Run: FAIL.
 
-- [ ] **Step 2: `messageStore.js`:**
+- [x] **Step 2: `messageStore.js`:**
 
 ```js
 // Patient messages from the portal side (spec 2026-10-06-portal-messages-design).
@@ -1769,7 +1769,7 @@ export async function markConversationRead(intakeId, topicId) {
 }
 ```
 
-- [ ] **Step 3: `NewConversationForm.jsx`:**
+- [x] **Step 3: `NewConversationForm.jsx`:**
 
 ```jsx
 import { useState } from "react"
@@ -1837,7 +1837,7 @@ export default function NewConversationForm({ intakeId, uid, onStarted, onCancel
 }
 ```
 
-- [ ] **Step 4: `ConversationView.jsx`:**
+- [x] **Step 4: `ConversationView.jsx`:**
 
 ```jsx
 import { useEffect, useRef, useState } from "react"
@@ -1984,7 +1984,7 @@ export default function ConversationView({ intakeId, uid, topic, canWrite }) {
 }
 ```
 
-- [ ] **Step 5: `MessagesPage.jsx`** (`/account/messages` and `/account/messages/:topicId`) and **`MessagesBox.jsx`** (home):
+- [x] **Step 5: `MessagesPage.jsx`** (`/account/messages` and `/account/messages/:topicId`) and **`MessagesBox.jsx`** (home):
 
 ```jsx
 // MessagesPage.jsx
@@ -2174,7 +2174,7 @@ export default function MessagesBox({ intakeId }) {
 
 In `MessagesPage`, open the form when `?new=1`: `const [params] = useSearchParams()` and `useState(params.get("new") === "1")` for `composing`.
 
-- [ ] **Step 6: Wire it.** `PortalApp.jsx` routes:
+- [x] **Step 6: Wire it.** `PortalApp.jsx` routes:
 
 ```jsx
         <Routes>
@@ -2186,9 +2186,9 @@ In `MessagesPage`, open the form when `?new=1`: `const [params] = useSearchParam
 
 `PortalHome.jsx`: import `MessagesBox`; add `<MessagesBox intakeId={link.intakeId} />` after `<PortalUpdates … />`; remove the Messages row from `COMING_SOON` (and `MailIcon` if now unused there; the care-team box still uses it).
 
-- [ ] **Step 7: Run** `portal-messages-check.mjs` (all pass), `portal-updates-check.mjs` and `portal-progress-check.mjs` (with the messageStore stub; all pass). Read screenshots. `humanizer` over the new copy. `npm run lint`, `npm run build`.
+- [x] **Step 7: Run** `portal-messages-check.mjs` (all pass), `portal-updates-check.mjs` and `portal-progress-check.mjs` (with the messageStore stub; all pass). Read screenshots. `humanizer` over the new copy. `npm run lint`, `npm run build`.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/portal
@@ -2202,9 +2202,9 @@ git commit -m "Portal: Messages (home box, conversations page, start, reply, clo
 **Files:**
 - Modify: `docs/client-portal.md` ("Where we left off": Messages built; setup and deploy notes)
 
-- [ ] **Step 1:** In "Where we left off", add: Messages is built (spec and plan paths), two sentences on what it does, the two EmailJS templates to set up (portal notice, staff notice with info@ fixed in the template), and that the rules must be deployed before hosting (the new rules also let a patient read their own chart record). Mark nothing else.
-- [ ] **Step 2:** Load `superpowers:verification-before-completion`. Run and report: `npm run test:rules`, `npm run check`, `npm run lint`, `npm run build`, every scratchpad browser check (`inbox-check`, `portal-messages-check`, `portal-progress-check`, `portal-updates-check`, `updates-check`, `progress-chart-check`, `portal-active-check`).
-- [ ] **Step 3: Commit**
+- [x] **Step 1:** In "Where we left off", add: Messages is built (spec and plan paths), two sentences on what it does, the two EmailJS templates to set up (portal notice, staff notice with info@ fixed in the template), and that the rules must be deployed before hosting (the new rules also let a patient read their own chart record). Mark nothing else.
+- [x] **Step 2:** Load `superpowers:verification-before-completion`. Run and report: `npm run test:rules`, `npm run check`, `npm run lint`, `npm run build`, every scratchpad browser check (`inbox-check`, `portal-messages-check`, `portal-progress-check`, `portal-updates-check`, `updates-check`, `progress-chart-check`, `portal-active-check`).
+- [x] **Step 3: Commit**
 
 ```bash
 git add docs/client-portal.md docs/superpowers/plans/2026-10-06-portal-messages.md

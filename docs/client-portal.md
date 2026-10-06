@@ -251,8 +251,21 @@ ships; nothing is back-filled.
 hosting). Signing a note with any vitals now also writes its progress entry in the same
 save; with the old rules live, that save is refused and the note can't be signed at all.
 
-The portal now lives in `src/portal/` (`PortalHome.jsx` is `/account`); sections still to
-come are listed in `COMING_SOON` there. Next in the agreed order: Messages.
+The portal now lives in `src/portal/`: `PortalApp.jsx` handles signing in and routes
+`/account/*`, `PortalHome.jsx` is `/account`. Sections still to come are listed in
+`COMING_SOON` in PortalHome (only Membership now, which waits on a billing system).
+
+**Messages is built** (spec `docs/superpowers/specs/2026-10-06-portal-messages-design.md`,
+plan `docs/superpowers/plans/2026-10-06-portal-messages.md`). Patients write to the care
+team in subject-based conversations at `/account/messages`; all clinical staff answer from
+the shared inbox at `/admin/messages` (sidebar count = topics needing a reply; the chart
+page links to a patient's topics). Either side can close a topic; writing again reopens
+it. Emails carry no content: the patient gets "you have a new message" when the staff
+box is ticked; info@corephia.com gets "a patient sent a message" only when a topic newly
+needs a reply. Before live use: set up the **portal notice** and **staff notice**
+templates (EmailJS setup above), and deploy the rules **before** hosting. The new rules
+also let a patient read their own chart record (name, status) so the portal knows when
+messaging is closed.
 
 Still open from the login work:
 - **Final review** of the setup/reset batch (`2026-10-05-portal-setup-and-reset.md`) has not
