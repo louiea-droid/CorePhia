@@ -1,7 +1,10 @@
+import { Link } from "react-router-dom"
 import { BadgeCheckIcon, MailIcon, PhoneIcon } from "../components/icons"
+import { unreadFor } from "../lib/messageMath"
 import { SUPPORT_PHONE } from "../lib/siteContact"
 import { signOutPatient } from "./lib/patientAuth"
 import MessagesBox from "./messages/MessagesBox"
+import { useMyTopics } from "./messages/useMyTopics"
 import PortalProgress from "./progress/PortalProgress"
 import PortalUpdates from "./updates/PortalUpdates"
 
@@ -15,35 +18,49 @@ const sideCard = "rounded-3xl border border-ink-950/10 bg-white p-6"
 
 // The portal's home page for a linked patient (PortalApp handles signing in).
 export default function PortalHome({ user, link }) {
+  const { topics } = useMyTopics(link.intakeId)
+  const newReplies = topics?.filter((topic) => unreadFor(topic, "patient")).length ?? 0
   return (
     <div>
-      <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-        <div>
-          <h1 className="font-serif text-4xl text-ink-950">
-            {link.firstName ? `Welcome back, ${link.firstName}` : "Welcome back"}
-          </h1>
-          <p className="mt-2 text-ink-950/70">Here's what your care team has shared with you.</p>
-        </div>
-        <div className="flex items-center gap-3 text-sm">
-          <span className="break-all text-ink-950/60">Signed in as {user.email}</span>
-          <button
-            type="button"
-            onClick={() => signOutPatient()}
-            className="cursor-pointer font-semibold whitespace-nowrap text-ink-950 underline-offset-4 transition-colors duration-200 hover:text-accent-dark hover:underline"
+      <header>
+        <h1 className="font-serif text-4xl text-ink-950">
+          {link.firstName ? `Welcome back, ${link.firstName}` : "Welcome back"}
+        </h1>
+        <p className="mt-2 text-ink-950/70">Here's what your care team has shared with you.</p>
+        {newReplies > 0 && (
+          <Link
+            to="/account/messages"
+            className="mt-4 inline-flex items-center gap-2 rounded-full bg-accent/15 px-4 py-2 text-sm font-semibold text-ink-950 transition-colors duration-200 hover:bg-accent/25"
           >
-            Sign out
-          </button>
-        </div>
+            <MailIcon className="size-4 text-accent-dark" aria-hidden="true" />
+            {newReplies} new {newReplies === 1 ? "reply" : "replies"} from your care team
+          </Link>
+        )}
       </header>
 
       <div className="mt-8 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="space-y-6">
           <PortalProgress intakeId={link.intakeId} />
-          <PortalUpdates intakeId={link.intakeId} />
           <MessagesBox intakeId={link.intakeId} />
+          <PortalUpdates intakeId={link.intakeId} />
         </div>
 
-        <aside className="space-y-6">
+        {/* Stays in view while the main column scrolls (desktop). */}
+        <aside className="space-y-6 lg:sticky lg:top-24">
+          <section aria-labelledby="account-heading" className={sideCard}>
+            <h2 id="account-heading" className="font-serif text-xl text-ink-950">
+              Your account
+            </h2>
+            <p className="mt-1 text-sm break-all text-ink-950/70">Signed in as {user.email}</p>
+            <button
+              type="button"
+              onClick={() => signOutPatient()}
+              className="mt-4 cursor-pointer rounded-full border border-ink-950/15 px-5 py-2 text-sm font-semibold text-ink-950 transition-colors duration-200 hover:bg-paper-100"
+            >
+              Sign out
+            </button>
+          </section>
+
           <section aria-labelledby="care-team-heading" className={sideCard}>
             <h2 id="care-team-heading" className="font-serif text-xl text-ink-950">
               Your care team

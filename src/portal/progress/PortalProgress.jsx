@@ -38,7 +38,9 @@ export default function PortalProgress({ intakeId }) {
     }
   }, [intakeId, attempt])
 
-  const current = result?.attempt === attempt ? result : null
+  // Keep the last answer on screen while a reload (after logging or deleting)
+  // is in flight, so the box and its open history don't flicker shut.
+  const current = result
   const reload = () => setAttempt((n) => n + 1)
   const entries = current?.data?.entries ?? []
   const points = series(entries)
@@ -122,46 +124,56 @@ export default function PortalProgress({ intakeId }) {
           </div>
           <WeightChart points={points} goalLb={numbers.goalLb} />
 
-          {visits.length > 0 && (
-            <div className="mt-8">
-              <h3 className="text-sm font-semibold text-ink-950">From your visits</h3>
-              <ul className="mt-2 divide-y divide-ink-950/10 text-sm">
-                {visits.map((entry) => (
-                  <li key={entry.id} className="flex flex-wrap justify-between gap-x-4 py-2.5">
-                    <span className="text-ink-950/70">{dayLabel(entry.date)}</span>
-                    <span className="text-ink-950">{vitalsText(entry)}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {weighIns.length > 0 && (
-            <div className="mt-8">
-              <h3 className="text-sm font-semibold text-ink-950">Your weigh-ins</h3>
-              {deleteError && (
-                <p role="alert" className="mt-2 text-sm text-brand-dark">
-                  {deleteError}
-                </p>
+          {/* The full lists sit behind a toggle so the portal page stays short. */}
+          {visits.length + weighIns.length > 0 && (
+            <details className="group mt-6 border-t border-ink-950/10 pt-4">
+              <summary className="cursor-pointer list-none text-sm font-semibold text-ink-950 transition-colors duration-200 hover:text-accent-dark">
+                <span className="group-open:hidden">Show history</span>
+                <span className="hidden group-open:inline">Hide history</span>
+                <span className="font-normal text-ink-950/55"> ({visits.length + weighIns.length})</span>
+              </summary>
+              {visits.length > 0 && (
+                <div className="mt-8">
+                  <h3 className="text-sm font-semibold text-ink-950">From your visits</h3>
+                  <ul className="mt-2 divide-y divide-ink-950/10 text-sm">
+                    {visits.map((entry) => (
+                      <li key={entry.id} className="flex flex-wrap justify-between gap-x-4 py-2.5">
+                        <span className="text-ink-950/70">{dayLabel(entry.date)}</span>
+                        <span className="text-ink-950">{vitalsText(entry)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
-              <ul className="mt-2 divide-y divide-ink-950/10 text-sm">
-                {weighIns.map((entry) => (
-                  <li key={entry.id} className="flex flex-wrap items-center justify-between gap-x-4 py-2.5">
-                    <span className="text-ink-950/70">{dayLabel(entry.date)}</span>
-                    <span className="flex items-center gap-4">
-                      <span className="text-ink-950">{entry.weightLb} lbs</span>
-                      <button
-                        type="button"
-                        onClick={() => setDeleting(entry)}
-                        className="cursor-pointer text-sm font-medium text-ink-950/60 transition-colors duration-200 hover:text-brand-dark"
-                      >
-                        Delete
-                      </button>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+
+              {weighIns.length > 0 && (
+                <div className="mt-8">
+                  <h3 className="text-sm font-semibold text-ink-950">Your weigh-ins</h3>
+                  {deleteError && (
+                    <p role="alert" className="mt-2 text-sm text-brand-dark">
+                      {deleteError}
+                    </p>
+                  )}
+                  <ul className="mt-2 divide-y divide-ink-950/10 text-sm">
+                    {weighIns.map((entry) => (
+                      <li key={entry.id} className="flex flex-wrap items-center justify-between gap-x-4 py-2.5">
+                        <span className="text-ink-950/70">{dayLabel(entry.date)}</span>
+                        <span className="flex items-center gap-4">
+                          <span className="text-ink-950">{entry.weightLb} lbs</span>
+                          <button
+                            type="button"
+                            onClick={() => setDeleting(entry)}
+                            className="cursor-pointer text-sm font-medium text-ink-950/60 transition-colors duration-200 hover:text-brand-dark"
+                          >
+                            Delete
+                          </button>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </details>
           )}
         </>
       )}
