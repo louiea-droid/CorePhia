@@ -4,7 +4,7 @@ import ApplicantModal from "../applicants/ApplicantModal"
 import AppointmentDialog from "../calendar/AppointmentDialog"
 import { loadAppointmentsFor } from "../calendar/appointmentStore"
 import { medicationInterestLabel } from "../analytics/analytics"
-import { ageFrom, asDate, bmi, currentExercisePlan, currentPrescriptions, disciplineOf, nextFollowUps } from "./chartMath"
+import { ageFrom, asDate, bmi, currentExercisePlan, currentPrescriptions, disciplineOf, nextFollowUps, updatePrefill } from "./chartMath"
 import { countAmendments, createDraftNote, loadChart, loadIntakeRecord, loadNotes } from "./chartStore"
 import { AUDIT_ACTIONS, recordAuditEvent } from "../lib/firebase"
 import { ChevronLeftIcon } from "../ui/icons"
@@ -22,6 +22,8 @@ import {
 } from "./noteUi"
 import PageHeader from "../layout/PageHeader"
 import PortalAccess from "./PortalAccess"
+import PostUpdateDialog from "./PostUpdateDialog"
+import UpdatesCard from "./UpdatesCard"
 import { canWriteNote } from "../staff/roles"
 
 const list = (value) => (Array.isArray(value) ? value.filter((item) => item && item !== "None of the above").join(", ") : value)
@@ -109,6 +111,9 @@ export default function PatientChart({ actor }) {
   const [appointments, setAppointments] = useState([])
   const [booking, setBooking] = useState(null) // null | { appointment } | { prefill }
   const [appointmentsVersion, setAppointmentsVersion] = useState(0)
+  const [posting, setPosting] = useState(null) // null | { body, fromNoteId }
+  const [updatesVersion, setUpdatesVersion] = useState(0)
+  const [updateEmailFailed, setUpdateEmailFailed] = useState(false)
 
   const reload = async () => {
     const [nextChart, nextNotes] = await Promise.all([loadChart(chartId), loadNotes(chartId, actor.uid)])
@@ -382,6 +387,16 @@ export default function PatientChart({ actor }) {
 
         <div className="space-y-4">
           <PortalAccess key={chart.id} chart={chart} intake={intake} actor={actor} />
+          <UpdatesCard
+            key={`updates-${chart.id}`}
+            chartId={chart.id}
+            notes={notes}
+            actor={actor}
+            canPost={chart.status === "active"}
+            version={updatesVersion}
+            emailFailed={updateEmailFailed}
+            onPost={() => setPosting({ body: "", fromNoteId: null })}
+          />
           <Card title="Current prescriptions">
             {current.length === 0 ? (
               <p className="text-sm text-ink-950/55">None. Prescriptions appear here once a note that adds one is signed.</p>
@@ -518,7 +533,10 @@ export default function PatientChart({ actor }) {
           lastWeightSource={lastWeightSource}
           actor={actor}
           onClose={afterEditor}
-          onSigned={afterEditor}
+          onSigned={async (signed, { share }) => {
+            await afterEditor()
+            if (share) setPosting({ body: updatePrefill(signed), fromNoteId: signed.id })
+          }}
           onDiscarded={afterEditor}
         />
       )}
@@ -526,6 +544,22 @@ export default function PatientChart({ actor }) {
         <NoteView chart={chart} intake={intake} note={openNote} actor={actor} onClose={() => {
             setOpenNote(null)
             setCountsVersion((version) => version + 1)
+          }}
+        />
+      )}
+
+      {posting && (
+        <PostUpdateDialog
+          chartId={chart.id}
+          to={(demographics.email ?? "").trim().toLowerCase()}
+          initialBody={posting.body}
+          fromNoteId={posting.fromNoteId}
+          actor={actor}
+          onClose={() => setPosting(null)}
+          onPosted={({ emailed }) => {
+            setPosting(null)
+            setUpdateEmailFailed(emailed === "failed")
+            setUpdatesVersion((version) => version + 1)
           }}
         />
       )}

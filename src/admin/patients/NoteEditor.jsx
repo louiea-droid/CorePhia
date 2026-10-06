@@ -261,6 +261,7 @@ export default function NoteEditor({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const [confirm, setConfirm] = useState(null) // "sign" | "discard" | null
+  const [share, setShare] = useState(false)
   const latest = useRef(fields)
   const timer = useRef(null)
   const closeRef = useRef(null)
@@ -349,7 +350,7 @@ export default function NoteEditor({
         targetId: chart.id,
         targetLabel: `${chart.firstName} ${chart.lastName}`.trim(),
       })
-      onSigned()
+      onSigned({ ...note, ...latest.current, status: "signed" }, { share })
     } catch (cause) {
       setConfirm(null)
       setError(errorText(cause, "Couldn't sign this note. Nothing was changed. Try again.", roleCanEdit))
@@ -614,7 +615,14 @@ export default function NoteEditor({
         confirmDisabled={busy}
         onConfirm={sign}
         onCancel={() => setConfirm(null)}
-      />
+      >
+        {chart.status === "active" && (
+          <label className="mt-4 flex cursor-pointer items-center gap-2 text-sm text-ink-950/80">
+            <input type="checkbox" checked={share} onChange={(event) => setShare(event.target.checked)} className="size-4 accent-accent-dark" />
+            Then share an update with the patient
+          </label>
+        )}
+      </ConfirmDialog>
       <ConfirmDialog
         open={confirm === "discard"}
         title="Discard this draft?"
