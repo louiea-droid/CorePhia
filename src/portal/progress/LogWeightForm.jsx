@@ -41,7 +41,7 @@ export default function LogWeightForm({ intakeId, onSaved, onCancel }) {
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block text-sm">
           <span className="mb-1 block font-medium text-ink-950/75">Weight (lbs)</span>
-          <input type="number" inputMode="decimal" step="0.1" value={weight} onChange={(event) => setWeight(event.target.value)} className={field} />
+          <input type="number" inputMode="decimal" step="any" value={weight} onChange={(event) => setWeight(event.target.value)} className={field} />
         </label>
         <label className="block text-sm">
           <span className="mb-1 block font-medium text-ink-950/75">Date</span>

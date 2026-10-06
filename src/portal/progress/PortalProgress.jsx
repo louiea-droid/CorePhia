@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import WeightChart from "../../components/WeightChart"
-import { series, summary } from "../../lib/progressMath"
+import { series, summary, vitalsText } from "../../lib/progressMath"
 import { deleteWeighIn, getMyProgress } from "../lib/patientAuth"
 import LogWeightForm from "./LogWeightForm"
 
@@ -20,6 +20,8 @@ export default function PortalProgress({ intakeId }) {
   const [result, setResult] = useState(null) // { attempt, data } | { attempt, failed }
   const [logging, setLogging] = useState(false)
   const [deleting, setDeleting] = useState(null)
+  const [removing, setRemoving] = useState(false)
+  const dialogRef = useRef(null)
   const [deleteError, setDeleteError] = useState(null)
 
   useEffect(() => {
@@ -44,16 +46,24 @@ export default function PortalProgress({ intakeId }) {
   const visits = entries.filter((entry) => entry.source === "visit").sort((a, b) => b.date.localeCompare(a.date))
   const weighIns = entries.filter((entry) => entry.source === "home").sort((a, b) => b.date.localeCompare(a.date))
 
+  useEffect(() => {
+    if (deleting && !dialogRef.current?.open) dialogRef.current?.showModal()
+  }, [deleting])
+
+  // One delete at a time: a second click while the first is saving would be
+  // refused (it's already deleted) and show a false error.
   const confirmDelete = async () => {
+    if (removing) return
+    setRemoving(true)
     try {
       await deleteWeighIn(intakeId, deleting.id)
       setDeleteError(null)
-      setDeleting(null)
       reload()
     } catch {
       setDeleteError("Couldn't delete that weigh-in. Try again.")
-      setDeleting(null)
     }
+    setRemoving(false)
+    dialogRef.current?.close()
   }
 
   return (
@@ -119,15 +129,7 @@ export default function PortalProgress({ intakeId }) {
                 {visits.map((entry) => (
                   <li key={entry.id} className="flex flex-wrap justify-between gap-x-4 py-2.5">
                     <span className="text-ink-950/70">{dayLabel(entry.date)}</span>
-                    <span className="text-ink-950">
-                      {[
-                        entry.weightLb != null && `${entry.weightLb} lbs`,
-                        entry.systolic != null && entry.diastolic != null && `BP ${entry.systolic}/${entry.diastolic}`,
-                        entry.heartRate != null && `HR ${entry.heartRate}`,
-                      ]
-                        .filter(Boolean)
-                        .join(", ")}
-                    </span>
+                    <span className="text-ink-950">{vitalsText(entry)}</span>
                   </li>
                 ))}
               </ul>
@@ -164,31 +166,36 @@ export default function PortalProgress({ intakeId }) {
         </>
       )}
 
-      {deleting && (
-        <div role="alertdialog" aria-modal="true" aria-label="Delete this weigh-in?" className="fixed inset-0 z-50 grid place-items-center bg-ink-950/50 p-4">
-          <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl">
-            <p className="font-serif text-xl text-ink-950">Delete this weigh-in?</p>
-            <p className="mt-2 text-sm text-ink-950/70">Your care team will still see that it was deleted.</p>
-            <div className="mt-6 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setDeleting(null)}
-                className="cursor-pointer rounded-full px-4 py-2 text-sm font-medium text-ink-950/70 transition-colors duration-200 hover:bg-paper-100"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                autoFocus
-                onClick={confirmDelete}
-                className="cursor-pointer rounded-full bg-ink-950 px-4 py-2 text-sm font-semibold text-paper-50 transition-colors duration-200 hover:bg-ink-900"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
+      {/* The browser's own modal dialog: Escape closes it, focus stays inside
+          and returns to the Delete button afterwards. */}
+      <dialog
+        ref={dialogRef}
+        aria-labelledby="delete-weigh-in-title"
+        onClose={() => setDeleting(null)}
+        className="m-auto w-[calc(100%-2rem)] max-w-sm rounded-3xl bg-white p-6 shadow-2xl backdrop:bg-ink-950/50"
+      >
+        <p id="delete-weigh-in-title" className="font-serif text-xl text-ink-950">
+          Delete this weigh-in?
+        </p>
+        <p className="mt-2 text-sm text-ink-950/70">Your care team will still see that it was deleted.</p>
+        <div className="mt-6 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => dialogRef.current?.close()}
+            className="cursor-pointer rounded-full px-4 py-2 text-sm font-medium text-ink-950/70 transition-colors duration-200 hover:bg-paper-100"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={removing}
+            onClick={confirmDelete}
+            className="cursor-pointer rounded-full bg-ink-950 px-4 py-2 text-sm font-semibold text-paper-50 transition-colors duration-200 hover:bg-ink-900 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {removing ? "Deleting…" : "Delete"}
+          </button>
         </div>
-      )}
+      </dialog>
     </section>
   )
 }

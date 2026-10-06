@@ -15,6 +15,7 @@ const SOURCE = { visit: "Visit", home: "Logged at home" }
 // narrow card and don't balloon in a wide one.
 export default function WeightChart({ points, goalLb = null }) {
   const [active, setActive] = useState(null)
+  const [announced, setAnnounced] = useState("") // keyboard focus only, so hovering stays quiet
   const [W, setW] = useState(600)
   const box = useRef(null)
   const hasPoints = points.length > 0
@@ -38,6 +39,13 @@ export default function WeightChart({ points, goalLb = null }) {
   const y = (lb) => PAD.top + ((high - lb) / (high - low)) * (H - PAD.top - PAD.bottom)
   const ticks = [high, Math.round((high + low) / 2), low]
   const shown = points[active ?? points.length - 1]
+  // Points on the same spot (same day, same weight) are read out together,
+  // since only the top one can be hovered.
+  const describe = (point) => {
+    const here = points.filter((other) => other.date === point.date && other.weightLb === point.weightLb)
+    const sources = [...new Set(here.map((other) => SOURCE[other.source].toLowerCase()))].join(" and ")
+    return `${longLabel(point.date)}: ${point.weightLb} lbs, ${sources}`
+  }
 
   return (
     <figure ref={box} className="mt-2">
@@ -81,7 +89,10 @@ export default function WeightChart({ points, goalLb = null }) {
             tabIndex={0}
             aria-label={`${longLabel(point.date)}, ${point.weightLb} lbs, ${SOURCE[point.source]}`}
             onMouseEnter={() => setActive(index)}
-            onFocus={() => setActive(index)}
+            onFocus={() => {
+              setActive(index)
+              setAnnounced(describe(point))
+            }}
             onMouseLeave={() => setActive(null)}
             onBlur={() => setActive(null)}
             className={`cursor-pointer stroke-accent-dark outline-none ${point.source === "home" ? "fill-white" : "fill-accent-dark"}`}
@@ -97,8 +108,9 @@ export default function WeightChart({ points, goalLb = null }) {
         )}
       </svg>
       <figcaption className="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs text-ink-950/60">
-        <span aria-live="polite">
-          {longLabel(shown.date)}: {shown.weightLb} lbs, {SOURCE[shown.source].toLowerCase()}
+        <span aria-hidden="true">{describe(shown)}</span>
+        <span aria-live="polite" className="sr-only">
+          {announced}
         </span>
         <span className="flex items-center gap-3">
           <span className="flex items-center gap-1.5">

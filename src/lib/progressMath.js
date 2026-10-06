@@ -60,6 +60,32 @@ export function visitEntryFor(note) {
   return { source: "visit", date: note.visitDate, ...numbers, noteId: note.id, removed: false }
 }
 
+// A visit's numbers as one line: whatever was recorded, so half a blood
+// pressure still shows ("Systolic 120") instead of an empty line.
+export function vitalsText({ weightLb = null, systolic = null, diastolic = null, heartRate = null } = {}) {
+  const bp =
+    systolic != null && diastolic != null
+      ? `BP ${systolic}/${diastolic}`
+      : systolic != null
+        ? `Systolic ${systolic}`
+        : diastolic != null && `Diastolic ${diastolic}`
+  return [weightLb != null && `${weightLb} lbs`, bp, heartRate != null && `HR ${heartRate}`].filter(Boolean).join(", ")
+}
+
+// The sign confirmation's line, naming only what this note recorded; "" when
+// it recorded none, so nothing goes to the portal.
+export function signLine(vitals) {
+  const { weightLb, systolic, diastolic, heartRate } = vitals ?? {}
+  const names = [
+    weightLb != null && "weight",
+    (systolic != null || diastolic != null) && "blood pressure",
+    heartRate != null && "heart rate",
+  ].filter(Boolean)
+  if (!names.length) return ""
+  const list = names.length === 1 ? names[0] : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`
+  return `The ${list} also ${names.length === 1 ? "goes" : "go"} to the patient's progress.`
+}
+
 // Is YYYY-MM-DD `date` between `days` before `today` and `today`?
 export function withinDays(date, today, days) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date ?? "")) return false

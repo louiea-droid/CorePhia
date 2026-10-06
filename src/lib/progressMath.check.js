@@ -1,6 +1,6 @@
 // Self-check for progressMath.js: `npm run check`. Plain node:assert.
 import assert from "node:assert/strict"
-import { series, summary, toNumbers, visitEntryFor, withinDays } from "./progressMath.js"
+import { series, signLine, summary, toNumbers, visitEntryFor, vitalsText, withinDays } from "./progressMath.js"
 
 const at = (iso) => ({ toMillis: () => new Date(iso).getTime() })
 const home = (id, date, weightLb, extra = {}) => ({ id, source: "home", date, weightLb, createdAt: at(`${date}T12:00:00Z`), removed: false, ...extra })
@@ -53,5 +53,23 @@ assert.equal(withinDays("2026-09-06", "2026-10-06", 30), true)
 assert.equal(withinDays("2026-09-05", "2026-10-06", 30), false)
 assert.equal(withinDays("2026-10-07", "2026-10-06", 30), false)
 assert.equal(withinDays("", "2026-10-06", 30), false)
+
+// A visit's numbers as one line, showing whatever was recorded, even half a BP.
+assert.equal(vitalsText({ weightLb: 202, systolic: 124, diastolic: 80, heartRate: 72 }), "202 lbs, BP 124/80, HR 72")
+assert.equal(vitalsText({ weightLb: null, systolic: 120, diastolic: null, heartRate: null }), "Systolic 120")
+assert.equal(vitalsText({ weightLb: null, systolic: null, diastolic: 80, heartRate: 66 }), "Diastolic 80, HR 66")
+assert.equal(vitalsText({ weightLb: 199.5 }), "199.5 lbs")
+assert.equal(vitalsText({}), "")
+
+// The sign confirmation names only what the note recorded.
+assert.equal(signLine({ weightLb: 199 }), "The weight also goes to the patient's progress.")
+assert.equal(signLine({ systolic: 118, diastolic: 76 }), "The blood pressure also goes to the patient's progress.")
+assert.equal(signLine({ weightLb: 199, systolic: 118 }), "The weight and blood pressure also go to the patient's progress.")
+assert.equal(
+  signLine({ weightLb: 199, diastolic: 76, heartRate: 70 }),
+  "The weight, blood pressure and heart rate also go to the patient's progress.",
+)
+assert.equal(signLine({ weightLb: null }), "")
+assert.equal(signLine(undefined), "")
 
 console.log("progressMath: all checks passed")

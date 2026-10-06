@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import WeightChart from "../../components/WeightChart"
-import { series, summary } from "../../lib/progressMath"
+import { series, summary, vitalsText } from "../../lib/progressMath"
 import { NOTE_TYPE_LABELS, formatDay } from "./noteUi"
 import { ensureBaseline, loadProgress } from "./progressStore"
 
@@ -89,13 +89,7 @@ export default function ProgressCard({ chartId, intake, notes, version }) {
                       <p className="text-ink-950">
                         <span className="font-medium">{formatDay(entry.date)}</span>
                         {": "}
-                        {[
-                          entry.weightLb != null && lbs(entry.weightLb),
-                          entry.systolic != null && entry.diastolic != null && `BP ${entry.systolic}/${entry.diastolic}`,
-                          entry.heartRate != null && `HR ${entry.heartRate}`,
-                        ]
-                          .filter(Boolean)
-                          .join(", ")}
+                        {vitalsText(entry)}
                       </p>
                       <p className="text-xs text-ink-950/55">
                         {entry.source === "home"
