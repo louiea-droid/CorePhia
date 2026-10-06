@@ -20,7 +20,7 @@ const AdminApp = lazy(() => import("./admin/AdminApp"))
 // Same reasoning as AdminApp: the portal pulls in the Firebase Auth SDK via
 // portal/lib/patientAuth, so it stays out of the bundle until someone actually
 // navigates to /account.
-const PortalHome = lazy(() => import("./portal/PortalHome"))
+const PortalApp = lazy(() => import("./portal/PortalApp"))
 const PortalSetup = lazy(() => import("./portal/PortalSetup"))
 const PortalReset = lazy(() => import("./portal/PortalReset"))
 
@@ -84,10 +84,10 @@ function App() {
           <Route path="/success-stories" element={<SuccessStories />} />
           <Route path="/intake" element={<PatientIntakeForm />} />
           <Route
-            path="/account"
+            path="/account/*"
             element={
               <Suspense fallback={null}>
-                <PortalHome />
+                <PortalApp />
               </Suspense>
             }
           />

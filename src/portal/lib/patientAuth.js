@@ -31,7 +31,7 @@ export const isConfigured = Boolean(config.apiKey && config.projectId)
 // entry point (this file, or admin) is actually reached.
 const app = isConfigured ? (getApps().length ? getApp() : initializeApp(config)) : null
 const auth = app ? getAuth(app) : null
-const db = app ? getFirestore(app) : null
+export const db = app ? getFirestore(app) : null
 
 export function watchPatientUser(onChange) {
   if (!auth) {
