@@ -9,7 +9,7 @@ import {
   signOut,
   verifyPasswordResetCode,
 } from "firebase/auth"
-import { collection, doc, getDoc, getDocs, getFirestore, query, serverTimestamp, setDoc, where } from "firebase/firestore"
+import { addDoc, collection, doc, getDoc, getDocs, getFirestore, query, serverTimestamp, setDoc, updateDoc, where } from "firebase/firestore"
 import { isInviteUsable } from "../../lib/inviteMath"
 import { setPatientSessionHint } from "../../lib/patientSessionHint"
 
@@ -78,6 +78,31 @@ export async function getMyUpdates(intakeId) {
   const snap = await getDocs(query(collection(db, "patients", intakeId, "updates"), where("removed", "==", false)))
   const millis = (value) => value?.toMillis?.() ?? 0
   return snap.docs.map((entry) => ({ id: entry.id, ...entry.data() })).sort((a, b) => millis(b.createdAt) - millis(a.createdAt))
+}
+
+// The patient's progress: visit and home entries plus the intake baseline,
+// only what isn't removed (the rules refuse any query that could return a
+// removed entry).
+export async function getMyProgress(intakeId) {
+  if (!db) return { entries: [], baseline: null }
+  const snap = await getDocs(query(collection(db, "patients", intakeId, "progress"), where("removed", "==", false)))
+  const all = snap.docs.map((entry) => ({ id: entry.id, ...entry.data() }))
+  return { entries: all.filter((entry) => entry.source !== "baseline"), baseline: all.find((entry) => entry.source === "baseline") ?? null }
+}
+
+export async function logWeight(intakeId, { date, weightLb }) {
+  await addDoc(collection(db, "patients", intakeId, "progress"), {
+    source: "home",
+    date,
+    weightLb,
+    createdAt: serverTimestamp(),
+    removed: false,
+  })
+}
+
+// Hidden from the patient; staff still see it, marked deleted.
+export async function deleteWeighIn(intakeId, entryId) {
+  await updateDoc(doc(db, "patients", intakeId, "progress", entryId), { removed: serverTimestamp() })
 }
 
 // --- Portal setup (the invite link) ------------------------------------------

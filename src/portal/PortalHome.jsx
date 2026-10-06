@@ -2,15 +2,15 @@ import { useEffect, useState } from "react"
 import { Helmet } from "react-helmet-async"
 import { Link } from "react-router-dom"
 import LoginPanel from "../components/LoginPanel"
-import { BadgeCheckIcon, ChevronRightIcon, MailIcon, PhoneIcon, TrendingUpIcon } from "../components/icons"
+import { BadgeCheckIcon, ChevronRightIcon, MailIcon, PhoneIcon } from "../components/icons"
 import { getMyPortalLink, signOutPatient, watchPatientUser } from "./lib/patientAuth"
+import PortalProgress from "./progress/PortalProgress"
 import PortalUpdates from "./updates/PortalUpdates"
 import { SUPPORT_PHONE } from "../lib/siteContact"
 
 // Sections still being built, one by one (Louie, 2026-10-06). When one
 // ships, take it off this list and give it its own panel on the page.
 const COMING_SOON = [
-  { Icon: TrendingUpIcon, title: "Track progress", line: "Your weight and the measures your care team follows." },
   { Icon: MailIcon, title: "Messages", line: "Write to your care team and read their replies." },
   { Icon: BadgeCheckIcon, title: "Membership", line: "Your plan and what it includes." },
 ]
@@ -160,7 +160,10 @@ export default function PortalHome() {
           </header>
 
           <div className="mt-8 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
-            <PortalUpdates intakeId={link.intakeId} />
+            <div className="space-y-6">
+              <PortalProgress intakeId={link.intakeId} />
+              <PortalUpdates intakeId={link.intakeId} />
+            </div>
 
             <aside className="space-y-6">
               <section aria-labelledby="care-team-heading" className={sideCard}>
