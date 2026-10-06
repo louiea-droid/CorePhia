@@ -24,6 +24,8 @@ import PageHeader from "../layout/PageHeader"
 import PortalAccess from "./PortalAccess"
 import PostUpdateDialog from "./PostUpdateDialog"
 import ProgressCard from "./ProgressCard"
+import { useTopics } from "../inbox/useTopics"
+import { needsReply } from "../../lib/messageMath"
 import UpdatesCard from "./UpdatesCard"
 import { canWriteNote } from "../staff/roles"
 
@@ -115,6 +117,8 @@ export default function PatientChart({ actor }) {
   const [posting, setPosting] = useState(null) // null | { body, fromNoteId }
   const [updatesVersion, setUpdatesVersion] = useState(0)
   const [updateEmailFailed, setUpdateEmailFailed] = useState(false)
+  // This patient's message topics, for the summary's Messages line.
+  const { topics: allTopics } = useTopics()
 
   const reload = async () => {
     const [nextChart, nextNotes] = await Promise.all([loadChart(chartId), loadNotes(chartId, actor.uid)])
@@ -253,6 +257,8 @@ export default function PatientChart({ actor }) {
   const canWrite = writableTypes.length > 0 && chart.status === "active"
   const shownNotes = (notes ?? []).filter((note) => noteFilter === "all" || disciplineOf(note.type) === noteFilter)
   const draftOpen = openNote?.status === "draft"
+  const chartTopics = allTopics?.filter((topic) => topic.chartId === chartId) ?? []
+  const waiting = chartTopics.filter(needsReply).length
 
   return (
     <div className="pb-6">
@@ -398,6 +404,23 @@ export default function PatientChart({ actor }) {
             emailFailed={updateEmailFailed}
             onPost={() => setPosting({ body: "", fromNoteId: null })}
           />
+          <section aria-labelledby="chart-messages-heading" className="rounded-2xl border border-ink-950/10 bg-white p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 id="chart-messages-heading" className="text-sm font-semibold text-ink-950">
+                Messages
+              </h2>
+              <Link to={`/admin/messages?patient=${chart.id}`} className="text-xs font-semibold text-accent-text hover:underline">
+                Open messages
+              </Link>
+            </div>
+            <p className="mt-3 text-sm text-ink-950/70">
+              {!allTopics
+                ? "Loading…"
+                : chartTopics.length === 0
+                  ? "No messages yet"
+                  : `${chartTopics.length} ${chartTopics.length === 1 ? "topic" : "topics"}${waiting ? `, ${waiting} ${waiting === 1 ? "needs" : "need"} a reply` : ""}`}
+            </p>
+          </section>
           <ProgressCard key={`progress-${chart.id}`} chartId={chart.id} intake={intake} notes={notes} version={signedNotes.length} />
           <Card title="Current prescriptions">
             {current.length === 0 ? (
