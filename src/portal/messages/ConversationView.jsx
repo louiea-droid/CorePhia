@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { Link } from "react-router-dom"
+import { ChevronRightIcon } from "../../components/icons"
 import { patientRoleLabel, unreadFor } from "../../lib/messageMath"
 import { SUPPORT_PHONE } from "../../lib/siteContact"
 import { closeConversation, listenMyMessages, markConversationRead, replyInConversation } from "../lib/messageStore"
@@ -60,7 +61,11 @@ export default function ConversationView({ intakeId, uid, topic, canWrite }) {
 
   return (
     <section aria-labelledby="conversation-heading" className="rounded-3xl border border-ink-950/10 bg-white p-6 sm:p-8">
-      <Link to="/account/messages" className="text-sm font-medium text-ink-950/60 transition-colors hover:text-ink-950">
+      <Link
+        to="/account/messages"
+        className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-paper-100 py-1.5 pr-4 pl-3 text-sm font-semibold text-ink-950 transition-colors duration-200 hover:bg-paper-200"
+      >
+        <ChevronRightIcon className="size-4 rotate-180 text-accent-dark" aria-hidden="true" />
         All messages
       </Link>
       <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
