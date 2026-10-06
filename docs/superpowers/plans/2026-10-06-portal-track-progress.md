@@ -40,7 +40,7 @@
 **Interfaces:**
 - Produces: the shapes in the spec; patient queries must filter `removed == false`; visit entries only inside the signing batch.
 
-- [ ] **Step 1: Write the failing tests.** Append:
+- [x] **Step 1: Write the failing tests.** Append:
 
 ```js
 describe("portal progress", () => {
@@ -134,9 +134,9 @@ describe("portal progress", () => {
 })
 ```
 
-- [ ] **Step 2: Run, see the allow-cases fail.** `npm run test:rules` (output to a log, read the summary). Expected: the "written with the signature", "logs a home weigh-in", "deletes", "baseline" and "reads" tests FAIL; the pure-deny test passes.
+- [x] **Step 2: Run, see the allow-cases fail.** `npm run test:rules` (output to a log, read the summary). Expected: the "written with the signature", "logs a home weigh-in", "deletes", "baseline" and "reads" tests FAIL; the pure-deny test passes.
 
-- [ ] **Step 3: Add the rules.** After the `updates` block, still inside `match /patients/{chartId}`:
+- [x] **Step 3: Add the rules.** After the `updates` block, still inside `match /patients/{chartId}`:
 
 ```
       // Track progress (spec 2026-10-06-portal-track-progress-design). Visit
@@ -211,9 +211,9 @@ describe("portal progress", () => {
       }
 ```
 
-- [ ] **Step 4: Run.** `npm run test:rules`. Expected: all pass (109 = 102 + 7). Update the header comment in `tests/firestore.rules.test.js`: list "portal progress", "All 109 passed on <today>".
+- [x] **Step 4: Run.** `npm run test:rules`. Expected: all pass (109 = 102 + 7). Update the header comment in `tests/firestore.rules.test.js`: list "portal progress", "All 109 passed on <today>".
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add firestore.rules tests/firestore.rules.test.js
@@ -236,7 +236,7 @@ git commit -m "Rules: portal progress (visit entries with the signature, home we
   - `visitEntryFor(note) → { source: "visit", date, weightLb, systolic, diastolic, heartRate, noteId, removed: false } | null` (`note` needs `id`, `visitDate`, `vitals`)
   - `withinDays(date, today, days) → boolean` for the log form (YYYY-MM-DD strings)
 
-- [ ] **Step 1: Write the failing checks** in `src/lib/progressMath.check.js`:
+- [x] **Step 1: Write the failing checks** in `src/lib/progressMath.check.js`:
 
 ```js
 // Self-check for progressMath.js: `npm run check`. Plain node:assert.
@@ -300,9 +300,9 @@ console.log("progressMath: all checks passed")
 
 Append ` && node src/lib/progressMath.check.js` to the `check` script in `package.json`.
 
-- [ ] **Step 2: Run.** `npm run check`. Expected: FAIL, cannot find `./progressMath.js`.
+- [x] **Step 2: Run.** `npm run check`. Expected: FAIL, cannot find `./progressMath.js`.
 
-- [ ] **Step 3: Implement** `src/lib/progressMath.js`:
+- [x] **Step 3: Implement** `src/lib/progressMath.js`:
 
 ```js
 // Track progress arithmetic, shared by the admin chart and the patient
@@ -376,9 +376,9 @@ export function withinDays(date, today, days) {
 }
 ```
 
-- [ ] **Step 4: Run.** `npm run check` → every file prints "all checks passed".
+- [x] **Step 4: Run.** `npm run check` → every file prints "all checks passed".
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/progressMath.js src/lib/progressMath.check.js package.json
@@ -402,7 +402,7 @@ No unit test (imports Firebase). Pinned by Task 1's batch test (same document sh
   - `ensureBaseline(chartId, intake) → Promise<void>` (writes `baseline` from `intake.vitals` once; no-op if it exists or there's no intake)
   - Demo store key `store.progress: Map<chartId, Entry[]>`; first read for a chart fills it from that chart's signed notes via `visitEntryFor`.
 
-- [ ] **Step 1: Create `progressStore.js`:**
+- [x] **Step 1: Create `progressStore.js`:**
 
 ```js
 // Track progress on the staff side: every read and write for
@@ -463,7 +463,7 @@ export async function ensureBaseline(chartId, intake) {
 }
 ```
 
-- [ ] **Step 2: `signNote`.** In `chartStore.js` add `import { visitEntryFor } from "../../lib/progressMath"`. In the demo branch, after the `Object.assign(store.charts.get(chartId), …)` line:
+- [x] **Step 2: `signNote`.** In `chartStore.js` add `import { visitEntryFor } from "../../lib/progressMath"`. In the demo branch, after the `Object.assign(store.charts.get(chartId), …)` line:
 
 ```js
     const entry = visitEntryFor({ ...fields, id: noteId })
@@ -486,9 +486,9 @@ In the live branch, before `await batch.commit()`:
   if (entry) batch.set(doc(database, PATIENTS_COLLECTION, chartId, "progress", `visit-${noteId}`), { ...entry, createdAt: serverTimestamp() })
 ```
 
-- [ ] **Step 3: Verify.** `npm run lint` (no new errors), `npm run build` succeeds, `npm run check` passes.
+- [x] **Step 3: Verify.** `npm run lint` (no new errors), `npm run build` succeeds, `npm run check` passes.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/admin/patients/progressStore.js src/admin/patients/chartStore.js
@@ -510,7 +510,7 @@ Load `dataviz` before the chart.
 - Consumes: `series`, `summary`, `visitEntryFor` (Task 2); `loadProgress`, `ensureBaseline` (Task 3).
 - Produces: `<WeightChart points goalLb />` where `points` is `series(...)` output and `goalLb` a number or null. Renders nothing for no points.
 
-- [ ] **Step 1: Browser check first.** `<scratchpad>/progress-chart-check.mjs`, same harness as `updates-check.mjs` (route `firebase.js` to force `usingSeedData = true`; open the first admitted seed chart with an email; `ctx.addInitScript` for the dark theme). Card locator: `page.getByRole("region", { name: "Progress" })`. Cases:
+- [x] **Step 1: Browser check first.** `<scratchpad>/progress-chart-check.mjs`, same harness as `updates-check.mjs` (route `firebase.js` to force `usingSeedData = true`; open the first admitted seed chart with an email; `ctx.addInitScript` for the dark theme). Card locator: `page.getByRole("region", { name: "Progress" })`. Cases:
   1. Seeded chart: card shows "Starting weight", "Latest weight", "Lost so far" (or "Change"), an `svg` with at least 2 `circle` elements, the key text "Visit" and "Logged at home".
   2. "Show all entries" lists visit rows with "BP" and a "From the … " source line.
   3. Inject a home entry and a removed home entry into the demo store (same `performance.getEntriesByType` trick as `updates-check.mjs` case 9, importing `progressStore.js` and pushing to `await demoProgress(id)`), reload the chart client-side → hollow point present, and the list shows "Logged at home" and "Deleted by patient on".
@@ -522,7 +522,7 @@ Load `dataviz` before the chart.
 
 Run: expected FAIL (no card).
 
-- [ ] **Step 2: `WeightChart.jsx`:**
+- [x] **Step 2: `WeightChart.jsx`:**
 
 ```jsx
 import { useState } from "react"
@@ -638,7 +638,7 @@ export default function WeightChart({ points, goalLb = null }) {
 }
 ```
 
-- [ ] **Step 3: `ProgressCard.jsx`:**
+- [x] **Step 3: `ProgressCard.jsx`:**
 
 ```jsx
 import { useEffect, useState } from "react"
@@ -762,13 +762,13 @@ export default function ProgressCard({ chartId, intake, notes, version }) {
 }
 ```
 
-- [ ] **Step 4: PatientChart.** Import `ProgressCard`; under the `<UpdatesCard … />`:
+- [x] **Step 4: PatientChart.** Import `ProgressCard`; under the `<UpdatesCard … />`:
 
 ```jsx
           <ProgressCard key={`progress-${chart.id}`} chartId={chart.id} intake={intake} notes={notes} version={signedNotes.length} />
 ```
 
-- [ ] **Step 5: NoteEditor.** Import `visitEntryFor` from `../../lib/progressMath`. Inside the sign `ConfirmDialog` children, before the share label:
+- [x] **Step 5: NoteEditor.** Import `visitEntryFor` from `../../lib/progressMath`. Inside the sign `ConfirmDialog` children, before the share label:
 
 ```jsx
         {visitEntryFor({ ...fields, id: note.id }) && (
@@ -776,9 +776,9 @@ export default function ProgressCard({ chartId, intake, notes, version }) {
         )}
 ```
 
-- [ ] **Step 6: Run the browser check** → all pass; read the screenshots. `npm run lint`, `npm run build`, `npm run check`.
+- [x] **Step 6: Run the browser check** → all pass; read the screenshots. `npm run lint`, `npm run build`, `npm run check`.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/components/WeightChart.jsx src/admin/patients/ProgressCard.jsx src/admin/patients/PatientChart.jsx src/admin/patients/NoteEditor.jsx
@@ -802,7 +802,7 @@ git commit -m "Chart: Progress card with the weight chart; signing says the numb
   - `logWeight(intakeId, { date, weightLb }) → Promise<void>`
   - `deleteWeighIn(intakeId, entryId) → Promise<void>`
 
-- [ ] **Step 1: Browser check first.** `<scratchpad>/portal-progress-check.mjs`, same stub approach as `portal-updates-check.mjs` (route `**/src/portal/lib/patientAuth.js*`). The stub keeps an in-page array so log and delete really change what `getMyProgress` returns:
+- [x] **Step 1: Browser check first.** `<scratchpad>/portal-progress-check.mjs`, same stub approach as `portal-updates-check.mjs` (route `**/src/portal/lib/patientAuth.js*`). The stub keeps an in-page array so log and delete really change what `getMyProgress` returns:
 
 ```js
 const stub = (mode) => `
@@ -848,7 +848,7 @@ Region locator: `page.getByRole("region", { name: "Track progress" })`. Cases:
 
 Run: expected FAIL.
 
-- [ ] **Step 2: `patientAuth.js`.** Extend the firestore import with `addDoc, updateDoc`. After `getMyUpdates`:
+- [x] **Step 2: `patientAuth.js`.** Extend the firestore import with `addDoc, updateDoc`. After `getMyUpdates`:
 
 ```js
 // The patient's progress: visit and home entries plus the intake baseline,
@@ -877,7 +877,7 @@ export async function deleteWeighIn(intakeId, entryId) {
 }
 ```
 
-- [ ] **Step 3: `LogWeightForm.jsx`:**
+- [x] **Step 3: `LogWeightForm.jsx`:**
 
 ```jsx
 import { useState } from "react"
@@ -954,7 +954,7 @@ export default function LogWeightForm({ intakeId, onSaved, onCancel }) {
 
 (No `min`/`max` on the weight input, so an out-of-range number reaches our message instead of the browser's.)
 
-- [ ] **Step 4: `PortalProgress.jsx`:**
+- [x] **Step 4: `PortalProgress.jsx`:**
 
 ```jsx
 import { useEffect, useState } from "react"
@@ -1153,7 +1153,7 @@ export default function PortalProgress({ intakeId }) {
 }
 ```
 
-- [ ] **Step 5: PortalHome.** Import `PortalProgress`; remove the Track progress row from `COMING_SOON` (and `TrendingUpIcon` from the icons import if unused); replace the main column's `<PortalUpdates intakeId={link.intakeId} />` with:
+- [x] **Step 5: PortalHome.** Import `PortalProgress`; remove the Track progress row from `COMING_SOON` (and `TrendingUpIcon` from the icons import if unused); replace the main column's `<PortalUpdates intakeId={link.intakeId} />` with:
 
 ```jsx
             <div className="space-y-6">
@@ -1162,9 +1162,9 @@ export default function PortalProgress({ intakeId }) {
             </div>
 ```
 
-- [ ] **Step 6: Run both portal checks** (`portal-progress-check.mjs` all pass; `portal-updates-check.mjs` after updating its stub with `getMyProgress`/`logWeight`/`deleteWeighIn` and the coming-soon count to 2). Read the screenshots. Run `humanizer` over the new strings. `npm run lint`, `npm run build`.
+- [x] **Step 6: Run both portal checks** (`portal-progress-check.mjs` all pass; `portal-updates-check.mjs` after updating its stub with `getMyProgress`/`logWeight`/`deleteWeighIn` and the coming-soon count to 2). Read the screenshots. Run `humanizer` over the new strings. `npm run lint`, `npm run build`.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/portal
@@ -1178,9 +1178,9 @@ git commit -m "Portal: Track progress box (chart, visit BP and heart rate, log a
 **Files:**
 - Modify: `docs/client-portal.md` ("Where we left off": Track progress built; rules must be redeployed)
 
-- [ ] **Step 1:** In "Where we left off", add a paragraph: Track progress is built (spec and plan paths), what it does in two sentences, and that the rules must be deployed before it works live. Mark Track progress done in "The four sections" table's notes column if it has one, otherwise leave the table.
-- [ ] **Step 2:** Load `superpowers:verification-before-completion`. Run and report: `npm run test:rules`, `npm run check`, `npm run lint`, `npm run build`, `progress-chart-check.mjs`, `portal-progress-check.mjs`, `portal-updates-check.mjs`, `updates-check.mjs`.
-- [ ] **Step 3: Commit**
+- [x] **Step 1:** In "Where we left off", add a paragraph: Track progress is built (spec and plan paths), what it does in two sentences, and that the rules must be deployed before it works live. Mark Track progress done in "The four sections" table's notes column if it has one, otherwise leave the table.
+- [x] **Step 2:** Load `superpowers:verification-before-completion`. Run and report: `npm run test:rules`, `npm run check`, `npm run lint`, `npm run build`, `progress-chart-check.mjs`, `portal-progress-check.mjs`, `portal-updates-check.mjs`, `updates-check.mjs`.
+- [x] **Step 3: Commit**
 
 ```bash
 git add docs/client-portal.md docs/superpowers/plans/2026-10-06-portal-track-progress.md

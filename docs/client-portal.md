@@ -230,6 +230,18 @@ Calls made while planning, for Louie to confirm:
 Before using it live: deploy the rules (`firebase deploy --only firestore:rules`) and set
 up the update email template (EmailJS setup above).
 
+**Track progress is built** (spec `docs/superpowers/specs/2026-10-06-portal-track-progress-design.md`,
+plan `docs/superpowers/plans/2026-10-06-portal-track-progress.md`). Signing a note with a
+weight, blood pressure or heart rate copies those numbers (and only those) to the
+patient's progress in the same save; the patient also logs their own weight and can delete
+it (staff still see it, marked deleted). Both show on one chart on `/account` and in the
+chart page's Progress card. The starting, goal weight and height are copied from the intake
+the first time staff open the chart. Visit numbers start from notes signed after this
+ships; nothing is back-filled. Needs the same rules deploy before it works live.
+
+The portal now lives in `src/portal/` (`PortalHome.jsx` is `/account`); sections still to
+come are listed in `COMING_SOON` there. Next in the agreed order: Messages.
+
 Still open from the login work:
 - **Final review** of the setup/reset batch (`2026-10-05-portal-setup-and-reset.md`) has not
   run yet. Its ledger is in `.superpowers/sdd/2026-10-05-portal-setup-and-reset/`.
