@@ -23,6 +23,7 @@ import {
 import PageHeader from "../layout/PageHeader"
 import PortalAccess from "./PortalAccess"
 import PostUpdateDialog from "./PostUpdateDialog"
+import ProgressCard from "./ProgressCard"
 import UpdatesCard from "./UpdatesCard"
 import { canWriteNote } from "../staff/roles"
 
@@ -397,6 +398,7 @@ export default function PatientChart({ actor }) {
             emailFailed={updateEmailFailed}
             onPost={() => setPosting({ body: "", fromNoteId: null })}
           />
+          <ProgressCard key={`progress-${chart.id}`} chartId={chart.id} intake={intake} notes={notes} version={signedNotes.length} />
           <Card title="Current prescriptions">
             {current.length === 0 ? (
               <p className="text-sm text-ink-950/55">None. Prescriptions appear here once a note that adds one is signed.</p>

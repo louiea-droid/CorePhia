@@ -5,6 +5,7 @@ import Select from "../../components/Select"
 import { bmi } from "./chartMath"
 import { discardDraftNote, saveDraftNote, signNote } from "./chartStore"
 import ConfirmDialog from "../ui/ConfirmDialog"
+import { visitEntryFor } from "../../lib/progressMath"
 import { AUDIT_ACTIONS, recordAuditEvent } from "../lib/firebase"
 import { CloseIcon } from "../ui/icons"
 import { INTENSITIES, NOTE_TYPES, NOTE_TYPE_LABELS, SECTION_FIELDS, inputClass, labelClass, prescriptionLine } from "./noteUi"
@@ -616,6 +617,9 @@ export default function NoteEditor({
         onConfirm={sign}
         onCancel={() => setConfirm(null)}
       >
+        {visitEntryFor({ ...fields, id: note.id }) && (
+          <p className="mt-3 text-sm text-ink-950/60">The weight, blood pressure and heart rate also go to the patient's progress.</p>
+        )}
         {chart.status === "active" && (
           <label className="mt-4 flex cursor-pointer items-center gap-2 text-sm text-ink-950/80">
             <input type="checkbox" checked={share} onChange={(event) => setShare(event.target.checked)} className="size-4 accent-accent-dark" />
