@@ -23,6 +23,11 @@ const entries = [
   baseline(),
 ]
 assert.deepEqual(series(entries).map((point) => point.id), ["v1", "v2", "h2"])
+// Points carry a visit's other numbers for the chart's tooltip.
+assert.deepEqual(
+  (({ systolic, diastolic, heartRate }) => ({ systolic, diastolic, heartRate }))(series(entries)[0]),
+  { systolic: 120, diastolic: 80, heartRate: 70 },
+)
 
 // Summary from the baseline start weight.
 assert.deepEqual(summary(entries, baseline()), { latestLb: 201, startLb: 210, goalLb: 180, changeLb: -9, toGoalLb: 21, bmi: 28.8 })

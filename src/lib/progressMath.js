@@ -26,7 +26,15 @@ export function series(entries) {
   return entries
     .filter((entry) => (entry.source === "visit" || entry.source === "home") && !entry.removed && entry.weightLb != null)
     .sort((a, b) => a.date.localeCompare(b.date) || millis(a.createdAt) - millis(b.createdAt))
-    .map(({ id, date, weightLb, source }) => ({ id, date, weightLb, source }))
+    .map(({ id, date, weightLb, source, systolic = null, diastolic = null, heartRate = null }) => ({
+      id,
+      date,
+      weightLb,
+      source,
+      systolic,
+      diastolic,
+      heartRate,
+    }))
 }
 
 // The headline numbers. Start is the intake weight, else the first weight on
