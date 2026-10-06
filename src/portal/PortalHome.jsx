@@ -3,7 +3,7 @@ import { Helmet } from "react-helmet-async"
 import { Link } from "react-router-dom"
 import LoginPanel from "../components/LoginPanel"
 import { BadgeCheckIcon, ChevronRightIcon, ClipboardCheckIcon, MailIcon, TrendingUpIcon } from "../components/icons"
-import { getMyPortalLink, getMyUpdates, signOutPatient, watchPatientUser } from "../lib/patientAuth"
+import { getMyPortalLink, getMyUpdates, signOutPatient, watchPatientUser } from "./lib/patientAuth"
 import { SUPPORT_PHONE } from "../lib/siteContact"
 
 const sections = [
@@ -83,7 +83,7 @@ function PortalUpdates({ intakeId }) {
 // Invite-only (Louie, 2026-10-02): a login only opens the portal once
 // patientAccounts/{uid} links it to an intake record. Staff link it (by hand
 // in the console for now); old self sign-ups without a link see "not set up".
-export default function Account() {
+export default function PortalHome() {
   const [user, setUser] = useState(undefined) // undefined = auth not known yet
   const [attempt, setAttempt] = useState(0)
   // The answer for one (user, attempt) pair: { key, link } or { key, failed }.

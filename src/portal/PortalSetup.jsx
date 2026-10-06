@@ -11,7 +11,7 @@ import {
   resetPatientPassword,
   signOutPatient,
   watchPatientUser,
-} from "../lib/patientAuth"
+} from "./lib/patientAuth"
 import { SUPPORT_PHONE } from "../lib/siteContact"
 
 const cardClass = "rounded-3xl border border-ink-950/10 bg-white p-8"

@@ -10,8 +10,8 @@ import {
   verifyPasswordResetCode,
 } from "firebase/auth"
 import { collection, doc, getDoc, getDocs, getFirestore, query, serverTimestamp, setDoc, where } from "firebase/firestore"
-import { isInviteUsable } from "./inviteMath"
-import { setPatientSessionHint } from "./patientSessionHint"
+import { isInviteUsable } from "../../lib/inviteMath"
+import { setPatientSessionHint } from "../../lib/patientSessionHint"
 
 const config = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,

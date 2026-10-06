@@ -17,12 +17,12 @@ import SuccessStories from "./pages/SuccessStories"
 // never downloaded by visitors to the public site.
 const AdminApp = lazy(() => import("./admin/AdminApp"))
 
-// Same reasoning as AdminApp: Account pulls in the Firebase Auth SDK via
-// lib/patientAuth, so it stays out of the bundle until someone actually
+// Same reasoning as AdminApp: the portal pulls in the Firebase Auth SDK via
+// portal/lib/patientAuth, so it stays out of the bundle until someone actually
 // navigates to /account.
-const Account = lazy(() => import("./pages/Account"))
-const PortalSetup = lazy(() => import("./pages/PortalSetup"))
-const PortalReset = lazy(() => import("./pages/PortalReset"))
+const PortalHome = lazy(() => import("./portal/PortalHome"))
+const PortalSetup = lazy(() => import("./portal/PortalSetup"))
+const PortalReset = lazy(() => import("./portal/PortalReset"))
 
 function ScrollManager() {
   const { pathname, hash } = useLocation()
@@ -87,7 +87,7 @@ function App() {
             path="/account"
             element={
               <Suspense fallback={null}>
-                <Account />
+                <PortalHome />
               </Suspense>
             }
           />

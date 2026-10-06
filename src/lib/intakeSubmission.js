@@ -12,7 +12,7 @@ const config = {
 
 export const isConfigured = Boolean(config.apiKey && config.projectId)
 
-// Same getApps() guard as lib/patientAuth.js: this module and that one can both
+// Same getApps() guard as portal/lib/patientAuth.js: this module and that one can both
 // be live on the same page (the header's login panel and the intake form), and
 // Firebase throws if the default app is initialized twice.
 const app = isConfigured ? (getApps().length ? getApp() : initializeApp(config)) : null

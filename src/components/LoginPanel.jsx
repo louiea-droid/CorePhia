@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { Link, useNavigate } from "react-router-dom"
-import { resetPatientPassword, signInPatient } from "../lib/patientAuth"
+import { resetPatientPassword, signInPatient } from "../portal/lib/patientAuth"
 import { SUPPORT_PHONE } from "../lib/siteContact"
 import { ChevronRightIcon, CloseIcon, EyeIcon, EyeOffIcon } from "./icons"
 

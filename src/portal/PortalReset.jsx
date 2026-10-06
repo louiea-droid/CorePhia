@@ -3,7 +3,7 @@ import { Helmet } from "react-helmet-async"
 import { Link, useSearchParams } from "react-router-dom"
 import LoginPanel from "../components/LoginPanel"
 import PasswordField from "../components/PasswordField"
-import { checkResetCode, saveNewPassword } from "../lib/patientAuth"
+import { checkResetCode, saveNewPassword } from "./lib/patientAuth"
 
 const cardClass = "rounded-3xl border border-ink-950/10 bg-white p-8"
 const primaryButton =
