@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { portalEmailConfigured } from "../../lib/emailjs"
+import { updateEmailConfigured } from "../../lib/emailjs"
 import { usingSeedData } from "../lib/firebase"
 import Modal from "../ui/Modal"
 import { inputClass, labelClass } from "./noteUi"
@@ -11,7 +11,7 @@ const MAX = 2000
 // from the Updates card, or pre-filled from a note just signed. No maxLength
 // on the message: a long prefill must stay visible and editable, not be cut.
 export default function PostUpdateDialog({ chartId, to, initialBody = "", fromNoteId = null, actor, onClose, onPosted }) {
-  const emailReady = portalEmailConfigured || usingSeedData
+  const emailReady = updateEmailConfigured || usingSeedData
   const canEmail = emailReady && Boolean(to)
   const [body, setBody] = useState(initialBody)
   const [email, setEmail] = useState(canEmail)

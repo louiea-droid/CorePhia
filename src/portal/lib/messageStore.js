@@ -11,7 +11,8 @@ const topicsOf = (intakeId) => collection(db, "patients", intakeId, "topics")
 
 function notifyStaff() {
   if (!staffEmailConfigured) return
-  sendEmail({ admin_link: `${window.location.origin}/admin/messages` }, STAFF_TEMPLATE_ID).catch((cause) =>
+  // No parameters: the template holds the recipient, text and link.
+  sendEmail({}, STAFF_TEMPLATE_ID).catch((cause) =>
     console.error("Could not send the staff notice:", cause.message),
   )
 }

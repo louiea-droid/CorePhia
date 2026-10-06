@@ -5,15 +5,19 @@
 // See docs/client-portal.md for the templates it expects.
 const SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID
 const TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID
-// One "portal notice" template for Updates and Messages (the sentence comes
-// in as {{notice}}), and a "staff notice" template whose recipient
-// (info@corephia.com) is fixed in EmailJS, never sent from here.
-export const PORTAL_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_PORTAL_TEMPLATE_ID
+// Notice templates: every word and link is typed into the template in
+// EmailJS, and the site sends only the recipient's address (nothing at all for
+// the staff notice, whose recipient is fixed there too). The public key ships
+// to browsers, so a template that took text or a link as a parameter would let
+// anyone send CorePhia-branded email saying anything.
+export const UPDATE_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_UPDATE_TEMPLATE_ID
+export const MESSAGE_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_MESSAGE_TEMPLATE_ID
 export const STAFF_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_STAFF_TEMPLATE_ID
 const PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY
 
 export const emailjsConfigured = Boolean(SERVICE_ID && TEMPLATE_ID && PUBLIC_KEY)
-export const portalEmailConfigured = Boolean(SERVICE_ID && PORTAL_TEMPLATE_ID && PUBLIC_KEY)
+export const updateEmailConfigured = Boolean(SERVICE_ID && UPDATE_TEMPLATE_ID && PUBLIC_KEY)
+export const messageEmailConfigured = Boolean(SERVICE_ID && MESSAGE_TEMPLATE_ID && PUBLIC_KEY)
 export const staffEmailConfigured = Boolean(SERVICE_ID && STAFF_TEMPLATE_ID && PUBLIC_KEY)
 
 // Throws with EmailJS's own error text (or "Network error") so the dialog can

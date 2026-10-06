@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { portalEmailConfigured } from "../../lib/emailjs"
+import { messageEmailConfigured } from "../../lib/emailjs"
 import { usingSeedData } from "../lib/firebase"
 import { loadCharts, loadIntakeRecord } from "../patients/chartStore"
 import { inputClass, labelClass } from "../patients/noteUi"
@@ -16,7 +16,7 @@ export default function NewTopicDialog({ actor, initialChartId = "", onClose, on
   const [email, setEmail] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
-  const canEmail = portalEmailConfigured || usingSeedData
+  const canEmail = messageEmailConfigured || usingSeedData
 
   useEffect(() => {
     let live = true

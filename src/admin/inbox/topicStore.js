@@ -15,30 +15,25 @@ import {
   writeBatch,
 } from "firebase/firestore"
 import { retryOnce } from "../../lib/inviteMath"
-import { PORTAL_TEMPLATE_ID, portalEmailConfigured, sendEmail } from "../../lib/emailjs"
+import { MESSAGE_TEMPLATE_ID, messageEmailConfigured, sendEmail } from "../../lib/emailjs"
 import { db, usingSeedData } from "../lib/firebase"
 import { PATIENTS_COLLECTION, demoId, getDemoStore } from "../patients/chartStore"
 
 const TOPICS = "topics"
 const MESSAGES = "messages"
-export const MESSAGE_SUBJECT = "You have a new message from CorePhia"
 
 const requireDb = () => {
   if (!db) throw new Error("Firebase is not configured.")
   return db
 }
 
-const emailParams = (to) => ({
-  to_email: to,
-  subject: MESSAGE_SUBJECT,
-  notice: "Your CorePhia care team sent you a message. Log in to your portal to read it.",
-  portal_link: `${window.location.origin}/account/messages`,
-})
+// Only the address: the message template holds its own subject, text and link.
+const emailParams = (to) => ({ to_email: to })
 
 async function emailPatient(to, wanted) {
   if (!wanted || !to) return "none"
-  if (usingSeedData && !portalEmailConfigured) return "sent"
-  return sendEmail(emailParams(to), PORTAL_TEMPLATE_ID).then(
+  if (usingSeedData && !messageEmailConfigured) return "sent"
+  return sendEmail(emailParams(to), MESSAGE_TEMPLATE_ID).then(
     () => "sent",
     () => "failed",
   )

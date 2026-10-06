@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { Link } from "react-router-dom"
-import { portalEmailConfigured } from "../../lib/emailjs"
+import { messageEmailConfigured } from "../../lib/emailjs"
 import { unreadFor } from "../../lib/messageMath"
 import { usingSeedData } from "../lib/firebase"
 import { loadIntakeRecord } from "../patients/chartStore"
@@ -26,7 +26,7 @@ export default function TopicView({ topic, chart, actor, onBack }) {
   const [closing, setClosing] = useState(false)
   const [hint, setHint] = useState(null)
   const replyRef = useRef(null)
-  const canEmail = (portalEmailConfigured || usingSeedData) && Boolean(to)
+  const canEmail = (messageEmailConfigured || usingSeedData) && Boolean(to)
   const active = chart?.status === "active"
 
   useEffect(
@@ -157,8 +157,8 @@ export default function TopicView({ topic, chart, actor, onBack }) {
               <input type="checkbox" checked={email && canEmail} disabled={!canEmail} onChange={(event) => setEmail(event.target.checked)} className="mt-0.5 size-4 accent-accent-dark" />
               <span>
                 Email the patient that there's a new message
-                {!(portalEmailConfigured || usingSeedData) && <span className="block text-xs">Email sending isn't set up yet.</span>}
-                {(portalEmailConfigured || usingSeedData) && !to && <span className="block text-xs">There's no email on this intake.</span>}
+                {!(messageEmailConfigured || usingSeedData) && <span className="block text-xs">Email sending isn't set up yet.</span>}
+                {(messageEmailConfigured || usingSeedData) && !to && <span className="block text-xs">There's no email on this intake.</span>}
               </span>
             </label>
             <div className="flex items-center gap-3">

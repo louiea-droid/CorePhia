@@ -103,23 +103,31 @@ domain is missing, reset emails still send, just without the "continue" step.
    `{{{message_html}}}` (triple braces: the site sends it already escaped, with `<br>` line
    breaks), then a button linking `{{setup_link}}` ("Set up your portal"), then
    "CorePhia Health · Tampa, Florida". Copy the **Template ID**.
-   A **portal notice** template (Updates and Messages): To Email `{{to_email}}`, From Name
-   `CorePhia`, Reply To `info@corephia.com`, Subject `{{subject}}`, body `{{notice}}`, a
-   button **Open your portal** linking `{{portal_link}}`, then "CorePhia Health · Tampa,
-   Florida". The site fills in the sentence ("…posted an update…" or "…sent you a
-   message…"); it never carries the update's or message's text. Copy its id.
+   Three **notice** templates. Type every word and link into the template itself: the
+   site sends only the patient's address (`{{to_email}}`), and nothing at all for the
+   staff notice. The public key is in every visitor's browser, so a template that took
+   its text or link as a `{{…}}` setting would let anyone send real CorePhia email saying
+   anything, with any link. Each: From Name `CorePhia`, Reply To `info@corephia.com`,
+   ending "CorePhia Health · Tampa, Florida".
+   - **Update notice:** To `{{to_email}}`, Subject "You have a new update from CorePhia",
+     body "Your CorePhia care team posted an update. Log in to your portal to read it.",
+     button **Open your portal** → `https://corephia.com/account`.
+   - **Message notice:** To `{{to_email}}`, Subject "You have a new message from
+     CorePhia", body "Your CorePhia care team sent you a message. Log in to your portal to
+     read it.", button **Open your portal** → `https://corephia.com/account/messages`.
+   - **Staff notice:** To **info@corephia.com** (typed, not `{{…}}`; add Dr. Antonious
+     here later), Subject "New patient message", body "A patient sent a message in the
+     CorePhia portal. Log in to the admin to read it.", button **Open Messages** →
+     `https://corephia.com/admin/messages`.
 
-   A **staff notice** template (a patient sent a message): To Email
-   **info@corephia.com typed in the template** (never `{{…}}`, so the site can't send it
-   anywhere else; add Dr. Antonious here later), Subject "New patient message", body "A
-   patient sent a message in the CorePhia portal. Log in to the admin to read it.", a
-   button **Open Messages** linking `{{admin_link}}`. Copy its id.
+   Copy each template's id.
 3. Account → General → copy the **Public Key**.
 4. Account → Security: restrict to `corephia.com` and `localhost`, and set a rate limit if
    offered. The public key ships to browsers: the admin, and the patient portal (for the
    staff notice).
 5. `.env.local`: `VITE_EMAILJS_SERVICE_ID`, `VITE_EMAILJS_TEMPLATE_ID` (invites),
-   `VITE_EMAILJS_PORTAL_TEMPLATE_ID`, `VITE_EMAILJS_STAFF_TEMPLATE_ID`,
+   `VITE_EMAILJS_UPDATE_TEMPLATE_ID`, `VITE_EMAILJS_MESSAGE_TEMPLATE_ID`,
+   `VITE_EMAILJS_STAFF_TEMPLATE_ID`,
    `VITE_EMAILJS_PUBLIC_KEY`, then restart the dev server (and rebuild for hosting). Without
    them the admin says "Email sending isn't set up yet." (updates and messages still send,
    without the email). Demo mode fakes a send.
@@ -262,7 +270,7 @@ the shared inbox at `/admin/messages` (sidebar count = topics needing a reply; t
 page links to a patient's topics). Either side can close a topic; writing again reopens
 it. Emails carry no content: the patient gets "you have a new message" when the staff
 box is ticked; info@corephia.com gets "a patient sent a message" only when a topic newly
-needs a reply. Before live use: set up the **portal notice** and **staff notice**
+needs a reply. Before live use: set up the **message notice** and **staff notice**
 templates (EmailJS setup above), and deploy the rules **before** hosting. The new rules
 also let a patient read their own chart record (name, status) so the portal knows when
 messaging is closed.
