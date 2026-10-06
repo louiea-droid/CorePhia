@@ -5,6 +5,7 @@ import LoginPanel from "../components/LoginPanel"
 import { ChevronRightIcon } from "../components/icons"
 import { SUPPORT_PHONE } from "../lib/siteContact"
 import { getMyPortalLink, signOutPatient, watchPatientUser } from "./lib/patientAuth"
+import MessagesPage from "./messages/MessagesPage"
 import PortalHome from "./PortalHome"
 
 const cardClass = "rounded-3xl border border-ink-950/10 bg-white p-8"
@@ -133,6 +134,8 @@ export default function PortalApp() {
       {state === "linked" && (
         <Routes>
           <Route index element={<PortalHome user={user} link={link} />} />
+          <Route path="messages" element={<MessagesPage user={user} link={link} />} />
+          <Route path="messages/:topicId" element={<MessagesPage user={user} link={link} />} />
         </Routes>
       )}
 

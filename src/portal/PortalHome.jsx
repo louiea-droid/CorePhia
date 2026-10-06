@@ -1,13 +1,13 @@
 import { BadgeCheckIcon, MailIcon, PhoneIcon } from "../components/icons"
 import { SUPPORT_PHONE } from "../lib/siteContact"
 import { signOutPatient } from "./lib/patientAuth"
+import MessagesBox from "./messages/MessagesBox"
 import PortalProgress from "./progress/PortalProgress"
 import PortalUpdates from "./updates/PortalUpdates"
 
 // Sections still being built, one by one (Louie, 2026-10-06). When one
 // ships, take it off this list and give it its own panel on the page.
 const COMING_SOON = [
-  { Icon: MailIcon, title: "Messages", line: "Write to your care team and read their replies." },
   { Icon: BadgeCheckIcon, title: "Membership", line: "Your plan and what it includes." },
 ]
 
@@ -40,6 +40,7 @@ export default function PortalHome({ user, link }) {
         <div className="space-y-6">
           <PortalProgress intakeId={link.intakeId} />
           <PortalUpdates intakeId={link.intakeId} />
+          <MessagesBox intakeId={link.intakeId} />
         </div>
 
         <aside className="space-y-6">
