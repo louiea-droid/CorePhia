@@ -35,15 +35,20 @@ const demoInvites = async (chartId) => {
   return store.invites.get(chartId)
 }
 
-// The chart's invites (newest first) and whether a patient login is linked.
+// The chart's invites (newest first), whether a patient login is linked, and
+// when it was linked (null for a link made by hand without linkedAt).
 export async function loadPortalAccess(chartId) {
-  if (usingSeedData) return { invites: [...(await demoInvites(chartId))], linked: false }
+  if (usingSeedData) return { invites: [...(await demoInvites(chartId))], linked: false, linkedAt: null }
   const database = requireDb()
   const [invites, links] = await Promise.all([
     getDocs(query(collection(database, PATIENTS_COLLECTION, chartId, INVITES), orderBy("createdAt", "desc"))),
     getDocs(query(collection(database, "patientAccounts"), where("intakeId", "==", chartId), limit(1))),
   ])
-  return { invites: invites.docs.map((entry) => ({ id: entry.id, ...entry.data() })), linked: !links.empty }
+  return {
+    invites: invites.docs.map((entry) => ({ id: entry.id, ...entry.data() })),
+    linked: !links.empty,
+    linkedAt: links.docs[0]?.data().linkedAt ?? null,
+  }
 }
 
 // Saves the invite, emails it, and records how that went. Resolves with the

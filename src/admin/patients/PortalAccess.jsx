@@ -8,10 +8,12 @@ const day = (value) => asDate(value)?.toLocaleDateString("en-US", { month: "shor
 
 const STATUS_WORDS = { ready: "not sent", failed: "not sent", sent: "sent" }
 
-function statusLine({ kind, invite }) {
+function statusLine({ kind, invite }, linkedAt) {
   switch (kind) {
-    case "active":
-      return "Portal active. The patient can log in."
+    case "active": {
+      const since = asDate(linkedAt)?.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+      return since ? `Portal active since ${since}.` : "Portal active."
+    }
     case "none":
       return "Not invited yet."
     case "sending":
@@ -26,7 +28,8 @@ function statusLine({ kind, invite }) {
 }
 
 // The chart's "Patient portal" card: who the invite goes to, where it stands,
-// and Send / Resend for roles that can admit.
+// and Send / Resend for roles that can admit. Once the patient has linked
+// their login, the invites are history: no Resend, no Earlier invites.
 export default function PortalAccess({ chart, intake, actor }) {
   const [access, setAccess] = useState(null)
   const [failed, setFailed] = useState(false)
@@ -51,8 +54,9 @@ export default function PortalAccess({ chart, intake, actor }) {
   const email = (demographics.email ?? "").trim().toLowerCase()
   const firstName = demographics.firstName || chart.firstName || ""
   const status = access && inviteStatus(access.invites, access.linked)
-  const canSend = canAdmit(actor.role) && chart.status === "active" && Boolean(email) && Boolean(access)
-  const earlier = access?.invites.slice(1) ?? []
+  const active = Boolean(access?.linked)
+  const canSend = canAdmit(actor.role) && chart.status === "active" && Boolean(email) && Boolean(access) && !active
+  const earlier = active ? [] : (access?.invites.slice(1) ?? [])
 
   return (
     <section className="rounded-2xl border border-ink-950/10 bg-white p-5">
@@ -76,7 +80,7 @@ export default function PortalAccess({ chart, intake, actor }) {
         ) : !status ? (
           <p className="text-ink-950/50">Loading…</p>
         ) : (
-          <p className={status.kind === "active" ? "font-medium text-accent-text" : "text-ink-950"}>{statusLine(status)}</p>
+          <p className={status.kind === "active" ? "font-medium text-accent-text" : "text-ink-950"}>{statusLine(status, access.linkedAt)}</p>
         )}
       </div>
 
