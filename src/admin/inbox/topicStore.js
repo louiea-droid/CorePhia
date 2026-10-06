@@ -102,13 +102,18 @@ const strip = ({ messages: _messages, ...topic }) => topic
 export function listenTopics(onChange, onError) {
   if (usingSeedData) {
     let store
+    let cancelled = false
     const push = () => onChange(store.topics.map(strip))
     demo().then((loaded) => {
+      if (cancelled) return
       store = loaded
       store.topicListeners.add(push)
       push()
     }, onError)
-    return () => store?.topicListeners.delete(push)
+    return () => {
+      cancelled = true
+      store?.topicListeners.delete(push)
+    }
   }
   return onSnapshot(
     collectionGroup(requireDb(), TOPICS),
@@ -120,13 +125,18 @@ export function listenTopics(onChange, onError) {
 export function listenMessages(chartId, topicId, onChange, onError) {
   if (usingSeedData) {
     let store
+    let cancelled = false
     const push = () => onChange([...(store.topics.find((topic) => topic.id === topicId)?.messages ?? [])])
     demo().then((loaded) => {
+      if (cancelled) return
       store = loaded
       store.topicListeners.add(push)
       push()
     }, onError)
-    return () => store?.topicListeners.delete(push)
+    return () => {
+      cancelled = true
+      store?.topicListeners.delete(push)
+    }
   }
   return onSnapshot(
     query(collection(requireDb(), PATIENTS_COLLECTION, chartId, TOPICS, topicId, MESSAGES), orderBy("createdAt", "asc")),

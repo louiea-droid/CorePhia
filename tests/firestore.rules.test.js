@@ -2,7 +2,7 @@
 // roles, appointments, patient portal links, portal invites, setup links, portal updates, portal progress and portal messages.
 //
 // Run: npm run test:rules
-// Needs Java 21+ for the Firestore emulator (firebase-tools starts it). All 125
+// Needs Java 21+ for the Firestore emulator (firebase-tools starts it). All 127
 // passed on 2026-10-06. Run them before every rules deploy.
 import { readFileSync } from "node:fs"
 import { after, before, beforeEach, describe, test } from "node:test"
@@ -1005,6 +1005,29 @@ describe("portal messages", () => {
     await assertFails(getDocs(collection(env.unauthenticatedContext().firestore(), "patients/chart1/topics")))
     await assertSucceeds(getDocs(collectionGroup(as("dietitian"), "topics")))
     await assertFails(getDocs(collectionGroup(db, "topics")))
+  })
+  test("a topic can't be pointed at a message that already exists", async () => {
+    await seedTopic()
+    await seedMessage("m5", { ...newMessage(patientFrom()), createdAt: new Date() })
+    await assertFails(
+      updateDoc(topicRef(as("provider")), { lastMessageAt: serverTimestamp(), lastFrom: "staff", lastMessageId: "m5", staffReadAt: serverTimestamp() }),
+    )
+  })
+  test("a patient can't reply on an inactive chart, pose as staff, or mark another chart read", async () => {
+    await env.withSecurityRulesDisabled(async (c) => {
+      const db = c.firestore()
+      await setDoc(doc(db, "patientAccounts", "p3"), { email: "p3@x.co", intakeId: "inactive1", firstName: "Ina", linkedAt: new Date() })
+      await setDoc(topicRef(db, "t1", "inactive1"), { ...newTopic("patient"), createdAt: new Date(), lastMessageAt: new Date(), patientReadAt: new Date() })
+      await setDoc(topicRef(db, "t1", "pending1"), { ...newTopic("patient"), createdAt: new Date(), lastMessageAt: new Date(), patientReadAt: new Date() })
+    })
+    const inactive = asPatient("p3", "p3@x.co")
+    const batch = writeBatch(inactive)
+    batch.update(topicRef(inactive, "t1", "inactive1"), { lastMessageAt: serverTimestamp(), lastFrom: "patient", lastMessageId: "m2", status: "open", closed: null, patientReadAt: serverTimestamp() })
+    batch.set(msgRef(inactive, "t1", "m2", "inactive1"), newMessage(patientFrom("p3")))
+    await assertFails(batch.commit())
+    await seedTopic()
+    await assertFails(reply(asPatient("patient1", "p1@x.co"), "patient", { kind: "staff", uid: "patient1", name: "patient1", role: "provider" }, "m2"))
+    await assertFails(updateDoc(topicRef(asPatient("patient1", "p1@x.co"), "t1", "pending1"), { patientReadAt: serverTimestamp() }))
   })
   test("a patient reads their own chart record, not anyone else's", async () => {
     await assertSucceeds(getDoc(doc(asPatient("patient1", "p1@x.co"), "patients", "chart1")))

@@ -348,8 +348,11 @@ service cloud.firestore {
     }
 
     match /patients/{chartId} {
-      // The linked patient reads their own chart record (name, status), so the
-      // portal knows whether messaging is open.
+      // The linked patient reads their own whole chart record, so the portal
+      // knows whether messaging is open. Today that is their name, date of
+      // birth, sex, status, when and by whom they were admitted, and the last
+      // note's type and time. ANY field added to a chart record later is
+      // patient-visible too; keep staff-only data in subcollections.
       allow read: if isClinical() || isLinkedTo(chartId);
       allow create: if isAdmitter() && isNewChart(chartId);
       // lastNote (the list's "Last note" column) is only ever written by a
@@ -823,7 +826,9 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // The staff inbox lists topics across every chart.
+    // The staff inbox lists topics across every chart. The collection name
+    // `topics` is reserved for patient messages: any `topics` collection added
+    // anywhere later becomes readable by every clinician through this rule.
     match /{path=**}/topics/{topicId} {
       allow read: if isClinical();
     }

@@ -272,8 +272,9 @@ it. Emails carry no content: the patient gets "you have a new message" when the 
 box is ticked; info@corephia.com gets "a patient sent a message" only when a topic newly
 needs a reply. Before live use: set up the **message notice** and **staff notice**
 templates (EmailJS setup above), and deploy the rules **before** hosting. The new rules
-also let a patient read their own chart record (name, status) so the portal knows when
-messaging is closed.
+also let a patient read their own whole chart record (name, date of birth, sex, status,
+admission, last note's type and time) so the portal knows when messaging is closed; any
+field added to a chart record later becomes patient-visible too.
 
 Still open from the login work:
 - **Final review** of the setup/reset batch (`2026-10-05-portal-setup-and-reset.md`) has not

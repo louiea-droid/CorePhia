@@ -17,12 +17,25 @@ const day = (value) => {
 export default function ConversationView({ intakeId, uid, topic, canWrite }) {
   const [messages, setMessages] = useState(null)
   const [failed, setFailed] = useState(false)
+  const [attempt, setAttempt] = useState(0)
   const [body, setBody] = useState("")
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const dialogRef = useRef(null)
 
-  useEffect(() => listenMyMessages(intakeId, topic.id, setMessages, () => setFailed(true)), [intakeId, topic.id])
+  useEffect(
+    () =>
+      listenMyMessages(
+        intakeId,
+        topic.id,
+        (next) => {
+          setMessages(next)
+          setFailed(false)
+        },
+        () => setFailed(true),
+      ),
+    [intakeId, topic.id, attempt],
+  )
   const unread = unreadFor(topic, "patient")
   useEffect(() => {
     if (unread) markConversationRead(intakeId, topic.id).catch(() => {})
@@ -50,7 +63,7 @@ export default function ConversationView({ intakeId, uid, topic, canWrite }) {
         All messages
       </Link>
       <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
-        <h1 id="conversation-heading" className="font-serif text-2xl wrap-break-word text-ink-950">
+        <h1 id="conversation-heading" className="min-w-0 font-serif text-2xl wrap-anywhere text-ink-950">
           {topic.subject}
         </h1>
         {canWrite && topic.status === "open" && (
@@ -67,7 +80,19 @@ export default function ConversationView({ intakeId, uid, topic, canWrite }) {
 
       <ol className="mt-6 space-y-3">
         {failed ? (
-          <li className="text-ink-950/70">We couldn't load your messages.</li>
+          <li>
+            <p className="text-ink-950/70">We couldn't load your messages.</p>
+            <button
+              type="button"
+              onClick={() => {
+                setFailed(false)
+                setAttempt((n) => n + 1)
+              }}
+              className="mt-3 cursor-pointer rounded-full border border-ink-950/15 px-5 py-2.5 text-sm font-semibold text-ink-950 transition-colors hover:bg-paper-100"
+            >
+              Try again
+            </button>
+          </li>
         ) : !messages ? (
           <li className="text-sm text-ink-950/60">Loading…</li>
         ) : (

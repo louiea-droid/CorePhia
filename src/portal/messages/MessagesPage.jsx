@@ -21,7 +21,17 @@ export default function MessagesPage({ user, link }) {
   const topic = topicId ? topics?.find((entry) => entry.id === topicId) : null
 
   if (topicId) {
-    if (!topics) return <p className="text-ink-950/60">{failed ? "We couldn't load your messages." : "Loading…"}</p>
+    if (!topics)
+      return failed ? (
+        <div>
+          <p className="text-ink-950/70">We couldn't load your messages.</p>
+          <button type="button" onClick={retry} className="mt-4 cursor-pointer rounded-full border border-ink-950/15 px-5 py-2.5 text-sm font-semibold text-ink-950 transition-colors hover:bg-paper-100">
+            Try again
+          </button>
+        </div>
+      ) : (
+        <p className="text-ink-950/60">Loading…</p>
+      )
     if (!topic) return <p className="text-ink-950/70">That conversation couldn't be found. <Link to="/account/messages" className="underline">All messages</Link></p>
     return <ConversationView intakeId={link.intakeId} uid={user.uid} topic={topic} canWrite={canWrite} />
   }

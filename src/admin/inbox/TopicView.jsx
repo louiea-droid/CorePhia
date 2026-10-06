@@ -27,7 +27,9 @@ export default function TopicView({ topic, chart, actor, onBack }) {
   const [hint, setHint] = useState(null)
   const replyRef = useRef(null)
   const canEmail = (messageEmailConfigured || usingSeedData) && Boolean(to)
-  const active = chart?.status === "active"
+  // Unknown (patients still loading, or the load failed) counts as open: the
+  // rules refuse a send on a chart that really is inactive.
+  const active = chart ? chart.status === "active" : true
 
   useEffect(
     () =>

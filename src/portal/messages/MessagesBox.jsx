@@ -1,5 +1,10 @@
 import { Link } from "react-router-dom"
 import { unreadFor } from "../../lib/messageMath"
+
+const when = (value) => {
+  const date = typeof value?.toDate === "function" ? value.toDate() : value instanceof Date ? value : null
+  return date ? date.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""
+}
 import { useCanWrite, useMyTopics } from "./useMyTopics"
 
 // The portal home's Messages box: the 3 latest conversations.
@@ -41,7 +46,10 @@ export default function MessagesBox({ intakeId }) {
             <li key={topic.id}>
               <Link to={`/account/messages/${topic.id}`} className="flex items-center justify-between gap-4 py-3 transition-colors hover:text-accent-dark">
                 <span className="min-w-0 truncate text-ink-950">{topic.subject}</span>
-                {unreadFor(topic, "patient") && <span className="shrink-0 rounded-full bg-accent/20 px-2.5 py-0.5 text-xs font-semibold text-ink-950">New reply</span>}
+                <span className="flex shrink-0 items-center gap-3 text-sm text-ink-950/60">
+                  {unreadFor(topic, "patient") && <span className="rounded-full bg-accent/20 px-2.5 py-0.5 text-xs font-semibold text-ink-950">New reply</span>}
+                  {when(topic.lastMessageAt)}
+                </span>
               </Link>
             </li>
           ))}
