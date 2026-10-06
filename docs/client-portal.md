@@ -103,13 +103,19 @@ domain is missing, reset emails still send, just without the "continue" step.
    `{{{message_html}}}` (triple braces: the site sends it already escaped, with `<br>` line
    breaks), then a button linking `{{setup_link}}` ("Set up your portal"), then
    "CorePhia Health · Tampa, Florida". Copy the **Template ID**.
+   A second template for portal updates: To Email `{{to_email}}`, From Name `CorePhia`,
+   Reply To `info@corephia.com`, Subject `{{subject}}`, body "Your CorePhia care team
+   posted an update. Log in to your portal to read it." and a button **Open your portal**
+   linking `{{portal_link}}`, then "CorePhia Health · Tampa, Florida". It never carries
+   the update's text. Copy its id too.
 3. Account → General → copy the **Public Key**.
 4. Account → Security: restrict to `corephia.com` and `localhost`, and set a rate limit if
    offered. The public key ships to browsers.
 5. `.env.local`: `VITE_EMAILJS_SERVICE_ID`, `VITE_EMAILJS_TEMPLATE_ID`,
-   `VITE_EMAILJS_PUBLIC_KEY`, then restart the dev server (and rebuild for hosting). Without
-   them the dialog says "Email sending isn't set up yet." Demo mode fakes a send.
-6. Deploy the rules (`firebase deploy --only firestore:rules`) or invite saves are refused.
+   `VITE_EMAILJS_UPDATE_TEMPLATE_ID`, `VITE_EMAILJS_PUBLIC_KEY`, then restart the dev server (and rebuild for hosting). Without
+   them the dialogs say "Email sending isn't set up yet." (an update still posts, without the
+   email). Demo mode fakes a send.
+6. Deploy the rules (`firebase deploy --only firestore:rules`) or invite and update saves are refused.
 - **Admin:** lists intake records, opens one, sets a status (pending / admitted / declined)
   and a short staff note (`adminNote`). Same Firebase project as the patient login.
 - **`firestore.rules`:** role-based staff access, audit log, and the "only your own data"
@@ -203,14 +209,26 @@ Decided 2026-10-02 (Louie): **invite-only**. Section order Updates → Track pro
 Messages (Membership waits on billing) is agreed but on hold; **the invite-only login is
 built first**.
 
-## Where we left off (2026-10-05)
+## Where we left off (2026-10-06)
 
-**Next: build Updates.** Spec approved by Louie:
-`docs/superpowers/specs/2026-10-05-portal-updates-design.md` (staff write updates or share
-a signed note as a pre-filled, editable update; email tick box on by default; author shown
-as name and role; Remove hides from the patient, kept on the chart). Next step: write the
-implementation plan (superpowers:writing-plans), then build natively and run one fresh
-review at the end.
+**Updates is built** (spec `docs/superpowers/specs/2026-10-05-portal-updates-design.md`,
+plan `docs/superpowers/plans/2026-10-06-portal-updates.md`). The chart has an Updates card
+under "Patient portal" (post, remove, last 5 with "Show all"); "Post an update" has the
+email tick box; signing a note offers "Then share an update with the patient", which opens
+the dialog pre-filled. `/account` lists the patient's updates. Louie chose no separate
+review for this build: rules tests, `npm run check` and browser checks only.
+
+Calls made while planning, for Louie to confirm:
+- Exercise notes have no plan section, so sharing one pre-fills the exercise prescription
+  line plus its Notes field.
+- Patients see staff roles as Provider (provider, admin), Dietitian, or Care team
+  (co-admin, super admin). The chart keeps the staff labels.
+- No email on the intake: the email box is greyed out; the update still posts.
+- Posting and removing aren't added to the activity log; each update records who posted
+  and who removed it.
+
+Before using it live: deploy the rules (`firebase deploy --only firestore:rules`) and set
+up the update email template (EmailJS setup above).
 
 Still open from the login work:
 - **Final review** of the setup/reset batch (`2026-10-05-portal-setup-and-reset.md`) has not
