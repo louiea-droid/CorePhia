@@ -111,7 +111,7 @@ domain is missing, reset emails still send, just without the "continue" step.
    ending "CorePhia Health · Tampa, Florida".
    - **Update notice:** To `{{to_email}}`, Subject "You have a new update from CorePhia",
      body "Your CorePhia care team posted an update. Log in to your portal to read it.",
-     button **Open your portal** → `https://corephia.com/account`.
+     button **Open your portal** → `https://corephia.com/account/updates`.
    - **Message notice:** To `{{to_email}}`, Subject "You have a new message from
      CorePhia", body "Your CorePhia care team sent you a message. Log in to your portal to
      read it.", button **Open your portal** → `https://corephia.com/account/messages`.
@@ -260,8 +260,11 @@ hosting). Signing a note with any vitals now also writes its progress entry in t
 save; with the old rules live, that save is refused and the note can't be signed at all.
 
 The portal now lives in `src/portal/`: `PortalApp.jsx` handles signing in and routes
-`/account/*`, `PortalHome.jsx` is `/account`. Sections still to come are listed in
-`COMING_SOON` in PortalHome (only Membership now, which waits on a billing system).
+`/account/*`; `PortalLayout.jsx` is the shared welcome, tabs (Overview · Progress ·
+Messages · Updates) and side column (account, care team, coming soon). Pages:
+`/account` (Overview, `PortalHome.jsx`), `/account/progress`, `/account/messages`,
+`/account/updates`. Sections still to come are listed in `COMING_SOON` in PortalLayout
+(only Membership now, which waits on a billing system; it becomes a tab when built).
 
 **Messages is built** (spec `docs/superpowers/specs/2026-10-06-portal-messages-design.md`,
 plan `docs/superpowers/plans/2026-10-06-portal-messages.md`). Patients write to the care

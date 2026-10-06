@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react"
+import { Link } from "react-router-dom"
 import WeightChart from "../../components/WeightChart"
 import { series, summary, vitalsText } from "../../lib/progressMath"
 import { deleteWeighIn, getMyProgress } from "../lib/patientAuth"
@@ -15,7 +16,8 @@ function changeLine(changeLb) {
 
 // The portal's Track progress box: visit weights and the patient's own
 // weigh-ins on one chart, visit BP and heart rate, and logging a weigh-in.
-export default function PortalProgress({ intakeId }) {
+// `compact` (the Overview): the headline numbers and a link to the full page.
+export default function PortalProgress({ intakeId, compact = false }) {
   const [attempt, setAttempt] = useState(0)
   const [result, setResult] = useState(null) // { attempt, data } | { attempt, failed }
   const [logging, setLogging] = useState(false)
@@ -74,7 +76,16 @@ export default function PortalProgress({ intakeId }) {
         <h2 id="progress-heading" className="font-serif text-2xl text-ink-950">
           Track progress
         </h2>
-        {current?.data && !logging && (
+        {compact ? (
+          <Link
+            to="/account/progress"
+            className="rounded-full border border-ink-950/15 px-5 py-2.5 text-sm font-semibold text-ink-950 transition-colors duration-200 hover:bg-paper-100"
+          >
+            View progress
+          </Link>
+        ) : (
+          current?.data &&
+          !logging && (
           <button
             type="button"
             onClick={() => setLogging(true)}
@@ -82,6 +93,7 @@ export default function PortalProgress({ intakeId }) {
           >
             Log your weight
           </button>
+          )
         )}
       </div>
 
@@ -122,16 +134,10 @@ export default function PortalProgress({ intakeId }) {
               )}
             </div>
           </div>
-          <WeightChart points={points} goalLb={numbers.goalLb} />
+          {!compact && <WeightChart points={points} goalLb={numbers.goalLb} />}
 
-          {/* The full lists sit behind a toggle so the portal page stays short. */}
-          {visits.length + weighIns.length > 0 && (
-            <details className="group mt-6 border-t border-ink-950/10 pt-4">
-              <summary className="cursor-pointer list-none text-sm font-semibold text-ink-950 transition-colors duration-200 hover:text-accent-dark">
-                <span className="group-open:hidden">Show history</span>
-                <span className="hidden group-open:inline">Hide history</span>
-                <span className="font-normal text-ink-950/55"> ({visits.length + weighIns.length})</span>
-              </summary>
+          {!compact && visits.length + weighIns.length > 0 && (
+            <div className="mt-2">
               {visits.length > 0 && (
                 <div className="mt-8">
                   <h3 className="text-sm font-semibold text-ink-950">From your visits</h3>
@@ -173,7 +179,7 @@ export default function PortalProgress({ intakeId }) {
                   </ul>
                 </div>
               )}
-            </details>
+            </div>
           )}
         </>
       )}

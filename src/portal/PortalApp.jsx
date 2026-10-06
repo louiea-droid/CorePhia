@@ -7,6 +7,9 @@ import { SUPPORT_PHONE } from "../lib/siteContact"
 import { getMyPortalLink, signOutPatient, watchPatientUser } from "./lib/patientAuth"
 import MessagesPage from "./messages/MessagesPage"
 import PortalHome from "./PortalHome"
+import PortalLayout from "./PortalLayout"
+import ProgressPage from "./progress/ProgressPage"
+import UpdatesPage from "./updates/UpdatesPage"
 
 const cardClass = "rounded-3xl border border-ink-950/10 bg-white p-8"
 const primaryButton =
@@ -133,9 +136,13 @@ export default function PortalApp() {
 
       {state === "linked" && (
         <Routes>
-          <Route index element={<PortalHome user={user} link={link} />} />
-          <Route path="messages" element={<MessagesPage user={user} link={link} />} />
-          <Route path="messages/:topicId" element={<MessagesPage user={user} link={link} />} />
+          <Route element={<PortalLayout user={user} link={link} />}>
+            <Route index element={<PortalHome />} />
+            <Route path="progress" element={<ProgressPage />} />
+            <Route path="messages" element={<MessagesPage />} />
+            <Route path="messages/:topicId" element={<MessagesPage />} />
+            <Route path="updates" element={<UpdatesPage />} />
+          </Route>
         </Routes>
       )}
 

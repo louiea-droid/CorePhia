@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
+import { Link, useNavigate, useOutletContext, useParams, useSearchParams } from "react-router-dom"
 import { unreadFor } from "../../lib/messageMath"
 import ConversationView from "./ConversationView"
 import NewConversationForm from "./NewConversationForm"
@@ -10,7 +10,8 @@ const when = (value) => {
   return date ? date.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""
 }
 
-export default function MessagesPage({ user, link }) {
+export default function MessagesPage() {
+  const { user, link } = useOutletContext()
   const { topicId } = useParams()
   const navigate = useNavigate()
   const { topics, failed, retry } = useMyTopics(link.intakeId)
@@ -39,10 +40,7 @@ export default function MessagesPage({ user, link }) {
   const listed = (topics ?? []).filter((entry) => entry.status === tab)
   return (
     <section aria-labelledby="messages-heading" className="rounded-3xl border border-ink-950/10 bg-white p-6 sm:p-8">
-      <Link to="/account" className="text-sm font-medium text-ink-950/60 transition-colors hover:text-ink-950">
-        Back to your portal
-      </Link>
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 id="messages-heading" className="font-serif text-3xl text-ink-950">
           Messages
         </h1>
