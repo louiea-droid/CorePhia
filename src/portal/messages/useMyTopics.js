@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { byLatest } from "../../lib/messageMath"
-import { getMyChartStatus, listenMyTopics } from "../lib/messageStore"
+import { listenMyChartStatus, listenMyTopics } from "../lib/messageStore"
 
 // The patient's conversations, live, newest activity first.
 export function useMyTopics(intakeId) {
@@ -21,16 +21,10 @@ export function useMyTopics(intakeId) {
   return { ...state, retry: () => setAttempt((n) => n + 1) }
 }
 
+// true / false once the chart's status is known, null until then, so an
+// inactive account never sees the compose box flash up first. Live.
 export function useCanWrite(intakeId) {
-  const [canWrite, setCanWrite] = useState(true)
-  useEffect(() => {
-    let live = true
-    getMyChartStatus(intakeId)
-      .then((status) => live && setCanWrite(status === "active"))
-      .catch(() => {})
-    return () => {
-      live = false
-    }
-  }, [intakeId])
+  const [canWrite, setCanWrite] = useState(null)
+  useEffect(() => listenMyChartStatus(intakeId, (status) => setCanWrite(status === "active")), [intakeId])
   return canWrite
 }

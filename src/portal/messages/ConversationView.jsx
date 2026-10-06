@@ -110,11 +110,11 @@ export default function ConversationView({ intakeId, uid, topic, canWrite }) {
             {busy ? "Sending…" : "Send"}
           </button>
         </form>
-      ) : (
+      ) : canWrite === false ? (
         <p className="mt-6 rounded-2xl bg-paper-100 p-4 text-sm text-ink-950/70">
           Messaging is closed. Call us at {SUPPORT_PHONE} or email info@corephia.com.
         </p>
-      )}
+      ) : null}
 
       <dialog ref={dialogRef} aria-labelledby="close-conversation-title" className="m-auto w-[calc(100%-2rem)] max-w-sm rounded-3xl bg-white p-6 shadow-2xl backdrop:bg-ink-950/50">
         <p id="close-conversation-title" className="font-serif text-xl text-ink-950">
