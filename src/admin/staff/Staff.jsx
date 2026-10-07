@@ -11,8 +11,9 @@ import { AUDIT_ACTIONS, USERS_COLLECTION, recordAuditEvent, signOutAdmin } from 
 import { PAGE_SIZE_OPTIONS } from "../lib/constants"
 import PageHeader from "../layout/PageHeader"
 import AddStaffDialog from "./AddStaffDialog"
+import EditNameDialog from "./EditNameDialog"
 import EditRoleDialog from "./EditRoleDialog"
-import { ROLE_LABELS, canManageMember, staffDisplayName } from "./roles"
+import { ROLE_LABELS, canManageMember, canRenameMember, staffDisplayName } from "./roles"
 import { filterStaff, staffErrorMessage } from "./staffMath"
 
 const PAGE_SIZE_KEY = "corephia-admin-staff-page-size"
@@ -141,6 +142,7 @@ export default function Staff({ actor }) {
   const [pageSize, setPageSize] = useState(readPageSize)
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState(null)
+  const [renaming, setRenaming] = useState(null)
   const [pendingRemove, setPendingRemove] = useState(null)
   const [pendingDelete, setPendingDelete] = useState(null)
   const [confirmSignOut, setConfirmSignOut] = useState(false)
@@ -242,6 +244,7 @@ export default function Staff({ actor }) {
         <RowMenu
           label={`More for ${name}`}
           items={[
+            ...(canRenameMember(actor, member) ? [{ label: "Edit name", onClick: () => setRenaming(member) }] : []),
             ...(member.role ? [{ label: "Remove access", onClick: () => setPendingRemove(member) }] : []),
             { label: "Delete account", danger: true, onClick: () => setPendingDelete(member) },
           ]}
@@ -412,6 +415,16 @@ export default function Staff({ actor }) {
           onSaved={(role) => {
             patchMember(editing.uid, { role })
             setEditing(null)
+          }}
+        />
+      )}
+      {renaming && (
+        <EditNameDialog
+          member={renaming}
+          onClose={() => setRenaming(null)}
+          onSaved={(name) => {
+            patchMember(renaming.uid, { name })
+            setRenaming(null)
           }}
         />
       )}

@@ -128,6 +128,10 @@ service cloud.firestore {
             || (next.addedBy.keys().hasOnly(['uid', 'name']) && next.addedBy.uid == request.auth.uid))
         && (!('addedAt' in changed) || next.addedAt == request.time)
         && next.keys().hasOnly(['role', 'name', 'email', 'addedBy', 'addedAt', 'lastSignInAt'])
+        // Renaming an existing account is for the admin and super admin (the
+        // Staff page's Edit name); a co-admin sets a name only when adding.
+        && (resource == null || !('name' in changed) || role() in ['admin', 'superAdmin'])
+        && (!('name' in changed) || (next.name is string && next.name.size() > 0 && next.name.size() <= 100))
         // Only the person themselves stamps their sign-in (isOwnSignInStamp).
         && !('lastSignInAt' in changed)
         && next.role in ['', 'provider', 'dietitian', 'coAdmin', 'admin', 'superAdmin']

@@ -57,6 +57,7 @@ export const AUDIT_ACTIONS = {
   addAmendment: "add_note_amendment",
   addStaff: "add_staff",
   changeStaffRole: "change_staff_role",
+  renameStaff: "rename_staff_account",
   deleteStaff: "delete_staff_account",
   bookAppointment: "book_appointment",
   moveAppointment: "move_appointment",

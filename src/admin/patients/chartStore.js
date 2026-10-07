@@ -385,6 +385,16 @@ export async function addStaff({ name, email, role }, actor) {
   }
 }
 
+// Changes the name on the staff record. Notes already signed keep the name they were signed with.
+export async function setStaffName(uid, name) {
+  if (usingSeedData) {
+    const member = (await getDemoStore()).staff.find((entry) => entry.uid === uid)
+    if (member) member.name = name
+    return
+  }
+  await updateDoc(doc(requireDb(), USERS_COLLECTION, uid), { name })
+}
+
 // role "" removes access. The account stays, so signed notes keep their name.
 export async function setStaffRole(uid, role) {
   if (usingSeedData) {

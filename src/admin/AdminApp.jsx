@@ -5,6 +5,7 @@ import AccountMenu from "./layout/AccountMenu"
 import Activity from "./staff/Activity"
 import Calendar from "./calendar/Calendar"
 import Dashboard from "./dashboard/Dashboard"
+import Help from "./help/Help"
 import { getAdminAccess, isConfigured, recordSignIn, signOutAdmin, usingSeedData, watchAdminUser } from "./lib/firebase"
 import IdleWarningModal from "./layout/IdleWarningModal"
 import { MenuIcon } from "./ui/icons"
@@ -77,6 +78,7 @@ function AdminRoutes({ role, signerName, user, displayName, onDisplayNameChange,
       <Route path="/admin/analytics" element={guard("analytics", <SiteTraffic />)} />
       <Route path="/admin/traffic" element={<Navigate to="/admin/analytics" replace />} />
       <Route path="/admin/messages" element={guard("inbox", <PatientMessages actor={actor} />)} />
+      <Route path="/admin/help" element={guard("help", <Help role={role} />)} />
       <Route path="/admin/staff" element={guard("staff", <Staff actor={actor} />)} />
       <Route path="/admin/activity" element={guard("activity", <Activity role={role} />)} />
       <Route

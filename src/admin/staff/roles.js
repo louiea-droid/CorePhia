@@ -34,6 +34,7 @@ const PAGE_ROLES = {
   staff: STAFF_ROLES,
   activity: ["superAdmin"],
   security: CLINICAL_ROLES,
+  help: CLINICAL_ROLES,
 }
 
 export const canOpen = (page, role) => PAGE_ROLES[page]?.includes(role) ?? false
@@ -63,6 +64,10 @@ export const canAmend = (noteType, role) => isClinicalRole(role) && (role !== "d
 // Who sees an appointment's move and cancel history (Louie, 2026-10-02).
 // Mirrors the changes read rule (isStaff) in firestore.rules.
 export const canSeeAppointmentHistory = (role) => STAFF_ROLES.includes(role)
+
+// Renaming someone else's staff record: admin and super admin only, and only
+// accounts they can already manage. Mirrors the name check in isRoleChange.
+export const canRenameMember = (viewer, member) => ["admin", "superAdmin"].includes(viewer.role) && canManageMember(viewer, member)
 
 // The roles a signed-in person may hand out on the Staff page. Only a super
 // admin grants admin or super admin.

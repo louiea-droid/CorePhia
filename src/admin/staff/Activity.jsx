@@ -22,6 +22,7 @@ const ACTION_LABELS = {
   [AUDIT_ACTIONS.addAmendment]: "Added an addendum",
   [AUDIT_ACTIONS.addStaff]: "Added staff",
   [AUDIT_ACTIONS.changeStaffRole]: "Changed a staff role",
+  [AUDIT_ACTIONS.renameStaff]: "Renamed a staff account",
   [AUDIT_ACTIONS.deleteStaff]: "Deleted a staff account",
   [AUDIT_ACTIONS.bookAppointment]: "Booked an appointment",
   [AUDIT_ACTIONS.moveAppointment]: "Changed an appointment",

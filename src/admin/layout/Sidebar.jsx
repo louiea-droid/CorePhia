@@ -8,6 +8,7 @@ import {
   ChevronLeftIcon,
   CloseIcon,
   DashboardIcon,
+  HelpIcon,
   MailIcon,
   PatientsIcon,
   StaffIcon,
@@ -24,20 +25,31 @@ import { needsReply } from "../../lib/messageMath"
 // a second source of truth: someone following a URL directly is still refused
 // by Firestore (and by the route guard); this keeps links they can't use out
 // of their sidebar.
-const NAV_ITEMS = [
-  { label: "Dashboard", icon: DashboardIcon, to: "/admin", page: "dashboard" },
-  // Intake submissions awaiting admit/decline. Admitting one starts their
-  // chart under Patients.
-  { label: "Applicants", icon: ApplicantsIcon, to: "/admin/applicants", page: "applicants" },
-  { label: "Patients", icon: PatientsIcon, to: "/admin/patients", page: "patients" },
-  { label: "Messages", icon: ChatIcon, to: "/admin/messages", page: "inbox" },
-  { label: "To-do", icon: TodoIcon, to: "/admin/todo", page: "todo" },
-  { label: "Calendar", icon: CalendarIcon, to: "/admin/calendar", page: "calendar" },
-  { label: "Queries", icon: MailIcon, to: "/admin/queries", page: "messages" },
-  { label: "Analytics", icon: TrafficIcon, to: "/admin/analytics", page: "analytics" },
-  { label: "Staff", icon: StaffIcon, to: "/admin/staff", page: "staff" },
-  { label: "Activity", icon: ActivityIcon, to: "/admin/activity", page: "activity" },
+//
+// Grouped by job with a divider between groups: the day's work, then the
+// website, then the team. Help sits at the bottom with Collapse, since it's a
+// utility rather than a place you work.
+const NAV_GROUPS = [
+  [
+    { label: "Dashboard", icon: DashboardIcon, to: "/admin", page: "dashboard" },
+    { label: "To-do", icon: TodoIcon, to: "/admin/todo", page: "todo" },
+    { label: "Calendar", icon: CalendarIcon, to: "/admin/calendar", page: "calendar" },
+    // Intake submissions awaiting admit/decline. Admitting one starts their
+    // chart under Patients.
+    { label: "Applicants", icon: ApplicantsIcon, to: "/admin/applicants", page: "applicants" },
+    { label: "Patients", icon: PatientsIcon, to: "/admin/patients", page: "patients" },
+    { label: "Messages", icon: ChatIcon, to: "/admin/messages", page: "inbox" },
+  ],
+  [
+    { label: "Queries", icon: MailIcon, to: "/admin/queries", page: "messages" },
+    { label: "Analytics", icon: TrafficIcon, to: "/admin/analytics", page: "analytics" },
+  ],
+  [
+    { label: "Staff", icon: StaffIcon, to: "/admin/staff", page: "staff" },
+    { label: "Activity", icon: ActivityIcon, to: "/admin/activity", page: "activity" },
+  ],
 ]
+const HELP_ITEM = { label: "Help", icon: HelpIcon, to: "/admin/help", page: "help" }
 
 // Shared by every collapsible label (nav items, the brand wordmark, footer
 // rows). display:none (what a plain `lg:hidden` toggle uses) can't be
@@ -77,6 +89,53 @@ export default function Sidebar({
   // Patient topics waiting on the care team, live.
   const { topics } = useTopics({ enabled: canOpen("inbox", role) })
   const needsReplyCount = topics?.filter(needsReply).length ?? 0
+  const groups = NAV_GROUPS.map((items) => items.filter((item) => canOpen(item.page, role))).filter((items) => items.length)
+
+  const renderItem = (item) => {
+    // A chart (/admin/patients/:id) keeps Patients highlighted.
+    const current = location.pathname === item.to || (item.to !== "/admin" && location.pathname.startsWith(`${item.to}/`))
+    const count = item.to === "/admin/queries" ? newMessageCount : item.to === "/admin/messages" ? needsReplyCount : 0
+    return (
+      <li key={item.label}>
+        <Link
+          to={item.to}
+          aria-current={current ? "page" : undefined}
+          title={collapsed ? item.label : undefined}
+          onClick={onCloseMobile}
+          className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-200 ${
+            current ? "bg-accent-dark text-oncolor" : "text-ink-950/70 hover:bg-ink-950/5 hover:text-ink-950"
+          }`}
+        >
+          {/* Two shapes for one count, swapped by width: the collapsed rail has no
+              room for a number beside the icon, so it degrades to a
+              dot on the icon's corner. On the active row the pill
+              inverts — an accent badge on the accent fill would be
+              invisible. */}
+          <span className="relative shrink-0">
+            <item.icon className="size-5" />
+            {count > 0 && (
+              <span
+                className={`absolute -top-0.5 -right-0.5 hidden size-2 rounded-full ring-2 ${
+                  current ? "bg-oncolor ring-accent-dark" : "bg-accent-dark ring-white"
+                } ${collapsed ? "lg:block" : ""}`}
+              />
+            )}
+          </span>
+          <span className={collapsibleLabelClass(collapsed, "lg:max-w-28")}>{item.label}</span>
+          {count > 0 && (
+            <span
+              className={`ml-auto flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 text-[11px] font-semibold tabular-nums ${
+                current ? "bg-oncolor text-accent-dark" : "bg-accent-dark text-oncolor"
+              } ${collapsed ? "lg:hidden" : ""}`}
+            >
+              {count > 9 ? "9+" : count}
+              <span className="sr-only"> new</span>
+            </span>
+          )}
+        </Link>
+      </li>
+    )
+  }
 
   return (
     <>
@@ -127,71 +186,27 @@ export default function Sidebar({
         </div>
 
         <nav aria-label="Admin" className="flex-1 overflow-y-auto p-3">
-          <ul className="space-y-1">
-            {NAV_ITEMS.filter((item) => canOpen(item.page, role)).map((item) => {
-              // A chart (/admin/patients/:id) keeps Patients highlighted.
-              const current =
-                location.pathname === item.to || (item.to !== "/admin" && location.pathname.startsWith(`${item.to}/`))
-              const count = item.to === "/admin/queries" ? newMessageCount : item.to === "/admin/messages" ? needsReplyCount : 0
-              return (
-                <li key={item.label}>
-                  <Link
-                    to={item.to}
-                    aria-current={current ? "page" : undefined}
-                    title={collapsed ? item.label : undefined}
-                    onClick={onCloseMobile}
-                    className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-200 ${
-                      current
-                        ? "bg-accent-dark text-oncolor"
-                        : "text-ink-950/70 hover:bg-ink-950/5 hover:text-ink-950"
-                    }`}
-                  >
-                    {/* Two shapes for one count, swapped by width: the collapsed rail has no
-                        room for a number beside the icon, so it degrades to a
-                        dot on the icon's corner. On the active row the pill
-                        inverts — an accent badge on the accent fill would be
-                        invisible. */}
-                    <span className="relative shrink-0">
-                      <item.icon className="size-5" />
-                      {count > 0 && (
-                        <span
-                          className={`absolute -top-0.5 -right-0.5 hidden size-2 rounded-full ring-2 ${
-                            current ? "bg-oncolor ring-accent-dark" : "bg-accent-dark ring-white"
-                          } ${collapsed ? "lg:block" : ""}`}
-                        />
-                      )}
-                    </span>
-                    <span className={collapsibleLabelClass(collapsed, "lg:max-w-28")}>{item.label}</span>
-                    {count > 0 && (
-                      <span
-                        className={`ml-auto flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 text-[11px] font-semibold tabular-nums ${
-                          current ? "bg-oncolor text-accent-dark" : "bg-accent-dark text-oncolor"
-                        } ${collapsed ? "lg:hidden" : ""}`}
-                      >
-                        {count > 9 ? "9+" : count}
-                        <span className="sr-only"> new</span>
-                      </span>
-                    )}
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
+          {groups.map((items, index) => (
+            <ul key={index} className={`space-y-1 ${index ? "mt-3 border-t border-ink-950/10 pt-3" : ""}`}>
+              {items.map(renderItem)}
+            </ul>
+          ))}
         </nav>
 
-        {/* Collapsing is a desktop affordance (see the note above on the
-            sidebar's own width classes), so this row never shows on the
-            mobile drawer. The theme switch and the account (profile,
-            password, sign out) live top right: ThemeSwitch.jsx and
-            AccountMenu.jsx. */}
-        <div className="hidden border-t border-ink-950/10 p-3 lg:block">
+        {/* Help, then Collapse. Collapsing is a desktop affordance (see the
+            note above on the sidebar's own width classes), so only that button
+            hides on the mobile drawer; Help shows everywhere. The theme switch
+            and the account (profile, password, sign out) live top right:
+            ThemeSwitch.jsx and AccountMenu.jsx. */}
+        <div className="space-y-1 border-t border-ink-950/10 p-3">
+          {canOpen(HELP_ITEM.page, role) && <ul>{renderItem(HELP_ITEM)}</ul>}
           <button
             type="button"
             onClick={onToggleCollapsed}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             aria-expanded={!collapsed}
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink-950/70 transition-colors duration-200 hover:bg-ink-950/5 hover:text-ink-950"
+            className="hidden w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink-950/70 transition-colors duration-200 hover:bg-ink-950/5 hover:text-ink-950 lg:flex"
           >
             <ChevronLeftIcon
               className={`size-5 shrink-0 transition-transform duration-300 ease-out-smooth ${

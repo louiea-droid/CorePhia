@@ -2,8 +2,8 @@
 // roles, appointments, patient portal links, portal invites, setup links, portal updates, portal progress and portal messages.
 //
 // Run: npm run test:rules
-// Needs Java 21+ for the Firestore emulator (firebase-tools starts it). All 127
-// passed on 2026-10-06. Run them before every rules deploy.
+// Needs Java 21+ for the Firestore emulator (firebase-tools starts it). All 131
+// passed on 2026-10-07. Run them before every rules deploy.
 import { readFileSync } from "node:fs"
 import { after, before, beforeEach, describe, test } from "node:test"
 import { assertFails, assertSucceeds, initializeTestEnvironment } from "@firebase/rules-unit-testing"
@@ -166,6 +166,28 @@ describe("roles", () => {
   })
   test("a provider can't write any role", async () => {
     await assertFails(setDoc(doc(as("provider"), "user", "newbie"), { role: "provider" }))
+  })
+  test("an admin renames a provider, dietitian or co-admin; a super admin renames anyone but themselves", async () => {
+    await assertSucceeds(updateDoc(doc(as("admin"), "user", "provider"), { name: "Jordan Lee, NP" }))
+    await assertSucceeds(updateDoc(doc(as("admin"), "user", "dietitian"), { name: "Sam Rivera, RD" }))
+    await assertSucceeds(updateDoc(doc(as("admin"), "user", "coadmin"), { name: "Casey" }))
+    await assertSucceeds(updateDoc(doc(as("super"), "user", "admin"), { name: "Dr. A" }))
+    await assertFails(updateDoc(doc(as("super"), "user", "super"), { name: "Me" }))
+  })
+  test("an admin can't rename another admin or a super admin", async () => {
+    await env.withSecurityRulesDisabled((c) => setDoc(doc(c.firestore(), "user", "admin2"), { role: "admin", name: "admin2" }))
+    await assertFails(updateDoc(doc(as("admin"), "user", "admin2"), { name: "X" }))
+    await assertFails(updateDoc(doc(as("admin"), "user", "super"), { name: "X" }))
+  })
+  test("a co-admin, provider or dietitian can't rename anyone", async () => {
+    await assertFails(updateDoc(doc(as("coadmin"), "user", "provider"), { name: "X" }))
+    await assertFails(updateDoc(doc(as("provider"), "user", "provider2"), { name: "X" }))
+    await assertFails(updateDoc(doc(as("dietitian"), "user", "provider"), { name: "X" }))
+  })
+  test("a name is 1 to 100 characters", async () => {
+    await assertFails(updateDoc(doc(as("admin"), "user", "provider"), { name: "" }))
+    await assertFails(updateDoc(doc(as("admin"), "user", "provider"), { name: "x".repeat(101) }))
+    await assertSucceeds(updateDoc(doc(as("admin"), "user", "provider"), { name: "x".repeat(100) }))
   })
 })
 

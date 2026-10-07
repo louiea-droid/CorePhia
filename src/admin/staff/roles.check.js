@@ -8,6 +8,7 @@ import {
   canAmend,
   canManageMember,
   canOpen,
+  canRenameMember,
   canSeeAppointmentHistory,
   canWriteNote,
   grantableRoles,
@@ -52,6 +53,16 @@ assert.equal(canManageMember({ uid: "a", role: "coAdmin" }, { uid: "d", role: "d
 assert.equal(canManageMember({ uid: "a", role: "admin" }, { uid: "d", role: "dietitian" }), true)
 assert.equal(canManageMember({ uid: "d", role: "dietitian" }, { uid: "p", role: "provider" }), false)
 
+// Renaming: admin and super admin only, on accounts they can manage, never their own.
+const target = (role, uid = "t") => ({ uid, role })
+assert.equal(canRenameMember({ uid: "a", role: "admin" }, target("provider")), true)
+assert.equal(canRenameMember({ uid: "a", role: "admin" }, target("coAdmin")), true)
+assert.equal(canRenameMember({ uid: "a", role: "admin" }, target("admin")), false)
+assert.equal(canRenameMember({ uid: "a", role: "admin" }, target("superAdmin")), false)
+assert.equal(canRenameMember({ uid: "s", role: "superAdmin" }, target("admin")), true)
+assert.equal(canRenameMember({ uid: "s", role: "superAdmin" }, target("superAdmin", "s")), false)
+for (const role of ["coAdmin", "provider", "dietitian"]) assert.equal(canRenameMember({ uid: "a", role }, target("provider")), false, role)
+
 // Appointment history: co-admin, admin, super admin.
 for (const role of ["coAdmin", "admin", "superAdmin"]) assert.equal(canSeeAppointmentHistory(role), true, role)
 for (const role of ["provider", "dietitian", ""]) assert.equal(canSeeAppointmentHistory(role), false, role)
@@ -70,6 +81,10 @@ assert.equal(canRemoveUpdate(posted, { uid: "d1", role: "dietitian" }), false)
 assert.equal(canRemoveUpdate(posted, { uid: "p2", role: "provider" }), false)
 assert.equal(canRemoveUpdate(posted, { uid: "c1", role: "coAdmin" }), true)
 assert.equal(canRemoveUpdate({ ...posted, removed: { by: { uid: "p1" } } }, { uid: "p1", role: "provider" }), false)
+
+// Help is open to every clinical role, and to nobody without one.
+for (const role of ["dietitian", "provider", "coAdmin", "admin", "superAdmin"]) assert.equal(canOpen("help", role), true, role)
+assert.equal(canOpen("help", ""), false)
 
 // The patient Messages inbox is for every clinical role.
 assert.equal(canOpen("inbox", "dietitian"), true)

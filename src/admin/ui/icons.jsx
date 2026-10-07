@@ -106,6 +106,16 @@ export function ChatIcon(props) {
   )
 }
 
+export function HelpIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M9.6 9.7a2.4 2.4 0 1 1 3.4 2.2c-.7.4-1 .8-1 1.6" />
+      <path d="M12 16.6h.01" />
+    </svg>
+  )
+}
+
 export function MenuIcon(props) {
   return (
     <svg {...base} {...props}>
