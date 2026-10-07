@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CorePhia Admin and Patient Portal: Update Log and Guide</title>
+<style>
+  :root { --ink: #0d1a3d; --muted: #4b5675; --line: #d8deea; --soft: #f5f7fb; --accent: #1e3a8a; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 16px/1.6 Georgia, "Times New Roman", serif; color: var(--ink); background: #fff; }
+  main { max-width: 820px; margin: 0 auto; padding: 40px 20px 80px; }
+  h1, h2, h3 { font-family: "Segoe UI", Arial, sans-serif; line-height: 1.25; color: var(--accent); text-wrap: balance; }
+  h1 { font-size: 30px; margin: 0 0 6px; }
+  h2 { font-size: 22px; margin: 44px 0 10px; padding-top: 14px; border-top: 2px solid var(--line); }
+  h3 { font-size: 17px; margin: 28px 0 6px; color: var(--ink); }
+  p, li { max-width: 68ch; }
+  ul, ol { padding-left: 22px; }
+  li { margin: 4px 0; }
+  .sub { color: var(--muted); margin: 0 0 24px; font-family: "Segoe UI", Arial, sans-serif; font-size: 15px; }
+  .box { background: var(--soft); border: 1px solid var(--line); border-radius: 8px; padding: 14px 18px; margin: 16px 0; }
+  .box p { margin: 6px 0; }
+  table { border-collapse: collapse; width: 100%; font: 14px/1.45 "Segoe UI", Arial, sans-serif; margin: 12px 0; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--soft); }
+  .scroll { overflow-x: auto; }
+  .date { font: 600 14px "Segoe UI", Arial, sans-serif; color: var(--accent); }
+  .tag { font: 600 12px "Segoe UI", Arial, sans-serif; background: var(--soft); border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; color: var(--muted); }
+  nav ul { list-style: none; padding: 0; columns: 2; }
+  nav a { color: var(--accent); }
+  @media (max-width: 560px) { nav ul { columns: 1; } }
+  @media print { main { padding: 0; } h2 { break-after: avoid; } table, .box { break-inside: avoid; } a { color: inherit; text-decoration: none; } }
+</style>
+</head>
+<body>
+<main>
+
+<h1>CorePhia admin and patient portal</h1>
+<p class="sub">Update log and user guide &middot; written October 7, 2026 &middot; covers everything built so far</p>
+
+<nav aria-label="Contents">
+  <ul>
+    <li><a href="#status">1. Where things stand</a></li>
+    <li><a href="#log">2. Update log</a></li>
+    <li><a href="#roles">3. Who can do what</a></li>
+    <li><a href="#admin">4. Admin guide</a></li>
+    <li><a href="#portal">5. Patient portal guide</a></li>
+    <li><a href="#emails">6. What emails go out</a></li>
+    <li><a href="#later">7. Not built yet</a></li>
+  </ul>
+</nav>
+
+<h2 id="status">1. Where things stand</h2>
+<p>The admin (staff side) and the patient portal are built and working in testing. They are not yet open to real patients. A few one-time setup steps and one compliance step remain first.</p>
+
+<div class="box">
+  <p><strong>Before real patients use it</strong></p>
+  <ol>
+    <li><strong>HIPAA agreement (BAA).</strong> The intake form and charts hold protected health information. The database host (Google Cloud) needs a signed Business Associate Agreement before real patient data goes in. A plain account is not covered.</li>
+    <li><strong>Publish the database security rules.</strong> These control who can read and write what. Several features (signing notes with vitals, invites, updates, messages, progress, renaming staff) are refused until they are published. They should be tested first.</li>
+    <li><strong>Set up the email service.</strong> Portal invites and the "check your portal" notices cannot send until the email service and its message templates are set up. Everything else still works without it.</li>
+    <li><strong>Replace the placeholder phone number</strong> <span class="tag">(000) 123-4567</span> that appears in the invite text, the portal and the contact pages.</li>
+    <li><strong>Clear out test data.</strong> One test patient ("Louie Test") and its portal login exist in the live project, and the Dashboard shows 14 sample applicants whenever there are no real intakes. Both should go before launch.</li>
+    <li><strong>Two-step sign-in</strong> for staff needs one setting switched on in the Firebase project before staff can turn it on.</li>
+  </ol>
+</div>
+
+<h2 id="log">2. Update log</h2>
+<p>Newest first. Plain-language summaries of what changed and why it matters.</p>
+
+<h3><span class="date">Oct 7, 2026</span> &middot; Rename staff accounts</h3>
+<ul>
+  <li><strong>Edit name</strong> on the Staff page, for the admin and super admin only. It changes the name used in lists and on notes signed from then on. Notes already signed keep the name they were signed with.</li>
+  <li>Recorded in the Activity log as "Renamed a staff account". Built and checked, waiting to be published with the database rules.</li>
+</ul>
+
+<h3><span class="date">Oct 6, 2026</span> &middot; Patient portal, part 2</h3>
+<ul>
+  <li><strong>Updates.</strong> Staff post short dated updates to a patient's portal. An optional email tells the patient to check the portal, with no details in it. After signing a note you can share an update straight from it.</li>
+  <li><strong>Track progress.</strong> Weight, blood pressure and heart rate from a signed note go to the patient's progress chart. Patients can also log their own weight. Staff see both.</li>
+  <li><strong>Messages.</strong> Patients write to the care team in subject-based conversations. All clinical staff answer from one shared inbox, with a count of conversations waiting for a reply.</li>
+  <li><strong>New portal layout.</strong> Four tabs (Overview, Progress, Messages, Updates) and a side column with account, care team and what is coming.</li>
+  <li>Chart page: the Patient portal card now shows "Portal active since {date}" once the patient has joined, and hides the resend controls.</li>
+</ul>
+
+<h3><span class="date">Oct 5, 2026</span> &middot; Patient portal login</h3>
+<ul>
+  <li><strong>Invite-only portal.</strong> There is no public sign-up. Staff send an invite from the patient's chart, and the patient sets their own password from the link in it.</li>
+  <li><strong>Forgot password</strong> for patients, with a reply that never reveals whether an email has an account.</li>
+  <li>Invites are listed on the chart with their status, and sending one is recorded in the Activity log.</li>
+</ul>
+
+<h3><span class="date">Oct 2, 2026</span> &middot; Dietitian, exercise, calendar, to-dos</h3>
+<ul>
+  <li><strong>Dietitian role</strong> with their own login. Dietitians sign their own notes.</li>
+  <li><strong>Dietitian notes and Exercise notes</strong> alongside the medical notes. Each has its own follow-up date, and the chart shows the current exercise plan.</li>
+  <li><strong>Calendar</strong> with Week, Month and Agenda views, booking, moving, cancelling, and a history of changes. Follow-ups that are due but not booked appear as "due, not booked yet".</li>
+  <li><strong>To-do</strong> now also holds your own items, private or shared with everyone.</li>
+  <li><strong>Staff page</strong> rebuilt as a users table with search, role filter and last sign-in.</li>
+  <li>The website's contact-form inbox is now called <strong>Queries</strong>, so <strong>Messages</strong> can mean patient messages.</li>
+</ul>
+
+<h3><span class="date">Sep 30 &ndash; Oct 1, 2026</span> &middot; Charts and the admin core</h3>
+<ul>
+  <li>One-question-per-screen patient intake, with name, phone and email required.</li>
+  <li>Applicants can be admitted or declined. Admitting creates the patient's chart.</li>
+  <li>Charts with dated notes: consultation and progress notes, prescriptions (start, renew, stop), draft then signed, and addenda after signing.</li>
+  <li>Staff roles, an Activity log of who opened or changed what, and Analytics with cookie-free, consent-first site counts.</li>
+</ul>
+
+<h3><span class="date">Sep 11 &ndash; 22, 2026</span> &middot; First builds</h3>
+<ul>
+  <li>First versions of the site and the admin, followed by security updates and design passes.</li>
+</ul>
+
+<h2 id="roles">3. Who can do what</h2>
+<p>Staff accounts have one of five roles. A page a role cannot use is hidden from its menu.</p>
+<div class="scroll">
+<table>
+  <thead><tr><th>Can&hellip;</th><th>Super admin</th><th>Admin</th><th>Co-admin</th><th>Provider</th><th>Dietitian</th></tr></thead>
+  <tbody>
+    <tr><td>Use Dashboard, Applicants, Patients, Messages, To-do, Calendar, Profile</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+    <tr><td>Use Queries, Analytics, Staff</td><td>Yes</td><td>Yes</td><td>Yes</td><td>No</td><td>No</td></tr>
+    <tr><td>See the Activity log</td><td>Yes</td><td>No</td><td>No</td><td>No</td><td>No</td></tr>
+    <tr><td>Admit or decline applicants, send portal invites</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>No</td></tr>
+    <tr><td>Write consultation, progress and exercise notes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>No</td></tr>
+    <tr><td>Write dietitian notes</td><td>No</td><td>Yes</td><td>No</td><td>No</td><td>Yes</td></tr>
+    <tr><td>Add an addendum to a signed note</td><td>Any note</td><td>Any note</td><td>Any note</td><td>Any note</td><td>Dietitian notes only</td></tr>
+    <tr><td>Post updates, message patients, book appointments, add to-dos</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+    <tr><td>Remove a posted update</td><td>Any</td><td>Any</td><td>Any</td><td>Own only</td><td>Own only</td></tr>
+    <tr><td>See an appointment's change history</td><td>Yes</td><td>Yes</td><td>Yes</td><td>No</td><td>No</td></tr>
+    <tr><td>Rename a staff account</td><td>Yes</td><td>Yes</td><td>No</td><td>No</td><td>No</td></tr>
+    <tr><td>Delete an intake record or a Query</td><td>Yes</td><td>No</td><td>No</td><td>No</td><td>No</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Nobody can change, remove or rename their own account from the Staff page (use Profile). Only a super admin can grant the Admin or Super admin role or touch the admin account.</p>
+
+<h2 id="admin">4. Admin guide</h2>
+
+<h3>Signing in and staying safe</h3>
+<ul>
+  <li>Sign in with email and password. If two-step sign-in is on, enter the 6-digit code from your authenticator app.</li>
+  <li>After 15 minutes without activity a "Still there?" box appears. With no answer, you are signed out 60 seconds later.</li>
+  <li>The light and dark switch is top right, next to your account menu (Profile, Sign out).</li>
+</ul>
+
+<h3>Dashboard</h3>
+<p>Read-only totals and charts for intake submissions: how many came in, who was admitted, weight and goal ranges, reasons for visiting, and what applicants reported. Click a bar or row to see the matching applicants.</p>
+
+<h3>Applicants</h3>
+<ol>
+  <li>Open <strong>Applicants</strong>. New submissions show as Pending. Search by name or filter by status.</li>
+  <li>Click a row to read the whole intake.</li>
+  <li>Press <strong>Admit</strong> or <strong>Decline</strong> (dietitians see the status only). Admitting creates the patient's chart in one step. Declining a patient who was admitted marks the chart Inactive. Nothing is ever deleted, and Admit again reactivates the chart.</li>
+  <li><strong>Note</strong> saves a private team note on the applicant. <strong>Book appointment</strong> opens the calendar booking.</li>
+</ol>
+<p>Admitting does not email the patient or create a portal invite. Invites are sent from the chart.</p>
+
+<h3>Patients and the chart</h3>
+<p>Open <strong>Patients</strong> and click a name. Use the Active and Inactive toggle to see both groups. An inactive chart is a kept record: no new notes, invites, updates or messages until the patient is admitted again.</p>
+<p>The chart has summary cards on the left (Portal, Updates, Messages, Progress, Current prescriptions, Current exercise plan, Next follow-ups, Upcoming appointments, From the intake) and the Notes on the right.</p>
+
+<h3>Writing and signing a note</h3>
+<ol>
+  <li>On the chart, press <strong>New consultation</strong>, <strong>New progress note</strong>, <strong>New exercise note</strong> or <strong>New dietitian note</strong>. You only see the types your role may write.</li>
+  <li>Fill in the visit date, weight, next follow-up and the sections for that note type. Consultation and progress notes also take blood pressure, heart rate and prescriptions. BMI and weight change show as you type. A consultation's "Pertinent history" is pre-filled from the intake.</li>
+  <li>The note autosaves as a draft that only you can see. Close keeps it. Discard draft removes it.</li>
+  <li>Press <strong>Sign note</strong>. Signing locks it for good. It is stamped with your name, role and the time. Any later change is a dated <strong>addendum</strong>, and the original text never changes.</li>
+  <li>If the note has weight, blood pressure or heart rate, the confirmation says those numbers also go to the patient's progress chart. Tick <strong>Then share an update with the patient</strong> to post an update from the note right away.</li>
+</ol>
+
+<table>
+  <thead><tr><th>Note type</th><th>Sections</th></tr></thead>
+  <tbody>
+    <tr><td>Consultation</td><td>Reason for visit, history of present illness, pertinent history, assessment, plan</td></tr>
+    <tr><td>Progress note</td><td>Interval history, assessment, plan</td></tr>
+    <tr><td>Dietitian note</td><td>Diet history and eating pattern, assessment, goals, meal plan</td></tr>
+    <tr><td>Exercise note</td><td>Current activity, limitations, goals, plus an exercise prescription (days per week, intensity, minutes, type)</td></tr>
+  </tbody>
+</table>
+
+<h3>Prescriptions</h3>
+<p>Consultation and progress notes carry prescriptions. Add one with a medication, instructions, start date and renewal date (30, 60 or 90 days, or a date). Renew or Stop an existing one from the list of current prescriptions. The chart's Current prescriptions card shows only what signed notes have started or renewed and not stopped. Medication is always one part of the patient's care, recorded by a licensed provider as clinically appropriate.</p>
+
+<h3>Patient portal card (on the chart)</h3>
+<ol>
+  <li>Press <strong>Send portal invite</strong>. The email goes to the address on the intake. You can edit the subject and message. The link works for 7 days.</li>
+  <li>The card shows the status: not invited, sent, expired, or "Portal active since {date}".</li>
+  <li>Co-admins and above can tick "Save as the default template" to change the standard wording.</li>
+</ol>
+
+<h3>Posting an update</h3>
+<p>On the chart's Updates card, press <strong>Post an update</strong>, write up to 2,000 characters, and leave the email box ticked if the patient should be told to check their portal. The patient sees your name and role. The email never contains the update. A posted update can be removed (it disappears from the patient's view and stays on the chart marked removed), but not edited.</p>
+
+<h3>Messages (patient messages)</h3>
+<ul>
+  <li>The sidebar number is how many conversations are waiting for a reply.</li>
+  <li>Filter by Needs a reply, Open, Closed or All, or search by patient.</li>
+  <li>Open a conversation, type in "Write a reply", and press Send. The email box tells the patient there is a new message, with no content.</li>
+  <li><strong>Close topic</strong> files it away. A new message from either side reopens it. <strong>New message</strong> starts a conversation with an active patient, even one who has not joined the portal yet.</li>
+  <li>Not to be confused with <strong>Queries</strong>, the website contact form.</li>
+</ul>
+
+<h3>To-do</h3>
+<ul>
+  <li><strong>Needs doing</strong> fills itself from the charts: prescriptions due for renewal within 7 days or overdue, follow-ups due or overdue for each discipline, and patients with no signed consultation yet. Nothing is ticked by hand. Signing the note that handles an item clears it.</li>
+  <li><strong>Your list</strong> holds your own items. Add one with <strong>+ Add a to-do</strong>, optionally linked to a patient and a date, and shown to just you or to everyone. Tick to complete, Undo to restore.</li>
+</ul>
+
+<h3>Calendar</h3>
+<ul>
+  <li>All times are Tampa time. Switch between <strong>Week</strong>, <strong>Month</strong> and <strong>Agenda</strong>, and between My schedule, Everyone or one person.</li>
+  <li>To book, press <strong>New appointment</strong>, click an empty slot, or click a "Follow-up due, not booked yet" marker. Choose the patient, who it is with, the kind of visit (medical, dietitian or exercise), the date, time and length. A clash shows a warning but can still be booked.</li>
+  <li>To change one, click it, edit and Save changes. Mark it Completed or No-show, or Cancel it with an optional reason. Every change is kept, and co-admins and above can read the history.</li>
+  <li>The calendar sends no reminders.</li>
+</ul>
+
+<h3>Queries (website contact form)</h3>
+<p>Co-admin and above. New messages from the website's contact form, with a count in the sidebar. Click one to read it. There is no reply button, so answer by phone or email.</p>
+
+<h3>Analytics</h3>
+<p>Co-admin and above. Page views, "Get started" clicks, intakes opened and submitted, top pages and most-clicked links, for 7, 30 or 90 days. Counts are anonymous, use no cookies, and only include visitors who accepted the privacy banner, so real traffic is higher.</p>
+
+<h3>Staff</h3>
+<ul>
+  <li><strong>+ Add user</strong>: name, email and role. They get an email to set their own password.</li>
+  <li>The pencil changes a role (choose "No access" to remove their sign-in). The <strong>&hellip;</strong> menu has <strong>Edit name</strong> (admin and super admin), <strong>Remove access</strong> and <strong>Delete account</strong>.</li>
+  <li>Deleting removes the person from Staff. Their notes keep their name. Their login itself can only be fully deleted in the Firebase console.</li>
+</ul>
+
+<h3>Activity (super admin only)</h3>
+<p>A read-only record of who did what, newest first and capped at the latest 250 entries: opening an intake or chart, signing notes, addenda, status changes, staff changes, appointments and invites. Nobody can edit or delete an entry. Posting updates, patient messages and to-dos are not recorded here.</p>
+
+<h3>Profile</h3>
+<p>Your display name, password change, and two-step sign-in. The display name is only the label in the account menu. The name stamped on signed notes comes from the Staff page.</p>
+
+<h2 id="portal">5. Patient portal guide</h2>
+
+<h3>Getting in</h3>
+<ol>
+  <li>Staff send an invite from the patient's chart.</li>
+  <li>The patient opens the link in the email, chooses a password, and lands in their portal. The link works for 7 days and only for the email address on their intake.</li>
+  <li>Later, they use <strong>Patient portal</strong> in the site header. <strong>Forgot password?</strong> sends a reset link.</li>
+</ol>
+<p>There is no sign-up. Someone with a login but no invite sees "Your portal isn't set up yet" with contact details.</p>
+
+<h3>The four tabs</h3>
+<table>
+  <thead><tr><th>Tab</th><th>What the patient sees and does</th></tr></thead>
+  <tbody>
+    <tr><td>Overview</td><td>A short progress summary, their latest messages, and the latest update.</td></tr>
+    <tr><td>Progress</td><td>Their latest weight, change since starting and distance to goal, a weight chart, and a list of numbers from visits (weight, blood pressure, heart rate). They can <strong>Log your weight</strong> (50 to 800 lbs, within the last 30 days) and delete their own entries. Staff still see that an entry was deleted.</td></tr>
+    <tr><td>Messages</td><td>Open and Closed conversations. They can start a message, reply, and close a conversation. Writing again reopens it. A notice says to call for anything urgent and 911 in an emergency.</td></tr>
+    <tr><td>Updates</td><td>A dated list of updates from the care team, each from "Provider", "Dietitian" or "Care team".</td></tr>
+  </tbody>
+</table>
+<p>The side column shows their account, the care team's phone and email, and a note that Membership is coming.</p>
+
+<h3>What patients cannot see</h3>
+<p>Notes, prescriptions, appointments, to-dos, team notes on their application, removed updates, and other staff's messages. If a chart is made inactive, messaging closes and the portal says so.</p>
+
+<h3>Role names patients see</h3>
+<p>Provider and admin accounts show as "Provider", dietitians as "Dietitian", and co-admins and super admins as "Care team".</p>
+
+<h2 id="emails">6. What emails go out</h2>
+<table>
+  <thead><tr><th>Email</th><th>When</th><th>What it says</th></tr></thead>
+  <tbody>
+    <tr><td>Portal invite</td><td>Staff press Send portal invite</td><td>The wording staff edited, plus a "Set up your portal" button.</td></tr>
+    <tr><td>New update</td><td>Staff post an update with the box ticked</td><td>A new update is waiting, log in to read it. Never the update itself.</td></tr>
+    <tr><td>New message</td><td>Staff send a message with the box ticked</td><td>A new message is waiting, log in to read it. Never the message.</td></tr>
+    <tr><td>Team notice to info@corephia.com</td><td>A patient message makes a conversation need a reply</td><td>A patient sent a message, log in to the admin. Sent once per waiting conversation, not once per message.</td></tr>
+    <tr><td>Password reset and staff set-up</td><td>Forgot password, or a new staff account</td><td>A secure link to choose a password.</td></tr>
+  </tbody>
+</table>
+<p>No email goes out for new intake submissions, appointments, admit or decline, or to-dos. Because emails travel outside the secured system, the portal emails are deliberately content-free. The invite wording is typed by staff, so keep it plain and free of clinical details.</p>
+
+<h2 id="later">7. Not built yet</h2>
+<ul>
+  <li><strong>Membership</strong> tab in the portal (it waits on a billing system).</li>
+  <li><strong>Email alert to staff for new intake submissions.</strong> It was built and then taken out for now.</li>
+  <li><strong>Appointment reminders</strong> and patient self-booking.</li>
+  <li><strong>Video visits</strong> and dragging appointments on the calendar.</li>
+  <li>A separate <strong>exercise role</strong>. Providers write exercise notes until one exists.</li>
+  <li>Revoking an invite (an earlier link stays valid until its 7 days are up).</li>
+  <li>A Privacy Policy and Terms page for the public site.</li>
+</ul>
+
+</main>
+</body>
+</html>
