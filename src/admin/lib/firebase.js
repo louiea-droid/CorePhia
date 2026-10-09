@@ -30,6 +30,8 @@ import {
   where,
 } from "firebase/firestore"
 import { isClinicalRole } from "../staff/roles"
+import { markAdminActivity } from "./useIdleTimeout"
+import { addDays, todayInTampa } from "../calendar/calendarMath"
 
 const config = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -64,6 +66,13 @@ export const AUDIT_ACTIONS = {
   cancelAppointment: "cancel_appointment",
   updateAppointmentStatus: "update_appointment_status",
   sendPortalInvite: "send_portal_invite",
+  listIntakes: "list_intake_records",
+  signIn: "sign_in",
+  signOut: "sign_out",
+  idleSignOut: "idle_sign_out",
+  changePassword: "change_password",
+  enableTwoStep: "enable_two_step",
+  disableTwoStep: "disable_two_step",
 }
 
 // A record with no status field yet (every one submitted before this feature
@@ -94,14 +103,48 @@ export function watchAdminUser(onChange) {
   return onAuthStateChanged(auth, onChange)
 }
 
+// Set just before a real sign-in and read once by AdminApp, so "Last sign in"
+// and the audit trail count sign-ins, not every page reload of a saved session.
+// Holds the time, and only counts for 5 minutes, so a sign-in attempt that
+// failed can't make a later page reload look like a sign-in.
+const FRESH_SIGN_IN_KEY = "corephia-admin-fresh-sign-in"
+const FRESH_SIGN_IN_MS = 5 * 60 * 1000
+function markFreshSignIn() {
+  markAdminActivity()
+  try {
+    sessionStorage.setItem(FRESH_SIGN_IN_KEY, String(Date.now()))
+  } catch {
+    // Storage blocked: the sign-in still works, it just isn't stamped.
+  }
+}
+export function takeFreshSignIn() {
+  try {
+    const at = Number(sessionStorage.getItem(FRESH_SIGN_IN_KEY))
+    sessionStorage.removeItem(FRESH_SIGN_IN_KEY)
+    return at > 0 && Date.now() - at < FRESH_SIGN_IN_MS
+  } catch {
+    return false
+  }
+}
+
 export async function signInAdmin(email, password) {
   if (!auth) throw new Error("Firebase is not configured.")
+  markFreshSignIn()
   const credential = await signInWithEmailAndPassword(auth, email, password)
   return credential.user
 }
 
-export async function signOutAdmin() {
-  if (auth) await signOut(auth)
+// Logged before signing out, while the account can still write to the trail.
+export async function signOutAdmin({ idle = false } = {}) {
+  if (!auth) return
+  if (auth.currentUser) {
+    await recordAuditEvent({
+      action: idle ? AUDIT_ACTIONS.idleSignOut : AUDIT_ACTIONS.signOut,
+      targetCollection: USERS_COLLECTION,
+      targetId: auth.currentUser.uid,
+    })
+  }
+  await signOut(auth)
 }
 
 // Firebase's reset email, coming back to the admin after the CorePhia
@@ -141,6 +184,7 @@ export async function reauthenticateAdmin(currentPassword) {
 export async function updateAdminPassword(newPassword) {
   if (!auth?.currentUser) throw new Error("Firebase is not configured.")
   await updatePassword(auth.currentUser, newPassword)
+  recordAuditEvent({ action: AUDIT_ACTIONS.changePassword, targetCollection: USERS_COLLECTION, targetId: auth.currentUser.uid })
 }
 
 // The audit trail and "signed in as" always key off the account's email —
@@ -188,10 +232,14 @@ export async function finishTotpEnrollment(secret, code, displayName = "Authenti
   if (!auth?.currentUser) throw new Error("Not signed in.")
   const assertion = TotpMultiFactorGenerator.assertionForEnrollment(secret, code)
   await multiFactor(auth.currentUser).enroll(assertion, displayName)
+  recordAuditEvent({ action: AUDIT_ACTIONS.enableTwoStep, targetCollection: USERS_COLLECTION, targetId: auth.currentUser.uid })
 }
 
 export async function removeEnrolledFactor(factorUid) {
   if (!auth?.currentUser) throw new Error("Not signed in.")
+  const uid = auth.currentUser.uid
+  // Logged first: removing a factor can sign the session out.
+  await recordAuditEvent({ action: AUDIT_ACTIONS.disableTwoStep, targetCollection: USERS_COLLECTION, targetId: uid })
   await multiFactor(auth.currentUser).unenroll(factorUid)
 }
 
@@ -204,10 +252,14 @@ export function getTotpResolver(error) {
   return getMultiFactorResolver(auth, error)
 }
 
-export async function completeTotpSignIn(resolver, code) {
+// `signIn: false` when it only re-checks someone already signed in (the
+// Profile page's password change), which isn't a new sign-in to record.
+export async function completeTotpSignIn(resolver, code, { signIn = true } = {}) {
   const hint = resolver.hints.find((factor) => factor.factorId === TotpMultiFactorGenerator.FACTOR_ID)
   if (!hint) throw new Error("This account's second factor isn't an authenticator app.")
   const assertion = TotpMultiFactorGenerator.assertionForSignIn(hint.uid, code)
+  if (signIn) markFreshSignIn()
+  else markAdminActivity()
   await resolver.resolveSignIn(assertion)
 }
 
@@ -283,6 +335,14 @@ export async function loadIntakeRecords() {
   }
   if (!db) throw new Error("Firebase is not configured.")
   const snapshot = await getDocs(query(collection(db, INTAKE_COLLECTION), orderBy("submittedAt", "desc")))
+  // Every caller (Dashboard, Applicants, Analytics, the patient search) reads
+  // every applicant's record here, so the bulk read itself is logged once.
+  recordAuditEvent({
+    action: AUDIT_ACTIONS.listIntakes,
+    targetCollection: INTAKE_COLLECTION,
+    targetId: "all",
+    targetLabel: `${snapshot.size} records`,
+  })
   return snapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() }))
 }
 
@@ -307,7 +367,9 @@ export async function recordAuditEvent({ action, targetCollection, targetId, tar
       targetCollection,
       targetId,
       targetLabel,
-      at: new Date().toISOString(),
+      // The server's clock, which the rules require, so an entry can't be
+      // backdated or dated into the future.
+      at: serverTimestamp(),
     })
   } catch (cause) {
     console.error("Audit log write failed:", cause.code ?? cause.message)
@@ -320,15 +382,21 @@ export async function recordAuditEvent({ action, targetCollection, targetId, tar
 export async function loadAuditLog(entryLimit = 250) {
   if (usingSeedData) return []
   if (!db) throw new Error("Firebase is not configured.")
-  const snapshot = await getDocs(query(collection(db, AUDIT_COLLECTION), orderBy("at", "desc"), limit(entryLimit)))
+  // `at` > epoch keeps only server-timestamped entries. Entries written before
+  // 2026-10-08 stored `at` as an ISO string, which Firestore sorts after every
+  // timestamp, so they would otherwise sit on top of the list for good.
+  const snapshot = await getDocs(
+    query(collection(db, AUDIT_COLLECTION), where("at", ">", new Date(0)), orderBy("at", "desc"), limit(entryLimit)),
+  )
   return snapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() }))
 }
 
 // Anonymous page-view and click counts from the public site (lib/siteEvents.js),
-// read for the Analytics page. `day` is the visitor's local YYYY-MM-DD, so a
-// string comparison selects the window; single-field, so no composite index.
+// read for the Analytics page. `day` is Tampa's YYYY-MM-DD (older events: the
+// visitor's own), so a string comparison selects the window; single-field, so
+// no composite index.
 export async function loadSiteEvents(days = 30) {
-  const since = new Date(Date.now() - (days - 1) * 86400000).toLocaleDateString("en-CA")
+  const since = addDays(todayInTampa(), -(days - 1))
   if (usingSeedData) {
     const { sampleSiteEvents } = await import("../analytics/sampleSiteEvents")
     return sampleSiteEvents(days)

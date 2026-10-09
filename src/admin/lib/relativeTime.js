@@ -32,12 +32,14 @@ export function formatRelativeTime(iso, now) {
 // One shared ticking clock for a whole table rather than a timer per row.
 // `active` gates the interval so a table with nothing in the relative-time
 // window (e.g. page 2 of a list) doesn't re-render every second for no reason.
-export function useRelativeTimeClock(active) {
+// `everyMs` is how often it ticks: a second for "3 secs ago", slower where
+// minutes are the finest step shown.
+export function useRelativeTimeClock(active, everyMs = 1000) {
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     if (!active) return
-    const id = setInterval(() => setNow(Date.now()), 1000)
+    const id = setInterval(() => setNow(Date.now()), everyMs)
     return () => clearInterval(id)
-  }, [active])
+  }, [active, everyMs])
   return now
 }

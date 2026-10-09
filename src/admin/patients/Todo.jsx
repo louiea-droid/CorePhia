@@ -39,9 +39,6 @@ const taskLabel = (task) =>
         : `${DISCIPLINE_LABELS[task.discipline]} follow-up`
       : "First consultation"
 
-// Today as a local calendar day, YYYY-MM-DD (en-CA formats it that way).
-const localToday = () => new Date().toLocaleDateString("en-CA")
-
 // Renewals, follow-ups and first consultations due, worked out from signed
 // notes (chartMath.dueTasks). Nothing is ticked off here: signing the note
 // that renews or follows up is what clears an item, so this can't drift from
@@ -74,7 +71,8 @@ export default function Todo({ actor }) {
 
   useEffect(() => {
     let active = true
-    const today = localToday()
+    // Tampa's day, like the calendar, whatever the viewer's clock says.
+    const today = todayInTampa()
     // Appointments around the To-do window (overdue items included), so a
     // follow-up that's already booked says so.
     Promise.all([
@@ -170,7 +168,11 @@ export default function Todo({ actor }) {
           ) : (
             <div className="space-y-4">
               {groups.map((group) => (
-                <section key={group.key} aria-labelledby={`todo-${group.key}`} className="rounded-2xl border border-ink-950/10 bg-white p-5">
+                <section
+                  key={group.key}
+                  aria-labelledby={`todo-${group.key}`}
+                  className={`rounded-2xl border border-ink-950/10 bg-white p-5 ${group.key === "overdue" ? "border-l-4 border-l-accent-dark pl-4.25" : ""}`}
+                >
                   <h2
                     id={`todo-${group.key}`}
                     className={`text-sm font-semibold ${group.key === "overdue" ? "text-brand-dark" : "text-ink-950"}`}
@@ -192,7 +194,7 @@ export default function Todo({ actor }) {
                             {task.booked ? (
                               <span className="font-medium text-accent-text">Booked {formatDay(tampaParts(task.booked.start).day)}</span>
                             ) : (
-                              <span className={group.key === "overdue" ? "font-medium text-brand-dark" : undefined}>{whenLabel(task)}</span>
+                              <span className={group.key === "overdue" ? "font-semibold text-brand-dark" : undefined}>{whenLabel(task)}</span>
                             )}
                             {task.due && <span className="ml-2 text-ink-950/40">{formatDay(task.due)}</span>}
                           </span>
@@ -212,7 +214,7 @@ export default function Todo({ actor }) {
               Couldn't load your list. {todoError}
             </p>
           ) : todos ? (
-            <AddedTodos todos={todos} today={localToday()} chartIds={chartIds} actor={actor} onChange={upsertTodo}>
+            <AddedTodos todos={todos} today={todayInTampa()} chartIds={chartIds} actor={actor} onChange={upsertTodo}>
               <AddTodo actor={actor} onAdded={upsertTodo} />
             </AddedTodos>
           ) : (

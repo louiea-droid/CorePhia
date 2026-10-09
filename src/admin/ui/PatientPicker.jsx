@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { loadIntakeRecords } from "../lib/firebase"
 import { inputClass, labelClass } from "../patients/noteUi"
 
@@ -12,13 +12,18 @@ export default function PatientPicker({ value, onChange, label = "Patient or app
   const [records, setRecords] = useState(null)
   const [search, setSearch] = useState("")
 
+  // One load at a time (focus and each keystroke both ask before the first
+  // finishes). A failed load is tried again next time instead of showing
+  // "no matches" for good.
+  const loading = useRef(false)
   const load = () => {
-    if (records) return
+    if (records || loading.current) return
+    loading.current = true
     loadIntakeRecords()
       .then((all) => setRecords(all.filter((record) => record.status !== "declined")))
-      .catch((cause) => {
-        console.error("Patient list failed:", cause.code ?? cause.message)
-        setRecords([])
+      .catch((cause) => console.error("Patient list failed:", cause.code ?? cause.message))
+      .finally(() => {
+        loading.current = false
       })
   }
 

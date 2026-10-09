@@ -6,7 +6,18 @@ import Activity from "./staff/Activity"
 import Calendar from "./calendar/Calendar"
 import Dashboard from "./dashboard/Dashboard"
 import Help from "./help/Help"
-import { getAdminAccess, isConfigured, recordSignIn, signOutAdmin, usingSeedData, watchAdminUser } from "./lib/firebase"
+import {
+  AUDIT_ACTIONS,
+  USERS_COLLECTION,
+  getAdminAccess,
+  isConfigured,
+  recordAuditEvent,
+  recordSignIn,
+  signOutAdmin,
+  takeFreshSignIn,
+  usingSeedData,
+  watchAdminUser,
+} from "./lib/firebase"
 import IdleWarningModal from "./layout/IdleWarningModal"
 import { MenuIcon } from "./ui/icons"
 import Loader from "./ui/Loader"
@@ -62,7 +73,7 @@ function AdminRoutes({ role, signerName, user, displayName, onDisplayNameChange,
   )
   return (
     <Routes>
-      <Route path="/admin" element={guard("dashboard", <Dashboard />)} />
+      <Route path="/admin" element={guard("dashboard", <Dashboard actor={actor} />)} />
       <Route path="/admin/applicants" element={guard("applicants", <Applicants role={role} actor={actor} />)} />
       <Route path="/admin/patients" element={guard("patients", <Patients actor={actor} />)} />
       <Route path="/admin/patients/:chartId" element={guard("patients", <PatientChart actor={actor} />)} />
@@ -83,8 +94,10 @@ function AdminRoutes({ role, signerName, user, displayName, onDisplayNameChange,
       <Route path="/admin/activity" element={guard("activity", <Activity role={role} />)} />
       <Route
         path="/admin/security"
-        element={<Security user={user} role={role} displayName={displayName} onDisplayNameChange={onDisplayNameChange} />}
+        element={<Security user={user} uid={actor.uid} role={role} displayName={displayName} onDisplayNameChange={onDisplayNameChange} />}
       />
+      {/* A mistyped or old admin address goes to the dashboard, not a blank page. */}
+      <Route path="*" element={<Navigate to="/admin" replace />} />
     </Routes>
   )
 }
@@ -138,7 +151,13 @@ function AdminChrome({ user, role, displayName, messagesViewedAt, theme, onToggl
             phones, each page's sticky PageHeader on desktop. */}
         <div className="absolute top-2 right-4 z-20 flex items-center gap-2 sm:right-6">
           <ThemeSwitch theme={theme} onToggle={onToggleTheme} />
-          <AccountMenu user={user} role={role} displayName={displayName} onSignOut={onSignOut} />
+          <AccountMenu
+            user={user}
+            uid={user?.uid ?? DEMO_ACTORS[role]?.uid ?? "demo"}
+            role={role}
+            displayName={displayName}
+            onSignOut={onSignOut}
+          />
         </div>
         <div className="flex shrink-0 items-center gap-3 border-b border-ink-950/10 bg-white px-4 py-3 lg:hidden">
           <button
@@ -245,7 +264,7 @@ export default function AdminApp() {
 
   const idleEnabled = isConfigured && !usingSeedData && !checkingAuth && Boolean(user) && Boolean(role)
   const handleIdle = useCallback(() => {
-    signOutAdmin()
+    signOutAdmin({ idle: true })
   }, [])
   const idleWarningSecondsLeft = useIdleTimeout({
     enabled: idleEnabled,
@@ -256,7 +275,11 @@ export default function AdminApp() {
 
   useEffect(() => {
     if (!isConfigured) return
+    // A quick sign-out and sign-in as someone else could let the first
+    // person's slower role lookup land last. Only the newest lookup counts.
+    let latestLookup = 0
     return watchAdminUser(async (nextUser) => {
+      const lookup = ++latestLookup
       // setUser and the awaited setRole land as two separate renders, not one
       // batched update — without re-arming checkingAuth here, sign-in briefly
       // renders with a user but last render's stale (null) role, which used
@@ -266,7 +289,13 @@ export default function AdminApp() {
       setUser(nextUser)
       setDisplayName(nextUser?.displayName ?? null)
       const access = nextUser ? await getAdminAccess(nextUser) : { role: null, name: null }
-      if (nextUser && access.role) recordSignIn(nextUser.uid)
+      if (lookup !== latestLookup) return
+      // A real sign-in, not a saved session reopening: stamp "Last sign in"
+      // and log it.
+      if (nextUser && access.role && takeFreshSignIn()) {
+        recordSignIn(nextUser.uid)
+        recordAuditEvent({ action: AUDIT_ACTIONS.signIn, targetCollection: USERS_COLLECTION, targetId: nextUser.uid })
+      }
       setRole(access.role)
       setSignerName(access.name)
       setCheckingAuth(false)

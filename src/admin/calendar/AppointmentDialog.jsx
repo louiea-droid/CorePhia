@@ -11,6 +11,7 @@ import PatientPicker from "../ui/PatientPicker"
 import { CloseIcon } from "../ui/icons"
 import { DISCIPLINE_LABELS, formatStamp, inputClass, labelClass } from "../patients/noteUi"
 import { getAdminPortalRoot } from "../ui/portalRoot"
+import { useDialog } from "../ui/useDialog"
 import { ROLE_LABELS, canSeeAppointmentHistory, isClinicalRole, staffDisplayName } from "../staff/roles"
 
 const COMPACT = "px-3 py-2 text-sm"
@@ -119,13 +120,7 @@ export default function AppointmentDialog({ appointment, prefill = {}, actor, on
     }
   }, [form.day])
 
-  useEffect(() => {
-    const onKeyDown = (event) => {
-      if (event.key === "Escape" && !event.defaultPrevented && !busy) onClose()
-    }
-    document.addEventListener("keydown", onKeyDown)
-    return () => document.removeEventListener("keydown", onKeyDown)
-  }, [busy, onClose])
+  useDialog({ onClose, closable: !busy })
 
   const start = fromTampa(form.day, form.time)
   const clashes = overlaps({ id: appointment?.id, staffUid: form.staffUid, start, minutes: form.minutes }, sameDay)

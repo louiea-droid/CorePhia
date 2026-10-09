@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react"
 import { Link } from "react-router-dom"
+import Avatar from "../ui/Avatar"
 import ConfirmDialog from "../ui/ConfirmDialog"
+import { useStaffPhotos } from "../lib/staffPhotos"
 import { signOutAdmin } from "../lib/firebase"
 import { ROLE_LABELS } from "../staff/roles"
 import { ChevronLeftIcon, PersonIcon, SignOutIcon } from "../ui/icons"
@@ -19,7 +21,8 @@ const nameFromEmail = (email = "") =>
 // Top-right account button: who is signed in, plus Profile (display name,
 // password, two-step sign-in) and sign out. A disclosure (button + plain links), not an ARIA menu, so Tab
 // moves through it the way it does everywhere else in the admin.
-export default function AccountMenu({ user, role, displayName, onSignOut = signOutAdmin }) {
+export default function AccountMenu({ user, uid, role, displayName, onSignOut = signOutAdmin }) {
+  const photo = useStaffPhotos().get(uid)
   const [open, setOpen] = useState(false)
   const [confirmingSignOut, setConfirmingSignOut] = useState(false)
   const rootRef = useRef(null)
@@ -66,9 +69,13 @@ export default function AccountMenu({ user, role, displayName, onSignOut = signO
         aria-label={`Account: ${name}${roleLabel ? `, ${roleLabel}` : ""}`}
         className="flex cursor-pointer items-center gap-2.5 rounded-full border border-ink-950/10 bg-white py-1 pr-3 pl-1 transition-colors duration-200 hover:bg-paper-100"
       >
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-accent-dark/15 text-accent-text">
-          <PersonIcon className="size-4" />
-        </span>
+        {photo ? (
+          <Avatar photo={photo} className="size-8" />
+        ) : (
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-accent-dark/15 text-accent-text">
+            <PersonIcon className="size-4" />
+          </span>
+        )}
         {buttonName && (
           <span className="hidden min-w-0 flex-col items-start text-left leading-tight sm:flex">
             <span className="max-w-44 truncate text-sm font-semibold text-ink-950">{buttonName}</span>

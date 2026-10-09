@@ -40,12 +40,13 @@ const PAGE_ROLES = {
 export const canOpen = (page, role) => PAGE_ROLES[page]?.includes(role) ?? false
 
 // Which note types a role may write and sign. Mirrors canWriteType in
-// firestore.rules. The admin (Dr. Antonious) also writes dietitian notes.
+// firestore.rules. The admin (Dr. Antonious) and the super admin also write
+// dietitian notes (Louie, 2026-10-08).
 const NOTE_WRITERS = {
   consultation: PRESCRIBERS,
   progress: PRESCRIBERS,
   exercise: PRESCRIBERS,
-  dietitian: ["dietitian", "admin"],
+  dietitian: ["dietitian", "admin", "superAdmin"],
 }
 
 export const canWriteNote = (type, role) => NOTE_WRITERS[type]?.includes(role) ?? false
@@ -67,7 +68,14 @@ export const canSeeAppointmentHistory = (role) => STAFF_ROLES.includes(role)
 
 // Renaming someone else's staff record: admin and super admin only, and only
 // accounts they can already manage. Mirrors the name check in isRoleChange.
-export const canRenameMember = (viewer, member) => ["admin", "superAdmin"].includes(viewer.role) && canManageMember(viewer, member)
+export const canRenameMember = (viewer, member) => canNameStaff(viewer.role) && canManageMember(viewer, member)
+
+// Setting the name a staff account signs notes with, including when adding
+// it: admin and super admin only, so nobody else can create an account that
+// signs as someone else. Mirrors the name check in isRoleChange.
+export function canNameStaff(role) {
+  return ["admin", "superAdmin"].includes(role)
+}
 
 // The roles a signed-in person may hand out on the Staff page. Only a super
 // admin grants admin or super admin.

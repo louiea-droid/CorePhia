@@ -5,6 +5,7 @@ import { PAGE_SIZE_OPTIONS } from "../lib/constants"
 import { AUDIT_ACTIONS, INTAKE_COLLECTION, recordAuditEvent } from "../lib/firebase"
 import PageHeader from "../layout/PageHeader"
 import Pagination from "../ui/Pagination"
+import SampleDataNotice from "../ui/SampleDataNotice"
 import ApplicantModal from "./ApplicantModal"
 import ApplicantsTable from "./ApplicantsTable"
 import AppointmentDialog from "../calendar/AppointmentDialog"
@@ -178,6 +179,7 @@ export default function Applicants({ role, actor }) {
     // header, the search/filter row and pagination never move.
     <div className="flex h-full flex-col">
       <PageHeader title="Applicants" description="Everyone who has submitted the intake form. Review each one, then admit or decline." />
+      {usingSampleFallback && <SampleDataNotice />}
 
       {error ? (
         <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-ink-950/10 bg-white p-6 text-center">
@@ -295,7 +297,13 @@ export default function Applicants({ role, actor }) {
           onClose={() => setBooking(null)}
           onSaved={(saved) => {
             setBooking(null)
-            setNextVisitFor({ id: saved.intakeId, visit: saved })
+            // The next visit is the earlier of the one already shown and the
+            // one just booked, not simply the newest booking.
+            setNextVisitFor((current) =>
+              current?.id === saved.intakeId && current.visit && asDate(current.visit.start) < asDate(saved.start)
+                ? current
+                : { id: saved.intakeId, visit: saved },
+            )
           }}
         />
       )}

@@ -1,20 +1,14 @@
-import { useEffect, useRef } from "react"
+import { useRef } from "react"
 import { createPortal } from "react-dom"
 import { CloseIcon } from "./icons"
 import { getAdminPortalRoot } from "./portalRoot"
+import { useDialog } from "./useDialog"
 
-// A small admin dialog: scrim, title, close button, Escape to close (unless a
-// popup inside already handled it), and focus on the close button to start.
+// A small admin dialog: scrim, title, close button, Escape to close (see
+// useDialog), and focus on the close button to start.
 export default function Modal({ title, onClose, children, footer, busy = false }) {
   const closeRef = useRef(null)
-  useEffect(() => {
-    closeRef.current?.focus()
-    const onKeyDown = (event) => {
-      if (event.key === "Escape" && !event.defaultPrevented && !busy) onClose()
-    }
-    document.addEventListener("keydown", onKeyDown)
-    return () => document.removeEventListener("keydown", onKeyDown)
-  }, [busy, onClose])
+  useDialog({ onClose, focusRef: closeRef, closable: !busy })
 
   return createPortal(
     <div className="fixed inset-0 z-50 overflow-y-auto [scrollbar-gutter:stable_both-edges]" role="presentation">

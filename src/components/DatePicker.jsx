@@ -14,8 +14,12 @@ const MONTH_LABELS = Array.from({ length: 12 }, (_, index) =>
 )
 const YEARS_PER_PAGE = 12
 
+// Built from the local year, month and day. toISOString() is UTC, so after
+// about 8pm in Tampa it names tomorrow, and anywhere east of UTC it names
+// yesterday, which saved the wrong day for "Today" and for every pick abroad.
 function toIso(date) {
-  return date.toISOString().slice(0, 10)
+  const pad = (number) => String(number).padStart(2, "0")
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }
 
 function fromIso(value) {
@@ -77,6 +81,7 @@ export default function DatePicker({
   defaultValue = "",
   required = false,
   min,
+  max,
   value: controlledValue,
   onChange,
   triggerClassName = "px-4 py-3.5",
@@ -96,7 +101,10 @@ export default function DatePicker({
   const rootRef = useRef(null)
   const inputRef = useRef(null)
   const minDate = min ? fromIso(min) : null
+  const maxDate = max ? fromIso(max) : null
   const today = new Date()
+  // A day outside min..max can't be picked.
+  const outOfRange = (date) => Boolean((minDate && date < minDate) || (maxDate && date > maxDate))
 
   // Same outside-set hook as Select (see SET_VALUE_EVENT there).
   useLayoutEffect(() => {
@@ -148,7 +156,7 @@ export default function DatePicker({
   }
 
   const pick = (date) => {
-    if (minDate && date < minDate) return
+    if (outOfRange(date)) return
     setValue(toIso(date))
     setMode("days")
     setOpen(false)
@@ -167,6 +175,7 @@ export default function DatePicker({
         name={name}
         required={required}
         min={min}
+        max={max}
         value={value}
         onChange={() => {}}
         tabIndex={-1}
@@ -275,7 +284,7 @@ export default function DatePicker({
                 const inMonth = date.getMonth() === viewDate.getMonth()
                 const isToday = sameDay(date, today)
                 const isSelected = selected && sameDay(date, selected)
-                const disabled = minDate && date < minDate
+                const disabled = outOfRange(date)
                 return (
                   <button
                     key={date.toISOString()}
@@ -346,7 +355,8 @@ export default function DatePicker({
             <button
               type="button"
               onClick={() => pick(today)}
-              className="text-accent-text transition-opacity duration-150 hover:opacity-70"
+              disabled={outOfRange(today)}
+              className="text-accent-text transition-opacity duration-150 hover:opacity-70 disabled:opacity-30"
             >
               Today
             </button>

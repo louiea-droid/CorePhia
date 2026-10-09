@@ -29,13 +29,21 @@ const ACTION_LABELS = {
   [AUDIT_ACTIONS.cancelAppointment]: "Cancelled an appointment",
   [AUDIT_ACTIONS.updateAppointmentStatus]: "Marked an appointment",
   [AUDIT_ACTIONS.sendPortalInvite]: "Sent a portal invite",
+  [AUDIT_ACTIONS.listIntakes]: "Opened the applicant list",
+  [AUDIT_ACTIONS.signIn]: "Signed in",
+  [AUDIT_ACTIONS.signOut]: "Signed out",
+  [AUDIT_ACTIONS.idleSignOut]: "Signed out after 15 minutes idle",
+  [AUDIT_ACTIONS.changePassword]: "Changed their password",
+  [AUDIT_ACTIONS.enableTwoStep]: "Turned on two-step sign-in",
+  [AUDIT_ACTIONS.disableTwoStep]: "Turned off two-step sign-in",
 }
 
 const DESTRUCTIVE_ACTIONS = new Set([AUDIT_ACTIONS.deleteIntake, AUDIT_ACTIONS.deleteMessage, AUDIT_ACTIONS.deleteStaff])
 
-function formatTimestamp(iso) {
-  const date = new Date(iso)
-  if (Number.isNaN(date.getTime())) return iso
+// `at` is a Firestore Timestamp (server time).
+function formatTimestamp(value) {
+  const date = typeof value?.toDate === "function" ? value.toDate() : new Date(value)
+  if (Number.isNaN(date.getTime())) return ""
   return date.toLocaleString("en-US", {
     month: "short",
     day: "numeric",

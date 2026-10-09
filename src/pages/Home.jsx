@@ -8,7 +8,7 @@ export default function Home() {
   return (
     <>
       <Helmet>
-        <title>CorePhia</title>
+        <title>CorePhia | Physician-Built Weight Loss Program in Tampa</title>
         <meta
           name="description"
           content="CorePhia builds personalized weight loss programs around real dietitian services, structured exercise, and physician-guided medical care. Start your program today."

@@ -116,8 +116,11 @@ describe("roles", () => {
   test("the admin can remove a co-admin", async () => {
     await assertSucceeds(updateDoc(doc(as("admin"), "user", "coadmin"), { role: "" }))
   })
-  test("a co-admin can add providers and co-admins", async () => {
-    await assertSucceeds(setDoc(doc(as("coadmin"), "user", "newbie"), { role: "coAdmin", name: "N" }))
+  test("a co-admin can add providers and co-admins, but not name them", async () => {
+    // A name is what signed notes carry, so only the admin tiers set it.
+    await assertFails(setDoc(doc(as("coadmin"), "user", "named"), { role: "provider", name: "Dr. Daniel Antonious" }))
+    await assertSucceeds(setDoc(doc(as("admin"), "user", "named"), { role: "provider", name: "Jordan Lee, NP" }))
+    await assertSucceeds(setDoc(doc(as("coadmin"), "user", "newbie"), { role: "coAdmin" }))
   })
   test("a co-admin can't touch the admin or another co-admin", async () => {
     await assertFails(updateDoc(doc(as("coadmin"), "user", "admin"), { role: "" }))
@@ -337,8 +340,9 @@ describe("dietitian and exercise notes", () => {
     await assertFails(setDoc(doc(db, "patients/chart1/notes/d2"), draft("dietitian", "dietitian", { type: "progress" })))
     await assertFails(setDoc(doc(db, "patients/chart1/notes/d3"), draft("dietitian", "dietitian", { type: "exercise", exercisePlan: plan() })))
   })
-  test("the admin writes dietitian notes; a provider can't", async () => {
+  test("the admin and super admin write dietitian notes; a provider can't", async () => {
     await assertSucceeds(setDoc(doc(as("admin"), "patients/chart1/notes/a1"), draft("admin", "admin", { type: "dietitian" })))
+    await assertSucceeds(setDoc(doc(as("super"), "patients/chart1/notes/s1"), draft("super", "superAdmin", { type: "dietitian" })))
     await assertFails(setDoc(doc(as("provider"), "patients/chart1/notes/p1"), draft("provider", "provider", { type: "dietitian" })))
   })
   test("a provider can't sign a dietitian draft, even their own after a role change", async () => {
@@ -1054,5 +1058,135 @@ describe("portal messages", () => {
   test("a patient reads their own chart record, not anyone else's", async () => {
     await assertSucceeds(getDoc(doc(asPatient("patient1", "p1@x.co"), "patients", "chart1")))
     await assertFails(getDoc(doc(asPatient("patient1", "p1@x.co"), "patients", "inactive1")))
+  })
+})
+
+describe("audit log", () => {
+  const withEmail = (uid, email) => env.authenticatedContext(uid, { email }).firestore()
+  const entry = (overrides = {}) => ({
+    actorUid: "provider",
+    actorEmail: "provider@x.co",
+    action: "view_patient_chart",
+    targetCollection: "patients",
+    targetId: "chart1",
+    targetLabel: "Test Patient",
+    at: serverTimestamp(),
+    ...overrides,
+  })
+
+  test("staff write their own entry with the server's time", async () => {
+    await assertSucceeds(setDoc(doc(withEmail("provider", "provider@x.co"), "auditLog", "a1"), entry()))
+  })
+  test("an entry can't claim someone else's email, a client time or an unknown action", async () => {
+    const db = withEmail("provider", "provider@x.co")
+    await assertFails(setDoc(doc(db, "auditLog", "a2"), entry({ actorEmail: "admin@x.co" })))
+    await assertFails(setDoc(doc(db, "auditLog", "a3"), entry({ at: new Date("2099-01-01") })))
+    await assertFails(setDoc(doc(db, "auditLog", "a4"), entry({ at: "2026-01-01T00:00:00Z" })))
+    await assertFails(setDoc(doc(db, "auditLog", "a5"), entry({ action: "made_up" })))
+    await assertFails(setDoc(doc(db, "auditLog", "a6"), entry({ actorUid: "admin" })))
+  })
+  test("entries are append-only and only the super admin reads them", async () => {
+    await assertSucceeds(setDoc(doc(withEmail("provider", "provider@x.co"), "auditLog", "a7"), entry()))
+    await assertFails(updateDoc(doc(as("super"), "auditLog", "a7"), { targetLabel: "x" }))
+    await assertFails(deleteDoc(doc(as("super"), "auditLog", "a7")))
+    await assertFails(getDoc(doc(as("admin"), "auditLog", "a7")))
+    await assertSucceeds(getDoc(doc(as("super"), "auditLog", "a7")))
+  })
+})
+describe("public intake and contact forms", () => {
+  const visitor = () => env.unauthenticatedContext().firestore()
+  // The shape PatientIntakeForm.buildIntakeRecord sends.
+  const intake = (overrides = {}) => ({
+    submittedAt: "2026-10-08T14:03:09.123Z",
+    demographics: {
+      firstName: "Test",
+      lastName: "Patient",
+      dateOfBirth: "1980-03-15",
+      sexAssignedAtBirth: "Female",
+      phone: "8135550100",
+      email: "test@x.co",
+      address: { line1: "", city: "Tampa", state: "FL", postalCode: "33601" },
+    },
+    vitals: { heightFeet: "5", heightInches: "6", currentWeightLb: "210", goalWeightLb: "170" },
+    medicalHistory: { conditions: ["None of the above"], medications: "", allergies: "", surgeries: "", priorWeightLossTreatment: "No", medicationInterest: "unsure" },
+    familyHistory: { conditions: [], notes: "" },
+    socialHistory: { tobacco: "Never", alcohol: "None", exerciseFrequency: "Rarely" },
+    nutrition: { waterIntake: "", estimatedDailyCalories: "", estimatedDailyCaloriesRange: "Not sure", mealsPerDay: "3", dietNotes: "" },
+    visit: { membershipPlan: "", reason: "Weight loss", preferredDate: "2026-10-20", preferredTime: "Morning", notes: "" },
+    consent: { telehealth: true, hipaaAcknowledged: true, signature: "Test Patient", signedOn: "2026-10-08" },
+    ...overrides,
+  })
+  const contact = (overrides = {}) => ({
+    name: "Visitor",
+    phone: "8135550100",
+    email: "v@x.co",
+    interest: "General question",
+    message: "Hello",
+    submittedAt: "2026-10-08T14:03:09.123Z",
+    ...overrides,
+  })
+
+  test("the intake form's own record is accepted", async () => {
+    await assertSucceeds(setDoc(doc(visitor(), "intakeRecords", "i1"), intake()))
+  })
+  test("an intake can't carry values that break the admin", async () => {
+    await assertFails(setDoc(doc(visitor(), "intakeRecords", "i2"), intake({ submittedAt: "2099-01-01" })))
+    await assertFails(setDoc(doc(visitor(), "intakeRecords", "i3"), intake({ submittedAt: {} })))
+    await assertFails(setDoc(doc(visitor(), "intakeRecords", "i4"), intake({ medicalHistory: { conditions: { x: 1 } } })))
+    await assertFails(setDoc(doc(visitor(), "intakeRecords", "i5"), intake({ vitals: "tall" })))
+    await assertFails(
+      setDoc(doc(visitor(), "intakeRecords", "i6"), intake({ demographics: { ...intake().demographics, dateOfBirth: "03/15/1980" } })),
+    )
+    await assertFails(setDoc(doc(visitor(), "intakeRecords", "i7"), intake({ emergencyContact: { name: "X" } })))
+  })
+  test("a contact message needs the form's time format", async () => {
+    await assertSucceeds(setDoc(doc(visitor(), "contactMessages", "c1"), contact()))
+    await assertFails(setDoc(doc(visitor(), "contactMessages", "c2"), contact({ submittedAt: "2099-01-01" })))
+  })
+})
+describe("site events", () => {
+  const visitor = () => env.unauthenticatedContext().firestore()
+  const event = (overrides = {}) => ({ type: "pageview", path: "/about", label: "", day: "2026-10-08", at: serverTimestamp(), ...overrides })
+
+  test("an anonymous page view or click is accepted in exactly that shape", async () => {
+    await assertSucceeds(setDoc(doc(visitor(), "siteEvents", "e1"), event()))
+    await assertSucceeds(setDoc(doc(visitor(), "siteEvents", "e2"), event({ type: "click", label: "Get started" })))
+  })
+  test("nothing from the account, admin or inside the intake, and no extra fields", async () => {
+    await assertFails(setDoc(doc(visitor(), "siteEvents", "e3"), event({ path: "/admin/patients" })))
+    await assertFails(setDoc(doc(visitor(), "siteEvents", "e4"), event({ path: "/account" })))
+    await assertFails(setDoc(doc(visitor(), "siteEvents", "e5"), event({ type: "click", path: "/intake" })))
+    await assertSucceeds(setDoc(doc(visitor(), "siteEvents", "e6"), event({ path: "/intake" })))
+    await assertFails(setDoc(doc(visitor(), "siteEvents", "e7"), event({ email: "x@x.co" })))
+    await assertFails(setDoc(doc(visitor(), "siteEvents", "e8"), event({ at: new Date("2026-01-01") })))
+  })
+  test("only co-admin and up read them, and nobody edits them", async () => {
+    await assertSucceeds(setDoc(doc(visitor(), "siteEvents", "e9"), event()))
+    await assertFails(getDoc(doc(visitor(), "siteEvents", "e9")))
+    await assertFails(getDoc(doc(as("provider"), "siteEvents", "e9")))
+    await assertSucceeds(getDoc(doc(as("coadmin"), "siteEvents", "e9")))
+    await assertFails(deleteDoc(doc(as("super"), "siteEvents", "e9")))
+  })
+})
+describe("staff photos", () => {
+  const photo = (overrides = {}) => ({ image: "data:image/jpeg;base64,/9j/4AAQSkZJRg==", updatedAt: serverTimestamp(), ...overrides })
+
+  test("staff set, change and remove their own photo, and the team sees it", async () => {
+    await assertSucceeds(setDoc(doc(as("provider"), "staffPhotos", "provider"), photo()))
+    await assertSucceeds(setDoc(doc(as("provider"), "staffPhotos", "provider"), photo({ image: "data:image/jpeg;base64,AAAA" })))
+    await assertSucceeds(getDoc(doc(as("dietitian"), "staffPhotos", "provider")))
+    await assertSucceeds(deleteDoc(doc(as("provider"), "staffPhotos", "provider")))
+  })
+  test("nobody sets someone else's photo, and only small JPEG data is accepted", async () => {
+    await assertFails(setDoc(doc(as("super"), "staffPhotos", "provider"), photo()))
+    await assertFails(setDoc(doc(as("provider"), "staffPhotos", "provider"), photo({ image: "https://example.com/a.jpg" })))
+    await assertFails(setDoc(doc(as("provider"), "staffPhotos", "provider"), photo({ image: `data:image/jpeg;base64,${"A".repeat(140000)}` })))
+    await assertFails(setDoc(doc(as("provider"), "staffPhotos", "provider"), photo({ caption: "hi" })))
+    await assertFails(setDoc(doc(as("provider"), "staffPhotos", "provider"), photo({ updatedAt: new Date("2020-01-01") })))
+  })
+  test("signed-out visitors and patients can't read staff photos", async () => {
+    await assertSucceeds(setDoc(doc(as("provider"), "staffPhotos", "provider"), photo()))
+    await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), "staffPhotos", "provider")))
+    await assertFails(getDoc(doc(asPatient("patient1", "p1@x.co"), "staffPhotos", "provider")))
   })
 })

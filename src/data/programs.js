@@ -168,7 +168,7 @@ export const programs = [
     faqs: [
       {
         q: "How often are follow-ups?",
-        a: "Your provider sets a schedule that fits your plan. How often you check in depends on your membership, shown in the pricing below.",
+        a: "Your provider sets a schedule that fits your plan. How often you check in depends on your membership, which is listed on the membership page.",
       },
       {
         q: "What happens at a follow-up?",

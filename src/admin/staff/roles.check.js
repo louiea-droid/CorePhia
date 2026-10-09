@@ -7,6 +7,7 @@ import {
   canRemoveUpdate,
   canAmend,
   canManageMember,
+  canNameStaff,
   canOpen,
   canRenameMember,
   canSeeAppointmentHistory,
@@ -21,10 +22,14 @@ assert.equal(isClinicalRole("dietitian"), true)
 for (const page of ["dashboard", "applicants", "patients", "todo", "calendar", "security"]) assert.equal(canOpen(page, "dietitian"), true, page)
 for (const page of ["messages", "analytics", "staff", "activity"]) assert.equal(canOpen(page, "dietitian"), false, page)
 
+// Naming a staff account (what their signed notes carry): admin tiers only.
+for (const role of ["admin", "superAdmin"]) assert.equal(canNameStaff(role), true, role)
+for (const role of ["coAdmin", "provider", "dietitian", ""]) assert.equal(canNameStaff(role), false, role)
+
 // Who writes which note type.
 assert.equal(canWriteNote("dietitian", "dietitian"), true)
-assert.equal(canWriteNote("dietitian", "admin"), true)
-for (const role of ["provider", "coAdmin", "superAdmin"]) assert.equal(canWriteNote("dietitian", role), false, role)
+for (const role of ["admin", "superAdmin"]) assert.equal(canWriteNote("dietitian", role), true, role)
+for (const role of ["provider", "coAdmin"]) assert.equal(canWriteNote("dietitian", role), false, role)
 for (const type of ["consultation", "progress", "exercise"]) {
   assert.equal(canWriteNote(type, "dietitian"), false, type)
   for (const role of ["provider", "coAdmin", "admin", "superAdmin"]) assert.equal(canWriteNote(type, role), true, `${type} ${role}`)

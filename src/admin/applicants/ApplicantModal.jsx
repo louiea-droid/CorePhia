@@ -4,6 +4,7 @@ import { createPortal } from "react-dom"
 import { AUDIT_ACTIONS, INTAKE_COLLECTION, recordAuditEvent } from "../lib/firebase"
 import { CloseIcon, NoteIcon, TrashIcon } from "../ui/icons"
 import { getAdminPortalRoot } from "../ui/portalRoot"
+import { useDialog } from "../ui/useDialog"
 
 // Every active colour here is deliberately one that .dark does NOT redefine,
 // because these three sit side by side: ink-950 was tried for pending and
@@ -25,12 +26,23 @@ const STATUS_BADGE = {
 
 function formatDate(value, options) {
   if (!value) return null
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString("en-US", options)
+  // A bare YYYY-MM-DD (date of birth, preferred date, signed on) is a calendar
+  // day. new Date() would read it as UTC midnight, which is the evening before
+  // in Tampa, so build it in local time instead.
+  const day = typeof value === "string" && /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  const date = day ? new Date(Number(day[1]), Number(day[2]) - 1, Number(day[3])) : new Date(value)
+  // Unreadable: show the raw text, never an object (React can't render one).
+  if (Number.isNaN(date.getTime())) return typeof value === "string" ? value : null
+  return date.toLocaleDateString("en-US", options)
 }
 
+// Only text, numbers and lists of them are shown. The intake endpoint is
+// public, so a record a script wrote with an object here would otherwise
+// crash the whole Applicants page when React tried to render it.
+const printable = (item) => typeof item === "string" || typeof item === "number"
+
 function Field({ label, value, span }) {
-  const display = Array.isArray(value) ? value.filter(Boolean).join(", ") : value
+  const display = Array.isArray(value) ? value.filter((item) => printable(item) && item !== "").join(", ") : printable(value) ? value : null
   return (
     <div className={span ? "col-span-2" : ""}>
       <p className="text-xs font-medium tracking-wide text-ink-950/45 uppercase">{label}</p>
@@ -155,25 +167,13 @@ export default function ApplicantModal({
     })
   }, [record, audit])
 
-  useEffect(() => {
-    if (!open) return
-    closeButtonRef.current?.focus()
-    document.body.style.overflow = "hidden"
-
-    const onKeyDown = (event) => {
-      if (event.key === "Escape") onClose()
-    }
-    document.addEventListener("keydown", onKeyDown)
-
-    return () => {
-      document.body.style.overflow = ""
-      document.removeEventListener("keydown", onKeyDown)
-    }
-  }, [open, onClose])
+  useDialog({ open, onClose, focusRef: closeButtonRef })
 
   if (!record) return null
 
-  const { demographics, emergencyContact, insurance, vitals, medicalHistory } = record
+  // No emergency contact: Dr. Antonious asked for it to be dropped (2026-10-08),
+  // so it isn't shown even on older records that have one.
+  const { demographics, insurance, vitals, medicalHistory } = record
   const { familyHistory, socialHistory, nutrition, visit, consent } = record
   const fullName = [demographics?.firstName, demographics?.lastName].filter(Boolean).join(" ") || "Applicant"
   const address = demographics?.address ?? {}
@@ -350,12 +350,6 @@ export default function ApplicantModal({
               <Field label="Address" value={address.line1} span />
               <Field label="City, state" value={cityState} />
               <Field label="Postal code" value={address.postalCode} />
-            </Section>
-
-            <Section title="Emergency contact">
-              <Field label="Name" value={emergencyContact?.name} />
-              <Field label="Relationship" value={emergencyContact?.relationship} />
-              <Field label="Phone" value={emergencyContact?.phone} span />
             </Section>
 
             {/* CorePhia is cash only and the intake no longer asks about

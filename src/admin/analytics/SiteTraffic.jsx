@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react"
 import { BarList, Card, ColumnChart, StatTile } from "../ui/charts"
 import { loadSiteEvents } from "../lib/firebase"
+import { TIME_ZONE, addDays, todayInTampa } from "../calendar/calendarMath"
 import PageHeader from "../layout/PageHeader"
 import { BarListSkeleton, ColumnChartSkeleton, StatTileSkeleton } from "../ui/Skeleton"
 import { useIntakeRecords } from "../applicants/useIntakeRecords"
 
 const RANGES = [7, 30, 90]
-const DAY = 86400000
 
 // Readable names for paths, so the table says "Membership" rather than "/membership".
 const PAGE_NAMES = {
@@ -37,7 +37,10 @@ const REDIRECT_ONLY = new Set(["/pricing"])
 // "Most clicked". Still stored, just not ranked.
 const CHROME_LABELS = new Set(["Open menu", "Close menu", "Back to menu", "Close", "Show password", "Hide password"])
 
-const dayOf = (offset) => new Date(Date.now() - offset * DAY).toLocaleDateString("en-CA")
+// Tampa calendar days, stepped as dates rather than 24-hour blocks, so the day
+// after a clock change doesn't repeat one day and drop another.
+const dayOf = (offset) => addDays(todayInTampa(), -offset)
+const tampaDay = (value) => new Date(value).toLocaleDateString("en-CA", { timeZone: TIME_ZONE })
 const shortDate = (day) => new Date(`${day}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" })
 
 function tally(values) {
@@ -46,9 +49,10 @@ function tally(values) {
   return [...counts.entries()].map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value)
 }
 
+// The same calendar-day window as the page views beside it.
 function submittedSince(records, days) {
-  const cutoff = Date.now() - days * DAY
-  return records.filter((record) => Date.parse(record.submittedAt) >= cutoff).length
+  const since = dayOf(days - 1)
+  return records.filter((record) => record.submittedAt && tampaDay(record.submittedAt) >= since).length
 }
 
 // Daily columns for 7 and 30 days; weekly for 90, where 90 daily columns

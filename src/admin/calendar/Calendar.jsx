@@ -386,7 +386,13 @@ export default function Calendar({ actor }) {
   useEffect(() => {
     let active = true
     loadAppointments(fromTampa(addDays(range.days[0], -3)), new Date(range.end.getTime() + 3 * 86_400_000))
-      .then((list) => active && setAppointments(list))
+      .then((list) => {
+        if (!active) return
+        setAppointments(list)
+        // A load that works clears an earlier failure, so moving to another
+        // week (or Today) recovers without reloading the page.
+        setError(null)
+      })
       .catch((cause) => active && setError(cause.code ?? cause.message))
     return () => {
       active = false
@@ -493,6 +499,13 @@ export default function Calendar({ actor }) {
         <div className="rounded-2xl border border-ink-950/10 bg-white p-6 text-center">
           <h2 className="font-semibold text-ink-950">Could not load the calendar</h2>
           <p className="mt-2 text-sm text-ink-950/60">{error}</p>
+          <button
+            type="button"
+            onClick={() => setVersion((value) => value + 1)}
+            className="mt-4 cursor-pointer rounded-lg bg-ink-950 px-3 py-1.5 text-xs font-semibold text-paper-50 transition-colors duration-200 hover:bg-brand-dark"
+          >
+            Try again
+          </button>
         </div>
       ) : !appointments ? (
         <div className="h-96 animate-pulse rounded-2xl bg-ink-950/5" />

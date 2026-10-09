@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 import { useSearchParams } from "react-router-dom"
 import { byLatest, needsReply, topicCounts, unreadFor } from "../../lib/messageMath"
 import PageHeader from "../layout/PageHeader"
-import { formatRelativeTime } from "../lib/relativeTime"
+import { formatRelativeTime, useRelativeTimeClock } from "../lib/relativeTime"
 import { loadCharts } from "../patients/chartStore"
 import { formatDay } from "../patients/noteUi"
 import { SearchIcon } from "../ui/icons"
@@ -38,7 +38,9 @@ export default function MessagesPage({ actor }) {
   const [filter, setFilter] = useState(params.get("patient") ? "all" : "needsReply")
   const [search, setSearch] = useState("")
   const [composing, setComposing] = useState(false)
-  const [now] = useState(() => Date.now())
+  // Ticks every 30 seconds, so "10 mins ago" keeps counting while the inbox
+  // stays open and a message that arrives meanwhile doesn't read "just now" for hours.
+  const now = useRelativeTimeClock(true, 30_000)
   const selectedId = params.get("topic")
   const patient = params.get("patient")
 

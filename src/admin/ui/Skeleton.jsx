@@ -154,12 +154,8 @@ export function TableSkeleton({ rows = 8, cols = DASHBOARD_TABLE_COLS }) {
 export function DashboardSkeleton() {
   return (
     <div className="space-y-4">
-      {/* Mirrors Dashboard.jsx's own stat-tile grid exactly (one row, 4
-          columns, 8 tiles) — it was two separate grids (4 + 3) left over
-          from an earlier tile count that no longer matched. */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatTileSkeleton />
-        <StatTileSkeleton />
+      {/* Mirrors Dashboard.jsx's own stat-tile grid (3 columns, 6 tiles). */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatTileSkeleton />
         <StatTileSkeleton />
         <StatTileSkeleton />

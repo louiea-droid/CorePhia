@@ -112,7 +112,6 @@ function buildSeedRecords(count) {
         email: `${firstName}.${lastName}@example.com`.toLowerCase(),
         address: { line1: "", city: "Tampa", state: pick(STATES), postalCode: "" },
       },
-      emergencyContact: { name: "", relationship: "", phone: "" },
       insurance: { provider: "", memberId: "", groupNumber: "", policyholderName: "" },
       vitals: {
         heightFeet: String(5 + Math.floor(random() * 2)),

@@ -75,10 +75,10 @@ const faqGroups = [
           : "Membership is billed monthly, with a tier for the level of support you want. Each tier lists exactly what it includes on our membership page, and prices are coming soon.",
       },
       {
-        // TODO: replace with a definitive answer once the client confirms whether
-        // insurance, HSA and FSA payments are accepted.
+        // Cash only (client decision 2026-09-29), worded to match the program
+        // pages. TODO: HSA and FSA cards are still unconfirmed, so they aren't mentioned.
         q: "Do you accept insurance?",
-        a: "Coverage depends on your individual plan and on what your provider recommends for you, so the dependable answer comes from us directly rather than from a general statement. Contact us before you enroll and we will tell you what applies to your situation.",
+        a: "No. CorePhia is cash pay, so there are no insurance approvals or claims standing between you and your care. Membership is billed monthly, and what each tier includes is listed on our membership page.",
       },
       {
         // TODO: replace with the actual list of licensed states once the client confirms it.

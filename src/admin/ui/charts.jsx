@@ -297,7 +297,10 @@ export function TagCloud({ data, emptyLabel = "No data yet", onSelect }) {
           <li key={item.label}>
             <span
               {...interactiveProps}
-              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-sm outline-none transition-transform duration-150 ease-out-smooth hover:scale-[1.04] focus-visible:scale-[1.04] ${tone}`}
+              // Hover is colour, never movement (CLAUDE.md): a ring, not a grow.
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm outline-none transition-shadow duration-150 ${
+                onSelect ? "cursor-pointer hover:ring-2 hover:ring-accent-dark/40 focus-visible:ring-2 focus-visible:ring-accent-dark" : ""
+              } ${tone}`}
             >
               {item.label}
               <span className="text-xs tabular-nums opacity-70">{item.value}</span>

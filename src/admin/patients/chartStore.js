@@ -24,6 +24,7 @@ import {
 } from "firebase/firestore"
 import { config, db, INTAKE_COLLECTION, sendStaffResetEmail, USERS_COLLECTION, usingSeedData } from "../lib/firebase"
 import { visitEntryFor } from "../../lib/progressMath"
+import { todayInTampa } from "../calendar/calendarMath"
 
 export const PATIENTS_COLLECTION = "patients"
 const NOTES = "notes"
@@ -188,7 +189,7 @@ export async function loadNotes(chartId, uid) {
 }
 
 export async function createDraftNote(chartId, type, actor, prefill = {}) {
-  const today = new Date().toLocaleDateString("en-CA")
+  const today = todayInTampa()
   const base = {
     type,
     status: "draft",
@@ -364,8 +365,10 @@ const randomPassword = () =>
 // throwaway Firebase app instance does the createUser (which would otherwise
 // switch the session to the new account). The new person never sees the
 // random password; the reset email is their "set your password" invite.
+// `name` is left off when empty (a co-admin adding someone, see
+// roles.canNameStaff): they then sign with their email until the admin names them.
 export async function addStaff({ name, email, role }, actor) {
-  const record = { name, email, role, addedBy: { uid: actor.uid, name: actor.name } }
+  const record = { ...(name ? { name } : {}), email, role, addedBy: { uid: actor.uid, name: actor.name } }
   if (usingSeedData) {
     const member = { uid: demoId(), ...record, addedAt: new Date() }
     ;(await getDemoStore()).staff.push(member)
@@ -378,8 +381,16 @@ export async function addStaff({ name, email, role }, actor) {
     const { user } = await createUserWithEmailAndPassword(inviteAuth, email, randomPassword())
     await signOut(inviteAuth)
     await setDoc(doc(database, USERS_COLLECTION, user.uid), { ...record, addedAt: serverTimestamp() })
-    await sendStaffResetEmail(email)
-    return { uid: user.uid, ...record, addedAt: new Date() }
+    // From here they are added, so a failed email mustn't read as "nothing
+    // changed": it's reported back and they can use "Forgot password?".
+    const inviteEmailFailed = await sendStaffResetEmail(email).then(
+      () => false,
+      (cause) => {
+        console.error("Staff set-up email failed:", cause.code ?? cause.message)
+        return true
+      },
+    )
+    return { uid: user.uid, ...record, addedAt: new Date(), inviteEmailFailed }
   } finally {
     await deleteApp(invite)
   }

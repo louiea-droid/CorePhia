@@ -8,10 +8,12 @@ import ApplicantListModal from "../applicants/ApplicantListModal"
 import ApplicantModal from "../applicants/ApplicantModal"
 import ApplicantsTable from "../applicants/ApplicantsTable"
 import { DashboardSkeleton } from "../ui/Skeleton"
+import SampleDataNotice from "../ui/SampleDataNotice"
+import TodayStrip from "./TodayStrip"
 import { TEMP_FAKE_RECORDS } from "../lib/tempFakeRecords"
 import { useIntakeRecords } from "../applicants/useIntakeRecords"
 
-export default function Dashboard() {
+export default function Dashboard({ actor }) {
   const { records, error } = useIntakeRecords()
   const [selectedRecord, setSelectedRecord] = useState(null)
   // Which BarList row a patient list is currently drilled into: title/
@@ -41,6 +43,17 @@ export default function Dashboard() {
         title="Dashboard"
       />
 
+      {/* Real records only: the sample fallback below is for the charts, and
+          a made-up pending count here would send staff to an empty page. */}
+      <div className="mb-4">
+        <TodayStrip
+          actor={actor}
+          pending={error ? "error" : records ? records.filter((record) => (record.status ?? "pending") === "pending").length : null}
+        />
+      </div>
+
+      {usingSampleFallback && <SampleDataNotice />}
+
       {error ? (
         <div className="rounded-2xl border border-ink-950/10 bg-white p-6">
           <h2 className="font-semibold text-ink-950">Could not load intake records</h2>
@@ -59,14 +72,13 @@ export default function Dashboard() {
         // overflow-x-clip so the hover tooltips, which are absolutely positioned
         // and can sit past a card's edge, never widen the page on a narrow screen.
         <div className="space-y-4 overflow-x-clip">
-          {/* 4 columns, not 3: eight tiles divides evenly into two full rows
-              of four at every breakpoint, with no dangling empty cells — the
-              same reasoning that picked 3 over 4 back when there were six. */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Six tiles: two full rows of three. Pending moved up into the
+              Today strip, and "Avg intended loss" was just goal minus current
+              weight, so the two averages beside it already say it. */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <StatTile label="Total intakes" value={metrics.total} caption="All forms submitted to date" />
             <StatTile label="Last 30 days" value={metrics.last30} caption="New patient intakes this month" />
             <StatTile label="Admitted" value={metrics.admitted} caption="Cleared to start the program" />
-            <StatTile label="Pending" value={metrics.pending} caption="Awaiting an admission decision" />
             <StatTile
               label="Consent complete"
               value={metrics.consentCompleteRate}
@@ -84,12 +96,6 @@ export default function Dashboard() {
               value={metrics.avgGoalWeight ?? "—"}
               unit="lb"
               caption="What applicants are aiming for"
-            />
-            <StatTile
-              label="Avg intended loss"
-              value={metrics.avgTargetLoss ?? "—"}
-              unit="lb"
-              caption="Current minus goal weight"
             />
           </div>
 

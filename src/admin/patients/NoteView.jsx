@@ -17,6 +17,7 @@ import {
   vitalsLine,
 } from "./noteUi"
 import { getAdminPortalRoot } from "../ui/portalRoot"
+import { useDialog } from "../ui/useDialog"
 import { ROLE_LABELS, canAmend } from "../staff/roles"
 
 // A signed note, read-only: signed notes are locked by firestore.rules. The
@@ -48,25 +49,9 @@ export default function NoteView({ chart, intake, note, actor, onClose }) {
     }
   }, [chart.id, note.id])
 
-  useEffect(() => {
-    closeRef.current?.focus()
-    document.body.style.overflow = "hidden"
-    return () => {
-      document.body.style.overflow = ""
-    }
-  }, [])
-
-  // Re-attached as the draft changes, so Escape sees the current text; the
-  // confirm dialog handles its own Escape while it's open.
-  useEffect(() => {
-    const onKeyDown = (event) => {
-      if (event.key !== "Escape" || document.querySelector('[role="alertdialog"]')) return
-      if (draft.trim()) setConfirmingDiscard(true)
-      else onClose()
-    }
-    document.addEventListener("keydown", onKeyDown)
-    return () => document.removeEventListener("keydown", onKeyDown)
-  }, [draft, onClose])
+  // Escape with an unsaved addendum asks first. The confirm dialog sits on top
+  // of this one while it's open, so it gets Escape instead (useDialog).
+  useDialog({ onClose: () => (draft.trim() ? setConfirmingDiscard(true) : onClose()), focusRef: closeRef })
 
   const save = async () => {
     const text = draft.trim()

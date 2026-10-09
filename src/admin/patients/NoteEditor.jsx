@@ -3,6 +3,7 @@ import { createPortal } from "react-dom"
 import DatePicker from "../../components/DatePicker"
 import Select from "../../components/Select"
 import { bmi } from "./chartMath"
+import { addDays as addCalendarDays, todayInTampa } from "../calendar/calendarMath"
 import { discardDraftNote, saveDraftNote, signNote } from "./chartStore"
 import ConfirmDialog from "../ui/ConfirmDialog"
 import { signLine } from "../../lib/progressMath"
@@ -10,16 +11,17 @@ import { AUDIT_ACTIONS, recordAuditEvent } from "../lib/firebase"
 import { CloseIcon } from "../ui/icons"
 import { INTENSITIES, NOTE_TYPES, NOTE_TYPE_LABELS, SECTION_FIELDS, inputClass, labelClass, prescriptionLine } from "./noteUi"
 import { getAdminPortalRoot } from "../ui/portalRoot"
+import { useDialog } from "../ui/useDialog"
 import { canWriteNote } from "../staff/roles"
 
 const AUTOSAVE_MS = 1500
+// How long Close waits for a save before treating the connection as offline.
+const SAVE_WAIT_MS = 8000
 const RENEWAL_PICKS = [30, 60, 90]
 
-const today = () => new Date().toLocaleDateString("en-CA")
-const addDays = (isoDay, days) => {
-  const [y, m, d] = (isoDay || today()).split("-").map(Number)
-  return new Date(y, m - 1, d + days).toLocaleDateString("en-CA")
-}
+// Tampa's day, like the calendar and To-do, whatever the viewer's clock says.
+const today = () => todayInTampa()
+const addDays = (isoDay, days) => addCalendarDays(isoDay || today(), days)
 const newId = () => `rx-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
 const numberOrNull = (value) => (value === "" || value == null ? null : Number(value))
 // Days and minutes are whole numbers (the rules check `is int`), so a typed
@@ -125,6 +127,7 @@ function PrescriptionRow({ entry, visitDate, onChange, onRemove }) {
         <button
           type="button"
           onClick={onRemove}
+          aria-label={`Remove ${entry.medication || "this prescription"}`}
           className="-mt-1 -mr-1 cursor-pointer rounded-md px-2 py-1 text-xs font-medium text-ink-950/50 transition-colors duration-200 hover:bg-ink-950/5 hover:text-ink-950"
         >
           Remove
@@ -307,37 +310,56 @@ export default function NoteEditor({
 
   // Close saves anything not yet confirmed first, and if that save fails the
   // editor stays open with the text and the error, so nothing typed is lost.
+  // Offline, Firestore queues the write and its promise never settles, so the
+  // save is only waited on for SAVE_WAIT_MS. After that the write is still
+  // queued and lands once the connection is back, so a second Close may leave.
   const close = useCallback(async () => {
     if (busy) return
-    if (roleCanEdit && !closeAnyway.current && version.current !== savedVersion.current && !(await save())) {
-      const refused = lastSaveError.current?.code === "permission-denied"
-      closeAnyway.current = refused
-      setError(
-        refused
-          ? `${errorText(lastSaveError.current, "", roleCanEdit)} Closing again leaves without saving.`
-          : "Couldn't save your draft, so it's still open. Check your connection and try again.",
-      )
-      return
+    if (roleCanEdit && !closeAnyway.current && version.current !== savedVersion.current) {
+      const outcome = await Promise.race([save(), new Promise((resolve) => setTimeout(() => resolve("slow"), SAVE_WAIT_MS))])
+      if (outcome !== true) {
+        const refused = outcome === false && lastSaveError.current?.code === "permission-denied"
+        closeAnyway.current = refused || outcome === "slow"
+        setError(
+          outcome === "slow"
+            ? "Your connection looks offline, so the draft hasn't finished saving. It will save once you're back online. Close again to leave."
+            : refused
+              ? `${errorText(lastSaveError.current, "", roleCanEdit)} Closing again leaves without saving.`
+              : "Couldn't save your draft, so it's still open. Check your connection and try again.",
+        )
+        return
+      }
     }
     onClose()
   }, [busy, save, onClose, roleCanEdit])
 
-  useEffect(() => {
-    closeRef.current?.focus()
-    document.body.style.overflow = "hidden"
-    return () => {
-      document.body.style.overflow = ""
-      clearTimeout(timer.current)
-    }
-  }, [])
+  // Escape closes the same way Close does. A sign or discard confirm sits on
+  // top while it's open, so it gets Escape instead (useDialog).
+  useDialog({ onClose: close, focusRef: closeRef })
 
+  // Leaving another way (browser Back, a link, the session ending) used to
+  // cancel the autosave timer and drop the last keystrokes. Send them as the
+  // editor goes. Not after a sign or discard: `finished` is set then.
+  const finished = useRef(false)
+  useEffect(
+    () => () => {
+      clearTimeout(timer.current)
+      if (!finished.current && roleCanEdit && version.current !== savedVersion.current) {
+        saveDraftNote(chart.id, note.id, latest.current).catch((cause) =>
+          console.error("Draft save on leaving failed:", cause.code ?? cause.message),
+        )
+      }
+    },
+    [chart.id, note.id, roleCanEdit],
+  )
+
+  // Closing or reloading the tab with unsaved text asks the browser to warn.
   useEffect(() => {
-    const onKeyDown = (event) => {
-      if (event.key === "Escape" && !event.defaultPrevented && !confirm) close()
-    }
-    document.addEventListener("keydown", onKeyDown)
-    return () => document.removeEventListener("keydown", onKeyDown)
-  }, [close, confirm])
+    if (saveState === "saved") return
+    const warn = (event) => event.preventDefault()
+    window.addEventListener("beforeunload", warn)
+    return () => window.removeEventListener("beforeunload", warn)
+  }, [saveState])
 
   const sign = async () => {
     setBusy(true)
@@ -351,6 +373,7 @@ export default function NoteEditor({
         targetId: chart.id,
         targetLabel: `${chart.firstName} ${chart.lastName}`.trim(),
       })
+      finished.current = true
       onSigned({ ...note, ...latest.current, status: "signed" }, { share })
     } catch (cause) {
       setConfirm(null)
@@ -365,6 +388,7 @@ export default function NoteEditor({
     clearTimeout(timer.current)
     try {
       await discardDraftNote(chart.id, note.id)
+      finished.current = true
       onDiscarded()
     } catch (cause) {
       setConfirm(null)

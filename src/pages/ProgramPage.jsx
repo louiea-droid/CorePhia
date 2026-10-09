@@ -1,8 +1,9 @@
 import { Helmet } from "react-helmet-async"
-import { Link, Navigate, useParams } from "react-router-dom"
+import { Link, useParams } from "react-router-dom"
 import { CheckCircleIcon, ChevronRightIcon, ClipboardCheckIcon } from "../components/icons"
 import Reveal from "../components/Reveal"
 import { PROGRAM_NAMES, programs } from "../data/programs"
+import NotFound from "./NotFound"
 
 const sectionHeading = "font-serif text-3xl leading-tight text-ink-950 sm:text-4xl"
 
@@ -11,7 +12,7 @@ const sectionHeading = "font-serif text-3xl leading-tight text-ink-950 sm:text-4
 export default function ProgramPage() {
   const { slug } = useParams()
   const program = programs.find((entry) => entry.slug === slug)
-  if (!program) return <Navigate to="/" replace />
+  if (!program) return <NotFound />
 
   const url = `https://www.corephia.com/programs/${program.slug}`
   const faqSchema = {
@@ -140,7 +141,10 @@ export default function ProgramPage() {
             Part of one program
           </h2>
           <p className="mt-4 max-w-2xl text-lg leading-relaxed text-ink-950/70">
-            {program.name} works alongside the rest of your CorePhia program. Every member gets all four.
+            {program.name} works alongside the rest of your CorePhia program.{" "}
+            <Link to="/membership" className="font-medium text-accent-dark underline underline-offset-2">
+              See what each membership includes.
+            </Link>
           </p>
           <ul className="mt-6 flex flex-wrap gap-3">
             {PROGRAM_NAMES.filter((name) => name !== program.name).map((name) => {

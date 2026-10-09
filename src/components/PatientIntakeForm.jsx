@@ -536,8 +536,16 @@ export default function PatientIntakeForm() {
   useEffect(() => {
     const onPop = (event) => {
       const id = event.state?.intakeScreen
+      // After sending, Back means "leave the form". Each question pushed its
+      // own history entry, so without this it took about twenty presses, with
+      // nothing visibly happening, to get out of the confirmation. Keep going
+      // back until an untagged entry (before the intake) is reached.
+      if (status === "sent") {
+        if (id) window.history.back()
+        return
+      }
       // No tag: the patient went back past the first question and is leaving.
-      if (!id || status === "sent") return
+      if (!id) return
       const list = visibleScreens(readAnswers(formRef.current))
       // A screen that a changed answer has since hidden falls back to the one
       // before where the patient is now.
@@ -700,7 +708,7 @@ export default function PatientIntakeForm() {
         <title>Schedule an Appointment | CorePhia Patient Intake Form</title>
         <meta
           name="description"
-          content="Book your CorePhia appointment. Fill out our secure patient intake form to schedule a nutrition, exercise, or medical support consultation."
+          content="Start your CorePhia program. Answer a few questions in our secure patient intake, about ten minutes, and your care team takes it from there."
         />
         <link rel="canonical" href="https://www.corephia.com/intake" />
       </Helmet>

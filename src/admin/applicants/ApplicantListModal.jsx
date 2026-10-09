@@ -1,7 +1,8 @@
-import { useEffect, useRef } from "react"
+import { useRef } from "react"
 import { createPortal } from "react-dom"
 import { CloseIcon } from "../ui/icons"
 import { getAdminPortalRoot } from "../ui/portalRoot"
+import { useDialog } from "../ui/useDialog"
 
 function formatDate(iso) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
@@ -16,21 +17,7 @@ export default function ApplicantListModal({ title, subtitle, records, onSelectP
   const closeButtonRef = useRef(null)
   const open = Boolean(title)
 
-  useEffect(() => {
-    if (!open) return
-    closeButtonRef.current?.focus()
-    document.body.style.overflow = "hidden"
-
-    const onKeyDown = (event) => {
-      if (event.key === "Escape") onClose()
-    }
-    document.addEventListener("keydown", onKeyDown)
-
-    return () => {
-      document.body.style.overflow = ""
-      document.removeEventListener("keydown", onKeyDown)
-    }
-  }, [open, onClose])
+  useDialog({ open, onClose, focusRef: closeButtonRef })
 
   if (!open) return null
 

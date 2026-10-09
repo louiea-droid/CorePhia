@@ -86,8 +86,17 @@ export default function UpdatesCard({ chartId, notes, actor, canPost, version, e
           <ol className="divide-y divide-ink-950/10">
             {shown.map((update) => {
               const note = update.fromNoteId && sourceNote(update.fromNoteId)
+              // Removed updates stay on the record but shrink to one line.
+              if (update.removed)
+                return (
+                  <li key={update.id} className="py-2 first:pt-0 last:pb-0">
+                    <p className="truncate text-xs text-ink-950/45" title={update.body}>
+                      Removed by {update.removed.by?.name} on {formatDay(update.removed.at)}: {update.body}
+                    </p>
+                  </li>
+                )
               return (
-                <li key={update.id} className={`py-3 first:pt-0 last:pb-0 ${update.removed ? "opacity-55" : ""}`}>
+                <li key={update.id} className="py-3 first:pt-0 last:pb-0">
                   <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                     <p className="text-xs text-ink-950/55">
                       {formatStamp(update.createdAt)} · {update.author?.name} ({ROLE_LABELS[update.author?.role] ?? update.author?.role})
@@ -105,9 +114,7 @@ export default function UpdatesCard({ chartId, notes, actor, canPost, version, e
                   <p className="mt-1 whitespace-pre-line wrap-break-word text-ink-950">{update.body}</p>
                   <p className="mt-1 text-xs text-ink-950/50">
                     {[
-                      update.removed
-                        ? `Removed by ${update.removed.by?.name} on ${formatDay(update.removed.at)}`
-                        : EMAIL_WORDS[update.email] ?? EMAIL_WORDS.none,
+                      EMAIL_WORDS[update.email] ?? EMAIL_WORDS.none,
                       note && `Shared from the ${formatDay(note.visitDate)} ${NOTE_TYPE_LABELS[note.type]?.toLowerCase() ?? "note"}`,
                     ]
                       .filter(Boolean)

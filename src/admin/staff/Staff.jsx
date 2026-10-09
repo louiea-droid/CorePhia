@@ -11,6 +11,8 @@ import { AUDIT_ACTIONS, USERS_COLLECTION, recordAuditEvent, signOutAdmin } from 
 import { PAGE_SIZE_OPTIONS } from "../lib/constants"
 import PageHeader from "../layout/PageHeader"
 import AddStaffDialog from "./AddStaffDialog"
+import Avatar from "../ui/Avatar"
+import { useStaffPhotos } from "../lib/staffPhotos"
 import EditNameDialog from "./EditNameDialog"
 import EditRoleDialog from "./EditRoleDialog"
 import { ROLE_LABELS, canManageMember, canRenameMember, staffDisplayName } from "./roles"
@@ -149,6 +151,7 @@ export default function Staff({ actor }) {
   const [saving, setSaving] = useState(false)
   const [notice, setNotice] = useState(null)
   const [rowError, setRowError] = useState(null)
+  const photos = useStaffPhotos()
 
   useEffect(() => {
     let active = true
@@ -255,9 +258,12 @@ export default function Staff({ actor }) {
 
   const userCell = (member) => (
     <div className="flex min-w-0 items-center gap-3">
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent-dark/15 text-xs font-semibold text-accent-text">
-        {initialsOf(member)}
-      </span>
+      <Avatar
+        photo={photos.get(member.uid)}
+        initials={initialsOf(member)}
+        className="size-9 text-xs font-semibold"
+        fallbackClassName="bg-accent-dark/15 text-accent-text"
+      />
       <div className="min-w-0">
         <p className="truncate text-sm font-semibold text-ink-950">
           {staffDisplayName(member) || "Unnamed account"}
@@ -403,7 +409,12 @@ export default function Staff({ actor }) {
           onAdded={(member) => {
             setAdding(false)
             setStaff((current) => [...(current ?? []), member])
-            setNotice(`${member.name} was added. They'll get an email to set their password.`)
+            const who = staffDisplayName(member)
+            setNotice(
+              member.inviteEmailFailed
+                ? `${who} was added, but the email to set their password didn't send. Ask them to use "Forgot password?" on the sign-in page.`
+                : `${who} was added. They'll get an email to set their password.`,
+            )
           }}
         />
       )}

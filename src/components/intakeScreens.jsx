@@ -6,6 +6,9 @@ import DatePicker from "./DatePicker"
 import { CheckCircleIcon } from "./icons"
 import Select from "./Select"
 
+// A `pattern` that needs at least one character that isn't a space.
+const NOT_BLANK = ".*\\S.*"
+
 const US_STATES = [
   "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL",
   "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME",
@@ -504,19 +507,40 @@ export const SCREENS = [
   {
     id: "about-you",
     question: "A little about you.",
-    render: () => (
+    render: ({ today }) => (
       <div className="grid gap-5 sm:grid-cols-2">
+        {/* NOT_BLANK: spaces alone pass `required` but are trimmed to nothing on
+            send, which the database then refuses, with no way for the patient to
+            tell why. maxLength matches those limits (firestore.rules). */}
         <Field label="First name" required>
-          <input name="firstName" type="text" required autoComplete="given-name" className={inputClass} />
+          <input
+            name="firstName"
+            type="text"
+            required
+            maxLength={100}
+            pattern={NOT_BLANK}
+            title="Enter your first name"
+            autoComplete="given-name"
+            className={inputClass}
+          />
         </Field>
         <Field label="Last name" required>
-          <input name="lastName" type="text" required autoComplete="family-name" className={inputClass} />
+          <input
+            name="lastName"
+            type="text"
+            required
+            maxLength={100}
+            pattern={NOT_BLANK}
+            title="Enter your last name"
+            autoComplete="family-name"
+            className={inputClass}
+          />
         </Field>
         <Field label="Date of birth" required>
-          <DatePicker name="dob" required />
+          <DatePicker name="dob" required max={today} ariaLabel="Date of birth" />
         </Field>
         <Field label="Sex assigned at birth" required>
-          <Select name="sexAssigned" required placeholder="Select one" options={SEX_OPTIONS} />
+          <Select name="sexAssigned" required placeholder="Select one" options={SEX_OPTIONS} ariaLabel="Sex assigned at birth" />
         </Field>
       </div>
     ),
@@ -527,13 +551,23 @@ export const SCREENS = [
     render: () => (
       <div className="grid gap-5 sm:grid-cols-2">
         <Field label="Phone number" required>
-          <input name="phone" type="tel" required autoComplete="tel" className={inputClass} />
+          <input
+            name="phone"
+            type="tel"
+            required
+            maxLength={40}
+            pattern=".*[0-9].*"
+            title="Enter a phone number"
+            autoComplete="tel"
+            className={inputClass}
+          />
         </Field>
         <Field label="Email address" required>
           <input
             name="email"
             type="email"
             required
+            maxLength={200}
             autoComplete="email"
             // Hyphens escaped: browsers compile `pattern` with the `v` flag,
             // where an unescaped `-` in a class is a syntax error and the whole
@@ -553,7 +587,7 @@ export const SCREENS = [
         </Field>
         <div className="grid grid-cols-2 gap-5">
           <Field label="State" required>
-            <Select name="state" required placeholder="State" options={US_STATES} />
+            <Select name="state" required placeholder="State" options={US_STATES} ariaLabel="State" />
           </Field>
           <Field label="ZIP code" required>
             <input
@@ -587,16 +621,23 @@ export const SCREENS = [
             <Field label="Membership plan">
               <Select
                 name="plan"
+                ariaLabel="Membership plan"
                 defaultValue={selectedPlan}
                 options={[{ value: "", label: "I'm not sure yet" }, ...PLANS.map((plan) => ({ value: plan, label: plan }))]}
               />
             </Field>
           )}
           <Field label="Preferred time" required>
-            <Select name="preferredTime" required placeholder="Select a preferred time" options={PREFERRED_TIMES} />
+            <Select
+              name="preferredTime"
+              required
+              placeholder="Select a preferred time"
+              options={PREFERRED_TIMES}
+              ariaLabel="Preferred time"
+            />
           </Field>
           <Field label="Preferred date" required>
-            <DatePicker name="preferredDate" required min={today} />
+            <DatePicker name="preferredDate" required min={today} ariaLabel="Preferred date" />
           </Field>
         </div>
         <Field label="Anything else you'd like to discuss?">
@@ -636,7 +677,16 @@ export const SCREENS = [
         </div>
         <div className="grid gap-5 sm:grid-cols-2">
           <Field label="Electronic signature (type your full legal name)" required>
-            <input name="signature" type="text" required placeholder="Full legal name" className={inputClass} />
+            <input
+              name="signature"
+              type="text"
+              required
+              maxLength={200}
+              pattern={NOT_BLANK}
+              title="Type your full legal name"
+              placeholder="Full legal name"
+              className={inputClass}
+            />
           </Field>
           <Field label="Date" required>
             <input name="signatureDate" type="date" required defaultValue={today} readOnly className={inputClass} />

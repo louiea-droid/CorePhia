@@ -17,7 +17,7 @@ const TOPICS = [
     show: everyone,
     steps: [
       "Sign in with your email and password. If two-step sign-in is on, also enter the 6-digit code from your authenticator app.",
-      "After 15 minutes with no activity, a \"Still there?\" box appears. If you don't answer, you're signed out a minute later.",
+      "After 15 minutes with no activity, a \"Still there?\" box appears. If you don't answer, you're signed out a minute later. Activity in any of your admin tabs counts, and closing the tab doesn't keep you signed in: come back after 15 minutes and you'll need to sign in again.",
       "Open your account menu, top right, and choose Profile to change your password, set up two-step sign-in or set your display name.",
     ],
     note: "Your display name only labels your account menu. The name stamped on signed notes comes from the Staff list.",
@@ -35,13 +35,26 @@ const TOPICS = [
     note: "Admitting doesn't email the patient. Portal invites are sent from the chart. Dietitians can read intakes but can't admit or decline.",
   },
   {
+    id: "chart",
+    title: "Find your way around a chart",
+    show: everyone,
+    steps: [
+      "The top of the chart shows what you need before you write: the patient's allergies from the intake, their current prescriptions, and the next follow-up for each kind of care.",
+      "The Notes card is on the right (first on a phone). New note starts one. Medical, Dietitian and Exercise filter the list. Click any note to read it, or to carry on with a draft.",
+      "Your drafts sit at the top of the Notes card, and only you can see them. Each shows a short preview, and a draft with nothing in it says \"Nothing written yet\", so a stray copy is easy to spot and discard. Signed notes are listed below, with a count of any addenda.",
+      "On the left: Updates (what the patient sees in their portal), Messages (how many conversations are waiting for a reply, and the latest subject), the Progress chart, the exercise plan and upcoming appointments.",
+      "Patient portal, further down, is where you send the portal invite. From the intake summarises what they told us, with View full intake for the rest.",
+    ],
+    note: "Prescriptions and follow-ups at the top only change when a note that sets them is signed.",
+  },
+  {
     id: "notes",
     title: "Write and sign a note",
     show: everyone,
     steps: [
-      "Open Patients, click a name, then press New consultation, New progress note, New exercise note or New dietitian note. You only see the types your role may write.",
+      "Open Patients, click a name, then press New note and pick Consultation, Progress note, Dietitian note or Exercise note. The menu only lists the types your role may write. Dietitian notes are written by the dietitian, the admin and the super admin.",
       "Fill in the visit date, weight, next follow-up and the sections. Consultation and progress notes also take blood pressure and heart rate. A consultation's pertinent history is filled in from the intake.",
-      "Your note saves itself as a draft that only you can see. Close keeps it. Discard draft removes it.",
+      "Your note saves itself as a draft that only you can see. Close keeps it, and it waits under Your drafts at the top of the Notes card. Discard draft removes it.",
       "Press Sign note. Signing locks the note for good, stamped with your name, role and the time. Any later change is added as a dated addendum, and the original never changes.",
       "If the note has weight, blood pressure or heart rate, those numbers also go to the patient's progress chart. Tick \"Then share an update with the patient\" to post an update right away.",
     ],
@@ -55,7 +68,7 @@ const TOPICS = [
     steps: [
       "In a consultation or progress note, press Add prescription. Enter the medication, the instructions, the start date and when it is next due for renewal (30, 60 or 90 days, or a date).",
       "To renew or stop one that is already current, press Renew or Stop beside it in the note.",
-      "Sign the note. The chart's Current prescriptions card then shows what is started or renewed and not stopped.",
+      "Sign the note. Current prescriptions at the top of the chart then shows what is started or renewed and not stopped.",
     ],
   },
   {
@@ -76,8 +89,20 @@ const TOPICS = [
     steps: [
       "On the chart's Updates card, press Post an update and write up to 2,000 characters.",
       "Leave \"Email the patient\" ticked if they should be told to check their portal. The email never contains the update.",
-      "The patient sees your name and role. An update can be removed but not edited. A removed update disappears from the patient's view and stays on the chart marked as removed.",
+      "The patient sees your name and role. An update can be removed but not edited. A removed update disappears from the patient's view. On the chart it stays as a single greyed line saying who removed it and when.",
     ],
+  },
+  {
+    id: "dashboard",
+    title: "Read the dashboard",
+    show: everyone,
+    steps: [
+      "The four cards across the top are what needs attention now. Click one to open its page.",
+      "Visits today counts scheduled appointments for today, and names the next one. Due this week counts prescription renewals and follow-ups due within 7 days or already overdue. The caption says how many are overdue.",
+      "Needs a reply is the same number as the badge beside Messages. Pending applicants are intakes waiting for an admit or decline decision.",
+      "Below that, six totals and the charts show what applicants told us on the intake. Click a bar or a row to see the applicants behind it, and click a name to read their intake. Most recent intakes is at the bottom.",
+    ],
+    note: "The cards count the whole practice, not just you. Dietitians see the same numbers but can't admit or decline. First consultations still waiting are on the To-do page, not in Due this week. While there are no real intakes yet, the dashboard and Applicants show sample applicants, with a yellow \"Sample data\" notice at the top.",
   },
   {
     id: "messages",
@@ -97,7 +122,7 @@ const TOPICS = [
     show: everyone,
     steps: [
       "Open Calendar. Switch between Week, Month and Agenda, and between your own schedule, everyone's, or one person's. Times are Tampa time.",
-      "Press New appointment, click an empty slot, or click a \"Follow-up due, not booked yet\" marker. Choose the patient, who it is with, the kind of visit, the date, time and length. A clash shows a warning but can still be booked.",
+      "Press New appointment, click an empty slot, or click a \"Follow-up due\" marker (a follow-up from a signed note that isn't booked yet). Choose the patient, who it is with, the kind of visit, the date, time and length. A clash shows a warning but can still be booked.",
       "To change one, click it, edit it and save. You can mark it Completed or No-show, or cancel it with an optional reason.",
     ],
     note: "Every change is kept on the appointment. The calendar doesn't send reminders.",
@@ -108,7 +133,7 @@ const TOPICS = [
     show: everyone,
     steps: [
       "Needs doing fills itself from the charts: prescriptions due for renewal in 7 days or overdue, follow-ups due or overdue, and patients with no signed consultation yet.",
-      "Nothing in Needs doing is ticked by hand. Signing the note that handles an item clears it.",
+      "Nothing in Needs doing is ticked by hand. Signing the note that handles an item clears it. Overdue items have a blue bar down the side of their group.",
       "Your list holds your own items. Press + Add a to-do, optionally link a patient and a date, and choose just you or everyone.",
     ],
   },
@@ -136,7 +161,7 @@ const TOPICS = [
     title: "Add and manage staff",
     show: (role) => canOpen("staff", role),
     steps: [
-      "Open Staff and press + Add user. Enter a name, an email and a role. They get an email to set their own password.",
+      "Open Staff and press + Add user. Enter an email and a role, plus a name if you're the admin. They get an email to set their own password. Someone a co-admin adds signs notes with their email until the admin gives them a name with Edit name.",
       "Use the pencil to change a role. Choosing No access removes their ability to sign in.",
       "The three-dot menu has Edit name, Remove access and Delete account. Deleting takes the person off the list, and notes they signed keep their name.",
     ],
@@ -174,8 +199,8 @@ const TOPICS = [
 // by id so the topic data above stays plain.
 const GROUPS = [
   ["Getting started", ["signing-in"]],
-  ["Patients and charts", ["applicants", "notes", "prescriptions", "invite", "updates"]],
-  ["Day to day", ["messages", "calendar", "todo"]],
+  ["Patients and charts", ["applicants", "chart", "notes", "prescriptions", "invite", "updates"]],
+  ["Day to day", ["dashboard", "messages", "calendar", "todo"]],
   ["Practice", ["queries", "analytics", "staff"]],
   ["The patient portal", ["portal", "emails"]],
 ]
@@ -225,7 +250,7 @@ export default function Help({ role }) {
           <nav aria-label="Help topics" className="scrollbar-thin -mr-2 hidden min-h-0 flex-1 overflow-y-auto pr-2 lg:block">
             {groups.map(([label, topics]) => (
               <div key={label} className="border-t border-ink-950/10 py-3 first:border-t-0 first:pt-0">
-                <p className="mb-1.5 px-3 text-sm font-semibold text-ink-950">{label}</p>
+                <p className="mb-2 px-3 font-serif text-lg leading-snug font-semibold text-ink-950">{label}</p>
                 <ul className="space-y-0.5">
                   {topics.map((topic) => (
                     <li key={topic.id}>

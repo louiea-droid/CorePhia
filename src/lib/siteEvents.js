@@ -35,7 +35,9 @@ export async function sendSiteEvent({ type, path, label = "" }) {
     type,
     path,
     label: label.slice(0, 80),
-    day: new Date().toLocaleDateString("en-CA"),
+    // Tampa's calendar day, so every visitor's events land on the same day
+    // the admin's Analytics page counts, wherever the visitor is.
+    day: new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }),
     at: serverTimestamp(),
   })
 }

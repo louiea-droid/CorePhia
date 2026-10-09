@@ -1,6 +1,7 @@
-import { useEffect, useRef } from "react"
+import { useRef } from "react"
 import { createPortal } from "react-dom"
 import { getAdminPortalRoot } from "./portalRoot"
+import { useDialog } from "./useDialog"
 
 export default function ConfirmDialog({
   open,
@@ -13,23 +14,11 @@ export default function ConfirmDialog({
   onCancel,
   children,
 }) {
-  const confirmButtonRef = useRef(null)
+  const cancelButtonRef = useRef(null)
 
-  useEffect(() => {
-    if (!open) return
-    confirmButtonRef.current?.focus()
-    document.body.style.overflow = "hidden"
-
-    const onKeyDown = (event) => {
-      if (event.key === "Escape") onCancel()
-    }
-    document.addEventListener("keydown", onKeyDown)
-
-    return () => {
-      document.body.style.overflow = ""
-      document.removeEventListener("keydown", onKeyDown)
-    }
-  }, [open, onCancel])
+  // Focus starts on Cancel, so a stray Enter backs out instead of deleting or
+  // signing. While the confirm action is running (confirmDisabled), Escape waits.
+  useDialog({ open, onClose: onCancel, focusRef: cancelButtonRef, closable: !confirmDisabled })
 
   if (!open) return null
 
@@ -54,6 +43,7 @@ export default function ConfirmDialog({
 
           <div className="mt-6 flex justify-end gap-2">
             <button
+              ref={cancelButtonRef}
               type="button"
               onClick={onCancel}
               className="rounded-full px-4 py-2 text-sm font-medium text-ink-950/70 transition-colors duration-200 hover:bg-ink-950/5 hover:text-ink-950"
@@ -61,7 +51,6 @@ export default function ConfirmDialog({
               {cancelLabel}
             </button>
             <button
-              ref={confirmButtonRef}
               type="button"
               onClick={onConfirm}
               disabled={confirmDisabled}

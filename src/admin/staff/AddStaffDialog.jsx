@@ -4,7 +4,7 @@ import { AUDIT_ACTIONS, USERS_COLLECTION, recordAuditEvent } from "../lib/fireba
 import { addStaff } from "../patients/chartStore"
 import { inputClass, labelClass } from "../patients/noteUi"
 import Modal from "../ui/Modal"
-import { ROLE_LABELS, grantableRoles } from "./roles"
+import { ROLE_LABELS, canNameStaff, grantableRoles } from "./roles"
 import { staffErrorMessage } from "./staffMath"
 
 // Add a staff member: name, email, role. They get an email to set their own
@@ -15,12 +15,22 @@ export default function AddStaffDialog({ actor, onClose, onAdded }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
 
+  // A co-admin adds people without a name (roles.canNameStaff); the admin
+  // names them later with Edit name.
+  const canName = canNameStaff(actor.role)
+
   const submit = async (event) => {
     event.preventDefault()
-    const name = form.name.trim()
+    const name = canName ? form.name.trim() : ""
     const email = form.email.trim().toLowerCase()
-    if (!name || !email) {
-      setError("Add a name and an email.")
+    if ((canName && !name) || !email) {
+      setError(canName ? "Add a name and an email." : "Add an email.")
+      return
+    }
+    // Checked before the login is created, so an over-long name can't leave a
+    // login with no staff record (the rules cap it at 100).
+    if (name.length > 100) {
+      setError("Keep the name to 100 characters.")
       return
     }
     setBusy(true)
@@ -31,7 +41,7 @@ export default function AddStaffDialog({ actor, onClose, onAdded }) {
         action: AUDIT_ACTIONS.addStaff,
         targetCollection: USERS_COLLECTION,
         targetId: member.uid,
-        targetLabel: `${name} (${ROLE_LABELS[form.role]})`,
+        targetLabel: `${name || email} (${ROLE_LABELS[form.role]})`,
       })
       onAdded(member)
     } catch (cause) {
@@ -65,10 +75,22 @@ export default function AddStaffDialog({ actor, onClose, onAdded }) {
     >
       <form id="add-staff" onSubmit={submit} className="space-y-4">
         <p className="text-sm text-ink-950/60">They'll get an email to set their own password.</p>
-        <label className="block">
-          <span className={labelClass}>Name</span>
-          <input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Jordan Lee, NP" className={inputClass} />
-        </label>
+        {canName ? (
+          <label className="block">
+            <span className={labelClass}>Name</span>
+            <input
+              value={form.name}
+              maxLength={100}
+              onChange={(event) => setForm({ ...form, name: event.target.value })}
+              placeholder="Jordan Lee, NP"
+              className={inputClass}
+            />
+          </label>
+        ) : (
+          <p className="text-sm text-ink-950/60">
+            The admin sets the name their notes are signed with. Until then, their notes show their email.
+          </p>
+        )}
         <label className="block">
           <span className={labelClass}>Email</span>
           <input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} className={inputClass} />

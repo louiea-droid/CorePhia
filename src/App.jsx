@@ -10,6 +10,7 @@ import Contact from "./pages/Contact"
 import Faq from "./pages/Faq"
 import Home from "./pages/Home"
 import Membership from "./pages/Membership"
+import NotFound from "./pages/NotFound"
 import ProgramPage from "./pages/ProgramPage"
 import SuccessStories from "./pages/SuccessStories"
 
@@ -32,7 +33,15 @@ function ScrollManager() {
     // On a deep link the browser resolves the hash before React has rendered the
     // target, so it never scrolls. Do it here instead, once the section exists.
     if (hash) {
-      document.querySelector(hash)?.scrollIntoView({ behavior: "instant" })
+      // By id, not querySelector: a hash like #1 or Facebook's #_=_ isn't a
+      // valid selector and used to throw, blanking the whole site. A hash that
+      // isn't percent-encoded properly can throw in decodeURIComponent, so
+      // that is caught too: it just means no scroll.
+      try {
+        document.getElementById(decodeURIComponent(hash.slice(1)))?.scrollIntoView({ behavior: "instant" })
+      } catch {
+        // Malformed hash: stay put.
+      }
       return
     }
     if (navigationType === "POP") return
@@ -107,6 +116,7 @@ function App() {
               </Suspense>
             }
           />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
       <Footer />

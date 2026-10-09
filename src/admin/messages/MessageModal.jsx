@@ -3,6 +3,7 @@ import { createPortal } from "react-dom"
 import { AUDIT_ACTIONS, MESSAGES_COLLECTION, recordAuditEvent } from "../lib/firebase"
 import { CloseIcon, TrashIcon } from "../ui/icons"
 import { getAdminPortalRoot } from "../ui/portalRoot"
+import { useDialog } from "../ui/useDialog"
 
 function formatDate(value) {
   if (!value) return null
@@ -43,21 +44,7 @@ export default function MessageModal({ message, onClose, canDelete, onRequestDel
     })
   }, [message])
 
-  useEffect(() => {
-    if (!open) return
-    closeButtonRef.current?.focus()
-    document.body.style.overflow = "hidden"
-
-    const onKeyDown = (event) => {
-      if (event.key === "Escape") onClose()
-    }
-    document.addEventListener("keydown", onKeyDown)
-
-    return () => {
-      document.body.style.overflow = ""
-      document.removeEventListener("keydown", onKeyDown)
-    }
-  }, [open, onClose])
+  useDialog({ open, onClose, focusRef: closeButtonRef })
 
   if (!message) return null
 

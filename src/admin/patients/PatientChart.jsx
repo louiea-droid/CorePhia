@@ -9,6 +9,7 @@ import { countAmendments, createDraftNote, loadChart, loadIntakeRecord, loadNote
 import { AUDIT_ACTIONS, recordAuditEvent } from "../lib/firebase"
 import { ChevronLeftIcon } from "../ui/icons"
 import NoteEditor from "./NoteEditor"
+import NewNoteMenu from "./NewNoteMenu"
 import NoteView from "./NoteView"
 import {
   DISCIPLINE_LABELS,
@@ -25,9 +26,9 @@ import PortalAccess from "./PortalAccess"
 import PostUpdateDialog from "./PostUpdateDialog"
 import ProgressCard from "./ProgressCard"
 import { useTopics } from "../inbox/useTopics"
-import { needsReply } from "../../lib/messageMath"
+import { byLatest, needsReply } from "../../lib/messageMath"
 import UpdatesCard from "./UpdatesCard"
-import { canWriteNote } from "../staff/roles"
+import { canWriteNote, staffDisplayName } from "../staff/roles"
 
 const list = (value) => (Array.isArray(value) ? value.filter((item) => item && item !== "None of the above").join(", ") : value)
 
@@ -76,6 +77,53 @@ const NOTE_FILTERS = [
   ["dietitian", "Dietitian"],
   ["exercise", "Exercise"],
 ]
+
+// The line a note row shows under its title: the plan if there is one, else the
+// first section with any text, so two drafts can be told apart. Empty drafts
+// say so, which is what makes stray duplicates easy to spot and discard.
+function notePreview(note) {
+  const plan = note.sections?.plan || note.sections?.mealPlan || exercisePlanLine(note.exercisePlan)
+  // Newlines become " · " so a multi-line section doesn't run together in the row.
+  const oneLine = (text) => text.trim().replace(/\s*\n+\s*/g, " · ")
+  if (plan) return { text: oneLine(plan), label: "Plan" }
+  const first = Object.values(note.sections ?? {}).find((value) => typeof value === "string" && value.trim())
+  return first ? { text: oneLine(first), label: null } : null
+}
+
+function NoteRow({ note, addenda, onOpen }) {
+  const preview = notePreview(note)
+  const draft = note.status === "draft"
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={() => onOpen(note)}
+        className="block w-full cursor-pointer rounded-xl px-2 py-3 text-left transition-colors duration-150 hover:bg-paper-50"
+      >
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-semibold text-ink-950">{NOTE_TYPE_LABELS[note.type]}</span>
+          <span className="text-sm text-ink-950/55">{formatDay(note.visitDate)}</span>
+          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_PILL[note.status]}`}>{draft ? "Draft" : "Signed"}</span>
+          {addenda > 0 && (
+            <span className="text-xs text-ink-950/55">
+              {addenda} {addenda === 1 ? "addendum" : "addenda"}
+            </span>
+          )}
+        </span>
+        {!draft && <span className="mt-0.5 block text-xs text-ink-950/50">{signerLine(note.signedBy, note.signedAt)}</span>}
+        {draft && <span className="mt-0.5 block text-xs text-ink-950/50">Started by {note.authorName}</span>}
+        {preview ? (
+          <span className="mt-1 line-clamp-2 block text-sm text-ink-950/70">
+            {preview.label && `${preview.label}: `}
+            {preview.text}
+          </span>
+        ) : (
+          draft && <span className="mt-1 block text-sm text-ink-950/45 italic">Nothing written yet</span>
+        )}
+      </button>
+    </li>
+  )
+}
 
 function SummaryRow({ label, value }) {
   return (
@@ -210,9 +258,16 @@ export default function PatientChart({ actor }) {
     }
   }
 
+  // A failed refresh (the note was already signed or saved) says so, rather
+  // than leaving the list showing the old state with no explanation.
   const afterEditor = async () => {
     setOpenNote(null)
-    await reload()
+    try {
+      await reload()
+    } catch (cause) {
+      console.error("Chart refresh failed:", cause.code ?? cause.message)
+      setCreateError("Saved, but the chart didn't refresh. Reload the page to see the latest notes.")
+    }
   }
 
   if (error)
@@ -259,6 +314,11 @@ export default function PatientChart({ actor }) {
   const draftOpen = openNote?.status === "draft"
   const chartTopics = allTopics?.filter((topic) => topic.chartId === chartId) ?? []
   const waiting = chartTopics.filter(needsReply).length
+  const latestTopic = [...chartTopics].sort(byLatest)[0]
+  // Drafts are only ever the signed-in author's, so "your drafts" is exact.
+  const draftNotes = shownNotes.filter((note) => note.status === "draft")
+  const signedShown = shownNotes.filter((note) => note.status !== "draft")
+  const noteHint = writableTypes.includes("dietitian") ? null : "Dietitian notes are written by the dietitian or the admin."
 
   return (
     <div className="pb-6">
@@ -280,13 +340,12 @@ export default function PatientChart({ actor }) {
           )}
         </div>
         <p className="mt-2 text-sm text-ink-950/65">
-          {[age !== null && `${age} years`, chart.sexAssignedAtBirth, demographics.phone, demographics.email]
-            .filter(Boolean)
-            .join(", ")}
+          {/* No email here: the Patient portal card below shows it. */}
+          {[age !== null && `${age} years`, chart.sexAssignedAtBirth, demographics.phone].filter(Boolean).join(", ")}
         </p>
         <p className="mt-1 text-sm text-ink-950/50">
           Admitted {asDate(chart.admittedAt)?.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
-          {chart.admittedBy?.name ? ` by ${chart.admittedBy.name}` : ""}
+          {chart.admittedBy?.name ? ` by ${staffDisplayName(chart.admittedBy)}` : ""}
         </p>
         {chart.status === "inactive" && (
           <p className="mt-3 rounded-lg bg-paper-100 px-3 py-2 text-sm text-ink-950/70">
@@ -294,6 +353,49 @@ export default function PatientChart({ actor }) {
             Applicants to write new notes.
           </p>
         )}
+        {/* What a provider needs before writing: allergies, what's prescribed, what's due next. */}
+        <dl className="mt-4 grid gap-x-8 gap-y-4 border-t border-ink-950/10 pt-4 text-sm sm:grid-cols-3">
+          <div>
+            <dt className="text-xs font-medium text-ink-950/55">Allergies</dt>
+            <dd className="mt-1 wrap-break-word text-ink-950">
+              {!intake ? "Not available" : intake.medicalHistory?.allergies || "None reported"}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs font-medium text-ink-950/55">Current prescriptions</dt>
+            <dd className="mt-1 text-ink-950">
+              {!notes ? (
+                "Loading…"
+              ) : current.length === 0 ? (
+                <span className="text-ink-950/55">None</span>
+              ) : (
+                <ul className="space-y-1">
+                  {current.map((rx) => (
+                    <li key={rx.id}>{prescriptionLine({ ...rx, action: "start" }).replace(/^Start /, "")}</li>
+                  ))}
+                </ul>
+              )}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs font-medium text-ink-950/55">Next follow-ups</dt>
+            <dd className="mt-1 text-ink-950">
+              {!notes ? (
+                "Loading…"
+              ) : followUps.length === 0 ? (
+                <span className="text-ink-950/55">None set</span>
+              ) : (
+                <ul className="space-y-1">
+                  {followUps.map((followUp) => (
+                    <li key={followUp.discipline}>
+                      <span className="text-ink-950/55">{DISCIPLINE_LABELS[followUp.discipline]}:</span> {formatDay(followUp.date)}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </dd>
+          </div>
+        </dl>
       </header>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]">
@@ -303,21 +405,7 @@ export default function PatientChart({ actor }) {
             title="Notes"
             fill
             action={
-              canWrite && (
-                <div className="flex flex-wrap gap-1.5">
-                  {writableTypes.map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      disabled={Boolean(creating)}
-                      onClick={() => startNote(type)}
-                      className="cursor-pointer rounded-lg bg-ink-950 px-3 py-1.5 text-xs font-semibold whitespace-nowrap text-paper-50 transition-colors duration-200 hover:bg-brand-dark disabled:opacity-50"
-                    >
-                      {creating === type ? "Starting…" : NOTE_TYPES[type].newLabel}
-                    </button>
-                  ))}
-                </div>
-              )
+              canWrite && <NewNoteMenu types={writableTypes} creating={creating} onPick={startNote} hint={noteHint} />
             }
           >
             {notes?.length > 0 && (
@@ -353,47 +441,39 @@ export default function PatientChart({ actor }) {
                 No {DISCIPLINE_LABELS[noteFilter].toLowerCase()} notes yet.
               </p>
             ) : (
-              <ol className="-mx-2 divide-y divide-ink-950/10">
-                {shownNotes.map((note) => (
-                  <li key={note.id}>
-                    <button
-                      type="button"
-                      onClick={() => setOpenNote(note)}
-                      className="block w-full cursor-pointer rounded-xl px-2 py-3 text-left transition-colors duration-150 hover:bg-paper-50"
-                    >
-                      <span className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-semibold text-ink-950">{NOTE_TYPE_LABELS[note.type]}</span>
-                        <span className="text-sm text-ink-950/55">{formatDay(note.visitDate)}</span>
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_PILL[note.status]}`}>
-                          {note.status === "draft" ? "Draft, only you can see it" : "Signed"}
-                        </span>
-                        {addendaCounts[note.id] > 0 && (
-                          <span className="text-xs text-ink-950/55">
-                            {addendaCounts[note.id]} {addendaCounts[note.id] === 1 ? "addendum" : "addenda"}
-                          </span>
-                        )}
-                      </span>
-                      {note.status === "signed" && (
-                        <span className="mt-0.5 block text-xs text-ink-950/50">{signerLine(note.signedBy, note.signedAt)}</span>
-                      )}
-                      {note.status === "draft" && (
-                        <span className="mt-0.5 block text-xs text-ink-950/50">Started by {note.authorName}</span>
-                      )}
-                      {(note.sections?.plan || note.sections?.mealPlan || exercisePlanLine(note.exercisePlan)) && (
-                        <span className="mt-1 line-clamp-2 block text-sm text-ink-950/70">
-                          Plan: {note.sections?.plan || note.sections?.mealPlan || exercisePlanLine(note.exercisePlan)}
-                        </span>
-                      )}
-                    </button>
-                  </li>
-                ))}
-              </ol>
+              <div className="space-y-4">
+                {draftNotes.length > 0 && (
+                  <section aria-labelledby="chart-drafts-heading">
+                    <h3 id="chart-drafts-heading" className="text-xs font-semibold text-ink-950/60">
+                      Your drafts <span className="font-normal text-ink-950/45">({draftNotes.length}), only you can see these</span>
+                    </h3>
+                    <ol className="-mx-2 mt-1 divide-y divide-ink-950/10">
+                      {draftNotes.map((note) => (
+                        <NoteRow key={note.id} note={note} addenda={0} onOpen={setOpenNote} />
+                      ))}
+                    </ol>
+                  </section>
+                )}
+                {signedShown.length > 0 && (
+                  <section aria-labelledby={draftNotes.length ? "chart-signed-heading" : undefined}>
+                    {draftNotes.length > 0 && (
+                      <h3 id="chart-signed-heading" className="text-xs font-semibold text-ink-950/60">
+                        Signed
+                      </h3>
+                    )}
+                    <ol className={`-mx-2 divide-y divide-ink-950/10 ${draftNotes.length > 0 ? "mt-1" : ""}`}>
+                      {signedShown.map((note) => (
+                        <NoteRow key={note.id} note={note} addenda={addendaCounts[note.id] ?? 0} onOpen={setOpenNote} />
+                      ))}
+                    </ol>
+                  </section>
+                )}
+              </div>
             )}
           </Card>
         </div>
 
         <div className="space-y-4">
-          <PortalAccess key={chart.id} chart={chart} intake={intake} actor={actor} />
           <UpdatesCard
             key={`updates-${chart.id}`}
             chartId={chart.id}
@@ -418,41 +498,25 @@ export default function PatientChart({ actor }) {
                 ? "Loading…"
                 : chartTopics.length === 0
                   ? "No messages yet"
-                  : `${chartTopics.length} ${chartTopics.length === 1 ? "topic" : "topics"}${waiting ? `, ${waiting} ${waiting === 1 ? "needs" : "need"} a reply` : ""}`}
+                  : `${chartTopics.length} ${chartTopics.length === 1 ? "topic" : "topics"}`}
+              {waiting > 0 && (
+                <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
+                  {waiting} {waiting === 1 ? "needs" : "need"} a reply
+                </span>
+              )}
             </p>
+            {latestTopic && (
+              <p className="mt-1 truncate text-xs text-ink-950/50">
+                Latest: {latestTopic.subject}
+              </p>
+            )}
           </section>
           <ProgressCard key={`progress-${chart.id}`} chartId={chart.id} intake={intake} notes={notes} version={signedNotes.length} />
-          <Card title="Current prescriptions">
-            {current.length === 0 ? (
-              <p className="text-sm text-ink-950/55">None. Prescriptions appear here once a note that adds one is signed.</p>
-            ) : (
-              <ul className="space-y-2 text-sm text-ink-950">
-                {current.map((rx) => (
-                  <li key={rx.id}>{prescriptionLine({ ...rx, action: "start" }).replace(/^Start /, "")}</li>
-                ))}
-              </ul>
-            )}
-          </Card>
-
           <Card title="Current exercise plan">
             {exercisePlanLine(exercisePlan) ? (
               <p className="text-sm text-ink-950">{exercisePlanLine(exercisePlan)}</p>
             ) : (
               <p className="text-sm text-ink-950/55">None yet. It appears here once an exercise note is signed.</p>
-            )}
-          </Card>
-
-          <Card title="Next follow-ups">
-            {followUps.length === 0 ? (
-              <p className="text-sm text-ink-950/55">None set.</p>
-            ) : (
-              <ul className="space-y-1.5 text-sm text-ink-950">
-                {followUps.map((followUp) => (
-                  <li key={followUp.discipline}>
-                    <span className="text-ink-950/55">{DISCIPLINE_LABELS[followUp.discipline]}:</span> {formatDay(followUp.date)}
-                  </li>
-                ))}
-              </ul>
             )}
           </Card>
 
@@ -497,6 +561,8 @@ export default function PatientChart({ actor }) {
               </ul>
             )}
           </Card>
+
+          <PortalAccess key={chart.id} chart={chart} intake={intake} actor={actor} />
 
           <Card
             title="From the intake"

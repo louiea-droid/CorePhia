@@ -66,7 +66,7 @@ export default function TeamSection() {
             built around your life
           </h2>
           <p className="mt-5 max-w-md text-lg leading-relaxed text-ink-950/70">
-            Meet our provider, who guides every CorePhia patient's care.
+            Meet the provider who builds your plan and follows your progress.
           </p>
         </div>
 

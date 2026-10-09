@@ -110,13 +110,32 @@ export default function Contact() {
                   <span className={labelClass}>
                     Full name <span className="text-brand-dark">*</span>
                   </span>
-                  <input name="name" type="text" required autoComplete="name" className={inputClass} />
+                  {/* Limits match firestore.rules; the pattern rejects a name made only of spaces. */}
+                  <input
+                    name="name"
+                    type="text"
+                    required
+                    maxLength={100}
+                    pattern=".*\S.*"
+                    title="Enter your name"
+                    autoComplete="name"
+                    className={inputClass}
+                  />
                 </label>
                 <label className="block">
                   <span className={labelClass}>
                     Phone number <span className="text-brand-dark">*</span>
                   </span>
-                  <input name="phone" type="tel" required autoComplete="tel" className={inputClass} />
+                  <input
+                    name="phone"
+                    type="tel"
+                    required
+                    maxLength={40}
+                    pattern=".*[0-9].*"
+                    title="Enter a phone number"
+                    autoComplete="tel"
+                    className={inputClass}
+                  />
                 </label>
                 <label className="block sm:col-span-2">
                   <span className={labelClass}>
@@ -126,6 +145,7 @@ export default function Contact() {
                     name="email"
                     type="email"
                     required
+                    maxLength={200}
                     autoComplete="email"
                     pattern="[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}"
                     title="Enter a full email address, like name@example.com"
@@ -136,11 +156,17 @@ export default function Contact() {
                   <span className={labelClass}>
                     What can we help with? <span className="text-brand-dark">*</span>
                   </span>
-                  <Select name="interest" required placeholder="Select an option" options={INTERESTS} />
+                  <Select
+                    name="interest"
+                    required
+                    placeholder="Select an option"
+                    options={INTERESTS}
+                    ariaLabel="What can we help with?"
+                  />
                 </label>
                 <label className="block sm:col-span-2">
                   <span className={labelClass}>Anything else we should know?</span>
-                  <textarea name="message" rows={4} className={inputClass} />
+                  <textarea name="message" rows={4} maxLength={2000} className={inputClass} />
                 </label>
 
                 <div className="sm:col-span-2">

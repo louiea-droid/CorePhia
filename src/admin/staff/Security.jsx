@@ -1,5 +1,7 @@
-import { useId, useState } from "react"
+import { useId, useRef, useState } from "react"
+import Avatar from "../ui/Avatar"
 import ConfirmDialog from "../ui/ConfirmDialog"
+import { photoFromFile, removeStaffPhoto, saveStaffPhoto, useStaffPhotos } from "../lib/staffPhotos"
 import {
   completeTotpSignIn,
   finishTotpEnrollment,
@@ -11,7 +13,7 @@ import {
   updateAdminDisplayName,
   updateAdminPassword,
 } from "../lib/firebase"
-import { EyeIcon, EyeOffIcon } from "../ui/icons"
+import { EyeIcon, EyeOffIcon, PencilIcon } from "../ui/icons"
 import { inputClass, labelClass } from "../patients/noteUi"
 import PageHeader from "../layout/PageHeader"
 import { ROLE_LABELS } from "./roles"
@@ -198,7 +200,7 @@ function PasswordRow({ email }) {
     if (fields.next === fields.current) return setError("Choose a password different from your current one.")
     setBusy(true)
     try {
-      if (resolver) await completeTotpSignIn(resolver, fields.code.trim())
+      if (resolver) await completeTotpSignIn(resolver, fields.code.trim(), { signIn: false })
       else {
         const needsCode = await reauthenticateAdmin(fields.current)
         if (needsCode) {
@@ -484,21 +486,84 @@ function TwoStepRow({ user }) {
   )
 }
 
+// The photo in the Profile header: click it (or its pencil badge) to choose a
+// new one; it's shrunk and cropped in the browser before saving (staffPhotos.js).
+function ProfilePhoto({ uid, name, onError }) {
+  const photo = useStaffPhotos().get(uid)
+  const inputRef = useRef(null)
+  const [busy, setBusy] = useState(false)
+
+  const run = async (work) => {
+    setBusy(true)
+    onError(null)
+    try {
+      await work()
+    } catch (cause) {
+      console.error("Profile photo:", cause.code ?? cause.message)
+      onError(cause.code === "permission-denied" ? "Couldn't save the photo. Your account can't change it right now." : cause.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const pick = (event) => {
+    const file = event.target.files?.[0]
+    event.target.value = "" // so choosing the same file again still fires
+    if (file) run(async () => saveStaffPhoto(uid, await photoFromFile(file)))
+  }
+
+  return (
+    <div className="flex shrink-0 flex-col items-center gap-1.5">
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => inputRef.current?.click()}
+        aria-label={photo ? "Change profile photo" : "Add a profile photo"}
+        className="group relative size-14 cursor-pointer rounded-full outline-none focus-visible:ring-2 focus-visible:ring-accent-dark focus-visible:ring-offset-2 disabled:cursor-wait"
+      >
+        <Avatar photo={photo} initials={initials(name)} className="size-14 font-serif text-xl" fallbackClassName="bg-accent-dark text-oncolor" />
+        {/* Hover is colour, never movement: the overlay fades in, nothing shifts. */}
+        <span
+          aria-hidden="true"
+          className={`absolute inset-0 flex items-center justify-center rounded-full bg-black/55 text-[11px] font-semibold text-white transition-opacity duration-200 ${
+            busy ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100"
+          }`}
+        >
+          {busy ? "Saving…" : photo ? "Change" : "Add"}
+        </span>
+        <span
+          aria-hidden="true"
+          className="absolute -right-0.5 -bottom-0.5 flex size-5 items-center justify-center rounded-full border-2 border-white bg-ink-950 text-paper-50"
+        >
+          <PencilIcon className="size-2.5" />
+        </span>
+      </button>
+      <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" tabIndex={-1} className="sr-only" onChange={pick} />
+      {photo && (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => run(() => removeStaffPhoto(uid))}
+          className="cursor-pointer text-xs text-ink-950/55 transition-colors duration-200 hover:text-brand-dark"
+        >
+          Remove photo
+        </button>
+      )}
+    </div>
+  )
+}
+
 // The signed-in person's own page ("Profile" in the account menu).
-export default function Security({ user, role, displayName, onDisplayNameChange }) {
+export default function Security({ user, uid, role, displayName, onDisplayNameChange }) {
   const name = displayName || user?.email || "Demo admin (preview)"
+  const [photoError, setPhotoError] = useState(null)
   return (
     <div className="flex h-full flex-col">
       <PageHeader title="Profile" />
 
       <div className="mx-auto w-full max-w-4xl space-y-4 pb-6">
         <section className="flex items-center gap-4 rounded-2xl border border-ink-950/10 bg-white p-5 sm:p-6">
-          <span
-            aria-hidden="true"
-            className="flex size-14 shrink-0 items-center justify-center rounded-full bg-accent-dark font-serif text-xl text-oncolor"
-          >
-            {initials(name)}
-          </span>
+          <ProfilePhoto uid={uid} name={name} onError={setPhotoError} />
           <div className="min-w-0">
             <p className="font-serif text-xl break-words text-ink-950 sm:text-2xl">{name}</p>
             <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-950/60">
@@ -507,6 +572,11 @@ export default function Security({ user, role, displayName, onDisplayNameChange 
                 {ROLE_LABELS[role] ?? "No role assigned"}
               </span>
             </p>
+            {photoError && (
+              <p role="alert" className="mt-2 text-sm text-brand-dark">
+                {photoError}
+              </p>
+            )}
           </div>
         </section>
 
