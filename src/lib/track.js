@@ -1,11 +1,12 @@
 import { readConsent } from "./analyticsConsent"
 
-// Where counting never happens. The account and admin are never counted at
+// Where counting never happens. The account, admin and portal setup/reset
+// pages (/portal/*: a visit there says someone is a patient) are never counted at
 // all. The intake counts only that it was opened (one page view), never a
 // click inside it: on a health site, what someone taps in the intake can
 // reveal health information. firestore.rules enforces the same lines.
 const isBlocked = (type, path) =>
-  /^\/(account|admin)(\/|$)/.test(path) || (type !== "pageview" && /^\/intake(\/|$)/.test(path))
+  /^\/(account|admin|portal)(\/|$)/.test(path) || (type !== "pageview" && /^\/intake(\/|$)/.test(path))
 
 // Paths that only redirect elsewhere: the page they land on is counted
 // instead, so counting these as well would double the visit.

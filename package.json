@@ -5,10 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && vite build --ssr src/entry-server.jsx --outDir dist-ssr && node scripts/prerender.mjs",
     "lint": "oxlint",
     "preview": "vite preview",
-    "check": "node src/admin/patients/chartMath.check.js && node src/admin/staff/roles.check.js && node src/admin/calendar/calendarMath.check.js && node src/admin/patients/todoMath.check.js && node src/admin/staff/staffMath.check.js && node src/lib/inviteMath.check.js && node src/lib/progressMath.check.js && node src/lib/messageMath.check.js && node src/admin/lib/auditActions.check.js",
+    "check": "node src/admin/patients/chartMath.check.js && node src/admin/staff/roles.check.js && node src/admin/calendar/calendarMath.check.js && node src/admin/patients/todoMath.check.js && node src/admin/staff/staffMath.check.js && node src/lib/inviteMath.check.js && node src/lib/progressMath.check.js && node src/lib/messageMath.check.js && node src/admin/lib/auditActions.check.js && node src/lib/googleAnalytics.check.js",
     "test:rules": "firebase emulators:exec --only firestore \"node --test tests/*.test.js\""
   },
   "dependencies": {

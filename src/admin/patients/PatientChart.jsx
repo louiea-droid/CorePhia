@@ -166,7 +166,7 @@ export default function PatientChart({ actor }) {
   const [updatesVersion, setUpdatesVersion] = useState(0)
   const [updateEmailFailed, setUpdateEmailFailed] = useState(false)
   // This patient's message topics, for the summary's Messages line.
-  const { topics: allTopics } = useTopics()
+  const { topics: allTopics } = useTopics({ chartId })
 
   const reload = async () => {
     const [nextChart, nextNotes] = await Promise.all([loadChart(chartId), loadNotes(chartId, actor.uid)])

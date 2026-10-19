@@ -1,4 +1,4 @@
-import { getApp, getApps, initializeApp } from "firebase/app"
+import { getApps, initializeApp } from "firebase/app"
 import {
   confirmPasswordReset,
   createUserWithEmailAndPassword,
@@ -9,9 +9,10 @@ import {
   signOut,
   verifyPasswordResetCode,
 } from "firebase/auth"
-import { addDoc, collection, doc, getDoc, getDocs, getFirestore, query, serverTimestamp, setDoc, updateDoc, where } from "firebase/firestore"
+import { addDoc, collection, doc, getDoc, getDocs, getFirestore, query, serverTimestamp, updateDoc, where, writeBatch } from "firebase/firestore"
 import { isInviteUsable } from "../../lib/inviteMath"
 import { setPatientSessionHint } from "../../lib/patientSessionHint"
+import { markPortalActivity } from "../../admin/lib/useIdleTimeout"
 
 const config = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -25,11 +26,11 @@ const config = {
 export const isConfigured = Boolean(config.apiKey && config.projectId)
 
 // Separate module from admin/lib/firebase.js (rather than sharing it) so the public
-// site's login panel never pulls in the admin bundle, and vice versa. Both call
-// getApps() first because Firebase throws if initializeApp() runs twice against
-// the same config — harmless here since neither bundle loads unless its own
-// entry point (this file, or admin) is actually reached.
-const app = isConfigured ? (getApps().length ? getApp() : initializeApp(config)) : null
+// site's login panel never pulls in the admin bundle, and vice versa. Its own
+// named app, so the patient login is a separate session from the staff one:
+// signing out of (or idling out of) the admin no longer signs a patient out of
+// the portal in the same browser, and the reverse.
+const app = isConfigured ? (getApps().find((existing) => existing.name === "portal") ?? initializeApp(config, "portal")) : null
 const auth = app ? getAuth(app) : null
 export const db = app ? getFirestore(app) : null
 
@@ -52,6 +53,8 @@ export function watchPatientUser(onChange) {
 
 export async function signInPatient(email, password) {
   if (!auth) throw new Error("Firebase is not configured.")
+  // A fresh sign-in starts the idle clock over (see PortalApp).
+  markPortalActivity()
   const credential = await signInWithEmailAndPassword(auth, email, password)
   setPatientSessionHint(true)
   return credential.user
@@ -122,20 +125,28 @@ export async function getInvite(chartId, inviteId) {
   }
 }
 
+// Re-links a login already pointing at another chart (a returning patient's
+// new intake); the rules allow that only against a new invite.
 async function linkInvite(user, { chartId, inviteId, invite }) {
-  if (await getMyPortalLink(user.uid)) return user
-  await setDoc(doc(db, "patientAccounts", user.uid), {
+  if ((await getMyPortalLink(user.uid))?.intakeId === chartId) return user
+  // The invite is marked used in the same commit, so it can't be read by
+  // its link any more (firestore.rules isUsedByLink).
+  const batch = writeBatch(db)
+  batch.set(doc(db, "patientAccounts", user.uid), {
     email: invite.to,
     intakeId: chartId,
     firstName: invite.firstName,
     inviteId,
     linkedAt: serverTimestamp(),
   })
+  batch.update(doc(db, "patients", chartId, "invites", inviteId), { status: "used", usedAt: serverTimestamp() })
+  await batch.commit()
   return user
 }
 
 export async function createPortalLogin(ref, password) {
   if (!auth) throw new Error("Firebase is not configured.")
+  markPortalActivity()
   const { user } = await createUserWithEmailAndPassword(auth, ref.invite.to, password)
   setPatientSessionHint(true)
   return linkInvite(user, ref)
@@ -158,10 +169,12 @@ export async function linkCurrentLogin(ref) {
 // Firebase's authorised list, send without it rather than not at all. An
 // unknown email is reported as sent, so the form can't be used to probe who
 // has a login.
-export async function resetPatientPassword(email) {
+// back: the same-origin path the reset email returns to (PortalReset's
+// Continue), so a reset started from an invite comes back to that invite.
+export async function resetPatientPassword(email, back = "/account") {
   if (!auth) throw new Error("Firebase is not configured.")
   try {
-    await sendPasswordResetEmail(auth, email, { url: `${window.location.origin}/account` })
+    await sendPasswordResetEmail(auth, email, { url: `${window.location.origin}${back}` })
   } catch (cause) {
     if (cause.code === "auth/user-not-found") return
     if (cause.code !== "auth/unauthorized-continue-uri") throw cause

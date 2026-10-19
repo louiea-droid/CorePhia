@@ -256,7 +256,7 @@ export async function signNote(chartId, noteId, type, fields, actor) {
       signedBy,
       updatedAt: signedAt,
     })
-    Object.assign(store.charts.get(chartId), { lastNote: { type, signedAt }, updatedAt: signedAt })
+    Object.assign(store.charts.get(chartId), { lastNote: { type, signedAt, noteId }, updatedAt: signedAt })
     const entry = visitEntryFor({ ...fields, id: noteId })
     if (entry) {
       const { demoProgress } = await import("./progressStore")
@@ -276,7 +276,7 @@ export async function signNote(chartId, noteId, type, fields, actor) {
     updatedAt: serverTimestamp(),
   })
   batch.update(doc(database, PATIENTS_COLLECTION, chartId), {
-    lastNote: { type, signedAt: serverTimestamp() },
+    lastNote: { type, signedAt: serverTimestamp(), noteId },
     updatedAt: serverTimestamp(),
   })
   // The patient's progress gets this visit's numbers in the same commit, so a
@@ -379,8 +379,16 @@ export async function addStaff({ name, email, role }, actor) {
   try {
     const inviteAuth = getAuth(invite)
     const { user } = await createUserWithEmailAndPassword(inviteAuth, email, randomPassword())
-    await signOut(inviteAuth)
-    await setDoc(doc(database, USERS_COLLECTION, user.uid), { ...record, addedAt: serverTimestamp() })
+    try {
+      await setDoc(doc(database, USERS_COLLECTION, user.uid), { ...record, addedAt: serverTimestamp() })
+    } catch (cause) {
+      // Still signed in as the new login on the throwaway app, so it can
+      // delete itself: no sign-in left behind without a staff record.
+      await user.delete().catch((removeCause) => console.error("Couldn't remove the half-added login:", removeCause.code ?? removeCause.message))
+      throw cause
+    } finally {
+      await signOut(inviteAuth)
+    }
     // From here they are added, so a failed email mustn't read as "nothing
     // changed": it's reported back and they can use "Forgot password?".
     const inviteEmailFailed = await sendStaffResetEmail(email).then(

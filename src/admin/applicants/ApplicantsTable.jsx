@@ -9,6 +9,7 @@ const STATUS_BADGE = {
   admitted: "bg-accent-dark/10 text-accent-text",
   pending: "bg-ink-950/10 text-ink-950/60",
   declined: "bg-red-600/10 text-red-600",
+  discharged: "bg-slate-200 text-ink-800",
 }
 
 // Mirrors ApplicantsTable's own row order: the 10 most recent submissions overall

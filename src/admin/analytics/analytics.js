@@ -1,3 +1,5 @@
+import { addDays, fromTampa, todayInTampa, weekDays } from "../calendar/calendarMath.js"
+
 const DAY = 86400000
 
 function tally(values) {
@@ -104,20 +106,17 @@ function bands(numbers, size, unit) {
 
 // Monday-anchored week buckets, oldest first, including weeks with no intakes so
 // a quiet week reads as a gap rather than being silently dropped.
+// Weeks are Tampa weeks (Monday 00:00 Tampa), like every other admin date.
 function weeklyCounts(records, weeks) {
-  const now = new Date()
-  const startOfWeek = new Date(now)
-  startOfWeek.setHours(0, 0, 0, 0)
-  startOfWeek.setDate(startOfWeek.getDate() - ((startOfWeek.getDay() + 6) % 7))
+  const thisMonday = weekDays(todayInTampa())[0]
 
   const buckets = []
   for (let offset = weeks - 1; offset >= 0; offset -= 1) {
-    const start = new Date(startOfWeek)
-    start.setDate(start.getDate() - offset * 7)
-    const end = new Date(start)
-    end.setDate(end.getDate() + 7)
+    const monday = addDays(thisMonday, -offset * 7)
+    const start = fromTampa(monday)
+    const end = fromTampa(addDays(monday, 7))
     buckets.push({
-      label: start.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      label: new Date(`${monday}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" }),
       value: records.filter((record) => {
         const at = Date.parse(record.submittedAt)
         return at >= start.getTime() && at < end.getTime()

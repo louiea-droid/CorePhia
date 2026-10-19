@@ -3,12 +3,15 @@ import { Navigate, Route, Routes, useLocation, useNavigationType } from "react-r
 import CookieBanner from "./components/CookieBanner"
 import Footer from "./components/Footer"
 import Header from "./components/Header"
-import PatientIntakeForm from "./components/PatientIntakeForm"
 import SiteAnalytics from "./components/SiteAnalytics"
+import { endPrerenderedStart } from "./hooks/useIntro"
+import { useGoogleAnalytics } from "./lib/googleAnalytics"
 import About from "./pages/About"
 import Contact from "./pages/Contact"
 import Faq from "./pages/Faq"
+import GuidePage from "./pages/GuidePage"
 import Home from "./pages/Home"
+import { Privacy, PrivacyPractices, Terms } from "./pages/Legal"
 import Membership from "./pages/Membership"
 import NotFound from "./pages/NotFound"
 import ProgramPage from "./pages/ProgramPage"
@@ -21,6 +24,10 @@ const AdminApp = lazy(() => import("./admin/AdminApp"))
 // Same reasoning as AdminApp: the portal pulls in the Firebase Auth SDK via
 // portal/lib/patientAuth, so it stays out of the bundle until someone actually
 // navigates to /account.
+// The intake (and its date picker and selects) is only needed on /intake, so
+// homepage visitors do not download it.
+const PatientIntakeForm = lazy(() => import("./components/PatientIntakeForm"))
+
 const PortalApp = lazy(() => import("./portal/PortalApp"))
 const PortalSetup = lazy(() => import("./portal/PortalSetup"))
 const PortalReset = lazy(() => import("./portal/PortalReset"))
@@ -53,6 +60,8 @@ function ScrollManager() {
 
 function App() {
   const { pathname } = useLocation()
+  useGoogleAnalytics(pathname)
+  useEffect(endPrerenderedStart, [])
 
   // The admin is a separate surface: no marketing header, footer or theming,
   // and nothing on the public site links to it.
@@ -71,7 +80,9 @@ function App() {
     return (
       <>
         <ScrollManager />
-        <PatientIntakeForm />
+        <Suspense fallback={null}>
+          <PatientIntakeForm />
+        </Suspense>
       </>
     )
   }
@@ -90,8 +101,11 @@ function App() {
           <Route path="/membership" element={<Membership />} />
           <Route path="/pricing" element={<Navigate to="/membership" replace />} />
           <Route path="/programs/:slug" element={<ProgramPage />} />
+          <Route path="/guides/:slug" element={<GuidePage />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy-practices" element={<PrivacyPractices />} />
           <Route path="/success-stories" element={<SuccessStories />} />
-          <Route path="/intake" element={<PatientIntakeForm />} />
           <Route
             path="/account/*"
             element={

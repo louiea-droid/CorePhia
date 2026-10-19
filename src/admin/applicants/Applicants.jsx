@@ -5,7 +5,6 @@ import { PAGE_SIZE_OPTIONS } from "../lib/constants"
 import { AUDIT_ACTIONS, INTAKE_COLLECTION, recordAuditEvent } from "../lib/firebase"
 import PageHeader from "../layout/PageHeader"
 import Pagination from "../ui/Pagination"
-import SampleDataNotice from "../ui/SampleDataNotice"
 import ApplicantModal from "./ApplicantModal"
 import ApplicantsTable from "./ApplicantsTable"
 import AppointmentDialog from "../calendar/AppointmentDialog"
@@ -14,7 +13,6 @@ import { asDate } from "../patients/chartMath"
 import { setApplicantStatus } from "../patients/chartStore"
 import { ApplicantsSkeleton } from "../ui/Skeleton"
 import { canAdmit } from "../staff/roles"
-import { TEMP_FAKE_RECORDS } from "../lib/tempFakeRecords"
 import { useIntakeRecords } from "./useIntakeRecords"
 
 const PAGE_SIZE_KEY = "corephia-admin-patients-page-size"
@@ -23,6 +21,7 @@ const STATUS_FILTER_OPTIONS = [
   { value: "pending", label: "Pending" },
   { value: "admitted", label: "Admitted" },
   { value: "declined", label: "Declined" },
+  { value: "discharged", label: "Discharged" },
 ]
 
 function readStoredPageSize() {
@@ -50,16 +49,10 @@ export default function Applicants({ role, actor }) {
   const [planFilter, setPlanFilter] = useState("")
   const [statusFilter, setStatusFilter] = useState("")
 
-  const usingSampleFallback = records && records.length === 0
-  const baseRecords = usingSampleFallback ? TEMP_FAKE_RECORDS : records
-  // Sample fallback rows aren't real Firestore documents — deleting one would
-  // either no-op against a nonexistent id or (worse) collide with an unrelated
-  // real id, so the option is hidden rather than wired to something misleading.
-  const canDelete = role === "superAdmin" && !usingSampleFallback
+  const canDelete = role === "superAdmin"
   // Admitting/declining isn't destructive, so every clinical role but the
-  // dietitian can do it (roles.canAdmit; firestore.rules isAdmitter), just
-  // not against the sample fallback rows, same reasoning as canDelete.
-  const canReview = canAdmit(role) && !usingSampleFallback
+  // dietitian can do it (roles.canAdmit; firestore.rules isAdmitter).
+  const canReview = canAdmit(role)
 
   const selectedId = selectedRecord?.id
   useEffect(() => {
@@ -126,16 +119,16 @@ export default function Applicants({ role, actor }) {
   }
 
   const filteredRecords = useMemo(() => {
-    if (!baseRecords) return null
+    if (!records) return null
     const query = search.trim().toLowerCase()
-    return baseRecords.filter((record) => {
+    return records.filter((record) => {
       if (planFilter && record.visit?.membershipPlan !== planFilter) return false
       if (statusFilter && (record.status ?? "pending") !== statusFilter) return false
       if (!query) return true
       const name = `${record.demographics?.firstName ?? ""} ${record.demographics?.lastName ?? ""}`.toLowerCase()
       return name.includes(query)
     })
-  }, [baseRecords, search, planFilter, statusFilter])
+  }, [records, search, planFilter, statusFilter])
 
   const totalPages = filteredRecords ? Math.max(1, Math.ceil(filteredRecords.length / pageSize)) : 1
   // Clamped at render time rather than synced back into state via an effect
@@ -179,7 +172,6 @@ export default function Applicants({ role, actor }) {
     // header, the search/filter row and pagination never move.
     <div className="flex h-full flex-col">
       <PageHeader title="Applicants" description="Everyone who has submitted the intake form. Review each one, then admit or decline." />
-      {usingSampleFallback && <SampleDataNotice />}
 
       {error ? (
         <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-ink-950/10 bg-white p-6 text-center">
@@ -188,7 +180,7 @@ export default function Applicants({ role, actor }) {
         </div>
       ) : !records ? (
         <ApplicantsSkeleton />
-      ) : !baseRecords.length ? (
+      ) : !records.length ? (
         <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-ink-950/10 bg-white p-8 text-center">
           <h2 className="font-serif text-2xl text-ink-950">No intakes yet</h2>
           <p className="mx-auto mt-3 max-w-md text-sm text-ink-950/60">
@@ -268,14 +260,11 @@ export default function Applicants({ role, actor }) {
       <ApplicantModal
         record={selectedRecord}
         nextVisit={nextVisitFor && nextVisitFor.id === selectedRecord?.id ? nextVisitFor.visit : null}
-        onBook={
-          usingSampleFallback
-            ? undefined
-            : (record) =>
-                setBooking({
-                  intakeId: record.id,
-                  patientName: `${record.demographics?.firstName ?? ""} ${record.demographics?.lastName ?? ""}`.trim(),
-                })
+        onBook={(record) =>
+          setBooking({
+            intakeId: record.id,
+            patientName: `${record.demographics?.firstName ?? ""} ${record.demographics?.lastName ?? ""}`.trim(),
+          })
         }
         onClose={() => setSelectedRecord(null)}
         canDelete={canDelete}
@@ -283,10 +272,7 @@ export default function Applicants({ role, actor }) {
         canReview={canReview}
         onUpdateStatus={updateStatus}
         onSaveNote={saveNote}
-        // Sample fallback rows aren't real records, so opening one isn't a
-        // real access event — keeping them out stops the audit trail filling
-        // with entries that point at documents that never existed.
-        audit={!usingSampleFallback}
+        audit
       />
 
       {booking && (

@@ -104,7 +104,9 @@ export default function Header() {
             }}
           >
             <img
-              src="/cp-health.webp"
+              src="/cp-health-header.webp"
+              width="336"
+              height="112"
               alt="CorePhia Health"
               className={`h-12 w-auto transition-[filter] duration-500 ease-out-smooth sm:h-14 ${
                 dark ? "brightness-0 invert" : ""

@@ -55,12 +55,12 @@ export default function About() {
   return (
     <>
       <Helmet>
-        <title>About CorePhia | Physician-Built Weight Loss Programs in Tampa</title>
+        <title>About CorePhia | Physician-Built Weight Loss in Tampa</title>
         <meta
           name="description"
-          content="CorePhia is a physician-built weight loss program based in Tampa, Florida, combining dietitian services, exercise prescriptions, and medication when a licensed provider prescribes it. Care is led by a provider board certified in internal medicine."
+          content="CorePhia is a physician-built weight loss program in Tampa, led by a board-certified internal medicine physician. See how we care for you."
         />
-        <link rel="canonical" href="https://www.corephia.com/about" />
+        <link rel="canonical" href="https://corephia.com/about" />
       </Helmet>
 
       <section aria-labelledby="about-heading" className="mx-auto max-w-4xl px-4 pt-16 pb-12 sm:px-6">
@@ -72,7 +72,7 @@ export default function About() {
         </h1>
         <p className="mt-6 text-lg leading-relaxed text-ink-950/70">
           CorePhia is a physician-built weight loss program based in Tampa, Florida. We combine dietitian
-          services, exercise prescriptions, and  weight loss medication,
+          services, exercise prescriptions, and weight loss medication when clinically appropriate,
           all guided by evidence-based medicine and a licensed provider.
         </p>
       </section>

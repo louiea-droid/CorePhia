@@ -1,8 +1,10 @@
 import { createPortal } from "react-dom"
-import { signOutAdmin } from "../lib/firebase"
 import { getAdminPortalRoot } from "../ui/portalRoot"
 
-export default function IdleWarningModal({ secondsLeft }) {
+// Shared by the admin and the patient portal, so the sign-out is passed in
+// (importing the admin's would pull it into the portal bundle). Outside the
+// admin, getAdminPortalRoot() falls back to document.body.
+export default function IdleWarningModal({ secondsLeft, onSignOut }) {
   return createPortal(
     <div className="fixed inset-0 z-50" role="presentation">
       <div aria-hidden="true" className="absolute inset-0 bg-scrim/50" />
@@ -22,7 +24,7 @@ export default function IdleWarningModal({ secondsLeft }) {
           <div className="mt-5 flex justify-end gap-2">
             <button
               type="button"
-              onClick={signOutAdmin}
+              onClick={onSignOut}
               className="rounded-full px-4 py-2 text-sm font-medium text-ink-950/60 transition-colors duration-200 hover:bg-ink-950/5"
             >
               Sign out now

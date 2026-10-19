@@ -1,0 +1,37 @@
+# CorePhia
+
+> CorePhia is a physician-built weight loss program based in Tampa, Florida. The program combines dietitian services, a comprehensive exercise plan, regular follow-ups, and medical care, with weight loss medication only when a licensed provider decides it is clinically appropriate. It is a program, not a pharmacy or a medication product. Patients must be located in Florida.
+
+## Key facts
+
+- Location: Tampa, Florida. Patients must be located in Florida, where the provider is licensed.
+- Who can join: adults 18 or older.
+- Cost: monthly membership, cash pay. Core is $199 a month, Core+ is $249 a month, Core Complete is $349 a month.
+- Insurance: not accepted.
+- Getting started: an online intake that takes about ten minutes, then a review by a licensed provider.
+- Medication: prescribed only when a licensed provider decides it is clinically appropriate. Many patients follow the program without it.
+
+## Programs
+
+- [Medical care](https://corephia.com/programs/medical-care): A licensed provider reviews your history and guides your care.
+- [Dietitian services](https://corephia.com/programs/dietitian-services): A meal plan built around your goals, preferences, and lifestyle.
+- [Comprehensive exercise plan](https://corephia.com/programs/exercise-plan): Workouts tailored to your fitness level.
+- [Follow-ups](https://corephia.com/programs/follow-ups): Regular check-ins and progress tracking.
+
+## Guides
+
+- [How medical weight loss works](https://corephia.com/guides/how-medical-weight-loss-works)
+- [What a dietitian does in a weight loss program](https://corephia.com/guides/what-a-dietitian-does)
+- [Exercise for weight loss](https://corephia.com/guides/exercise-for-weight-loss)
+- [How to choose a weight loss program in Florida](https://corephia.com/guides/choosing-a-weight-loss-program-in-florida)
+- [What to expect when you start a weight loss program](https://corephia.com/guides/what-to-expect-weight-loss-intake)
+- [What happens at a weight loss follow-up](https://corephia.com/guides/what-happens-at-a-weight-loss-follow-up)
+- [Medical weight loss in Tampa, Florida](https://corephia.com/guides/medical-weight-loss-tampa-florida)
+- [Why weight loss slows down, and what to do about it](https://corephia.com/guides/why-weight-loss-slows-down)
+
+## About
+
+- [Membership](https://corephia.com/membership): Plans and monthly prices.
+- [About CorePhia](https://corephia.com/about)
+- [FAQ](https://corephia.com/faq)
+- [Contact](https://corephia.com/contact): +1 (850) 454-6700, info@corephia.com

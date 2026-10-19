@@ -94,6 +94,9 @@ export default function LoginPanel({ open, onClose, startView = "login" }) {
     setError(null)
   }
 
+  // The build-time prerender (scripts/prerender.mjs) has no document to portal into.
+  if (typeof document === "undefined") return null
+
   return createPortal(
     <div className={`fixed inset-0 z-50 ${open ? "" : "pointer-events-none"}`} inert={!open}>
       <div
@@ -260,7 +263,7 @@ export default function LoginPanel({ open, onClose, startView = "login" }) {
             <Link
               to="/intake"
               onClick={close}
-              className="mt-4 inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-ink-950 transition-colors duration-200 ease-out-smooth hover:bg-accent-dark hover:text-paper-50"
+              className="mt-4 inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-ink-950 transition-colors duration-200 ease-out-smooth hover:bg-ink-950 hover:text-paper-50"
             >
               Get started
               <ChevronRightIcon className="size-4" />

@@ -1,4 +1,4 @@
-import { getApp, getApps, initializeApp } from "firebase/app"
+import { getApps, initializeApp } from "firebase/app"
 import { addDoc, collection, getFirestore } from "firebase/firestore"
 
 const config = {
@@ -12,10 +12,9 @@ const config = {
 
 export const isConfigured = Boolean(config.apiKey && config.projectId)
 
-// Same getApps() guard as portal/lib/patientAuth.js: this module and that one can both
-// be live on the same page (the header's login panel and the intake form), and
-// Firebase throws if the default app is initialized twice.
-const app = isConfigured ? (getApps().length ? getApp() : initializeApp(config)) : null
+// Reuses the default app if another module made it first (the portal has its own
+// named app): Firebase throws if the default app is initialized twice.
+const app = isConfigured ? (getApps().find((existing) => existing.name === "[DEFAULT]") ?? initializeApp(config)) : null
 const db = app ? getFirestore(app) : null
 
 // Matches INTAKE_COLLECTION in admin/lib/firebase.js, which is what reads these back.

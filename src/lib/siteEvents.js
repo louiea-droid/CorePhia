@@ -1,4 +1,4 @@
-import { getApp, getApps, initializeApp } from "firebase/app"
+import { getApps, initializeApp } from "firebase/app"
 import { addDoc, collection, getFirestore, serverTimestamp } from "firebase/firestore"
 
 // Anonymous page-view and click counts (meeting item 15). Imported lazily by
@@ -19,7 +19,7 @@ const config = {
 }
 
 const isConfigured = Boolean(config.apiKey && config.projectId)
-const app = isConfigured ? (getApps().length ? getApp() : initializeApp(config)) : null
+const app = isConfigured ? (getApps().find((existing) => existing.name === "[DEFAULT]") ?? initializeApp(config)) : null
 const db = app ? getFirestore(app) : null
 
 // Matches SITE_EVENTS_COLLECTION in admin/lib/firebase.js, which reads these back.

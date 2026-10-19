@@ -157,29 +157,26 @@ export default function ScienceSection() {
             className="flex flex-col items-center rounded-3xl bg-gradient-to-bl from-ink-700 via-ink-800 to-ink-900 p-6 text-center shadow-lg hover:shadow-2xl sm:p-8"
           >
             <span className="animate-soft-pulse rounded-full border border-accent/40 px-3 py-1 text-xs font-semibold text-accent">
-              Real member results
+              Built around you
             </span>
             <p className="mt-3 font-serif text-2xl leading-tight text-paper-100 sm:text-3xl">
-              Members lose up to 20% body weight*
+              Your plan is adjusted as you progress
             </p>
 
             <div className="mt-6">
-              <DoseGauge dose="20%" active={doseVisible} />
+              <DoseGauge dose="On target" active={doseVisible} />
             </div>
 
             <a
               href="/#programs"
-              className="mt-4 rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-ink-950 transition-colors duration-200 ease-out-smooth hover:bg-accent-dark"
+              className="mt-4 rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-ink-950 transition-colors duration-200 ease-out-smooth hover:bg-ink-950 hover:text-paper-50"
             >
               Explore our programs
             </a>
           </div>
         </div>
 
-        <p className="mt-6 text-center text-xs text-paper-100/40">
-          *Based on program outcomes combining nutrition, exercise, and medication when prescribed. Individual
-          results vary.
-        </p>
+        
       </div>
     </section>
   )

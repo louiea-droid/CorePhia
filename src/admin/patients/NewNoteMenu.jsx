@@ -72,7 +72,7 @@ export default function NewNoteMenu({ types, creating, onPick, hint }) {
       <div
         id="new-note-menu"
         hidden={!open}
-        className="absolute top-full right-0 z-30 mt-2 w-72 max-w-[calc(100vw-3rem)] rounded-2xl bg-white p-1.5 shadow-xl ring-1 ring-ink-950/10"
+        className="animate-pop-in absolute top-full right-0 z-30 mt-2 w-72 max-w-[calc(100vw-3rem)] rounded-2xl bg-white p-1.5 shadow-xl ring-1 ring-ink-950/10"
       >
         {ordered.map((type) => (
           <button

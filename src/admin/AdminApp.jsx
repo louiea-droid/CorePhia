@@ -10,6 +10,7 @@ import {
   AUDIT_ACTIONS,
   USERS_COLLECTION,
   getAdminAccess,
+  watchAdminAccess,
   isConfigured,
   recordAuditEvent,
   recordSignIn,
@@ -75,7 +76,7 @@ function AdminRoutes({ role, signerName, user, displayName, onDisplayNameChange,
     <Routes>
       <Route path="/admin" element={guard("dashboard", <Dashboard actor={actor} />)} />
       <Route path="/admin/applicants" element={guard("applicants", <Applicants role={role} actor={actor} />)} />
-      <Route path="/admin/patients" element={guard("patients", <Patients actor={actor} />)} />
+      <Route path="/admin/patients" element={guard("patients", <Patients actor={actor} role={role} />)} />
       <Route path="/admin/patients/:chartId" element={guard("patients", <PatientChart actor={actor} />)} />
       <Route path="/admin/todo" element={guard("todo", <Todo actor={actor} />)} />
       <Route path="/admin/calendar" element={guard("calendar", <Calendar actor={actor} />)} />
@@ -302,6 +303,16 @@ export default function AdminApp() {
     })
   }, [])
 
+  // After the first lookup, follow the staff record so a rename or role change
+  // by the admin applies at once (see watchAdminAccess).
+  useEffect(() => {
+    if (!user) return
+    return watchAdminAccess(user, (access) => {
+      setRole(access.role)
+      setSignerName(access.name)
+    })
+  }, [user])
+
   // The admin must never be indexed or followed, wherever it is hosted.
   const head = (
     <Helmet>
@@ -408,7 +419,7 @@ export default function AdminApp() {
           of document.body so they stay inside the dark-mode scope. */}
       <div id="admin-portal-root" className={theme === "dark" ? "dark" : undefined}>
         {body}
-        {idleWarningSecondsLeft != null && <IdleWarningModal secondsLeft={idleWarningSecondsLeft} />}
+        {idleWarningSecondsLeft != null && <IdleWarningModal secondsLeft={idleWarningSecondsLeft} onSignOut={() => signOutAdmin()} />}
       </div>
     </>
   )

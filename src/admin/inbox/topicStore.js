@@ -99,11 +99,12 @@ const strip = ({ messages: _messages, ...topic }) => topic
 
 // --- Reads -----------------------------------------------------------------
 
-export function listenTopics(onChange, onError) {
+// chartId: only that patient's topics (the chart page), not every chart's.
+export function listenTopics(onChange, onError, chartId) {
   if (usingSeedData) {
     let store
     let cancelled = false
-    const push = () => onChange(store.topics.map(strip))
+    const push = () => onChange(store.topics.filter((topic) => !chartId || topic.chartId === chartId).map(strip))
     demo().then((loaded) => {
       if (cancelled) return
       store = loaded
@@ -116,7 +117,7 @@ export function listenTopics(onChange, onError) {
     }
   }
   return onSnapshot(
-    collectionGroup(requireDb(), TOPICS),
+    chartId ? collection(requireDb(), PATIENTS_COLLECTION, chartId, TOPICS) : collectionGroup(requireDb(), TOPICS),
     (snapshot) => onChange(snapshot.docs.map((entry) => ({ id: entry.id, chartId: entry.ref.parent.parent.id, ...entry.data() }))),
     onError,
   )

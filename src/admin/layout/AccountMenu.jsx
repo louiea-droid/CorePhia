@@ -90,7 +90,7 @@ export default function AccountMenu({ user, uid, role, displayName, onSignOut = 
       <div
         id="account-menu"
         hidden={!open}
-        className="absolute top-full right-0 z-30 mt-2 w-64 rounded-2xl bg-white p-1.5 shadow-xl ring-1 ring-ink-950/10"
+        className="animate-pop-in absolute top-full right-0 z-30 mt-2 w-64 rounded-2xl bg-white p-1.5 shadow-xl ring-1 ring-ink-950/10"
       >
         <div className="border-b border-ink-950/10 px-3 pt-2 pb-3">
           <p className="truncate text-sm font-semibold text-ink-950">{name}</p>

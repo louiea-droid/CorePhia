@@ -1,63 +1,123 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://www.corephia.com/</loc>
-    <lastmod>2026-09-14</lastmod>
+    <loc>https://corephia.com/</loc>
+    <lastmod>2026-10-13</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://www.corephia.com/about</loc>
-    <lastmod>2026-09-14</lastmod>
+    <loc>https://corephia.com/about</loc>
+    <lastmod>2026-10-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.corephia.com/contact</loc>
-    <lastmod>2026-09-14</lastmod>
+    <loc>https://corephia.com/contact</loc>
+    <lastmod>2026-10-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.corephia.com/faq</loc>
-    <lastmod>2026-09-14</lastmod>
+    <loc>https://corephia.com/faq</loc>
+    <lastmod>2026-10-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.corephia.com/membership</loc>
-    <lastmod>2026-09-29</lastmod>
+    <loc>https://corephia.com/membership</loc>
+    <lastmod>2026-10-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.corephia.com/programs/medical-care</loc>
-    <lastmod>2026-09-30</lastmod>
+    <loc>https://corephia.com/programs/medical-care</loc>
+    <lastmod>2026-10-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.corephia.com/programs/dietitian-services</loc>
-    <lastmod>2026-09-30</lastmod>
+    <loc>https://corephia.com/programs/dietitian-services</loc>
+    <lastmod>2026-10-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.corephia.com/programs/exercise-plan</loc>
-    <lastmod>2026-09-30</lastmod>
+    <loc>https://corephia.com/programs/exercise-plan</loc>
+    <lastmod>2026-10-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.corephia.com/programs/follow-ups</loc>
-    <lastmod>2026-09-30</lastmod>
+    <loc>https://corephia.com/programs/follow-ups</loc>
+    <lastmod>2026-10-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.corephia.com/intake</loc>
-    <lastmod>2026-09-14</lastmod>
+    <loc>https://corephia.com/privacy</loc>
+    <lastmod>2026-10-13</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://corephia.com/terms</loc>
+    <lastmod>2026-10-13</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://corephia.com/privacy-practices</loc>
+    <lastmod>2026-10-13</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://corephia.com/guides/how-medical-weight-loss-works</loc>
+    <lastmod>2026-10-14</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://corephia.com/guides/what-a-dietitian-does</loc>
+    <lastmod>2026-10-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://corephia.com/guides/exercise-for-weight-loss</loc>
+    <lastmod>2026-10-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://corephia.com/guides/choosing-a-weight-loss-program-in-florida</loc>
+    <lastmod>2026-10-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://corephia.com/guides/what-to-expect-weight-loss-intake</loc>
+    <lastmod>2026-10-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://corephia.com/guides/what-happens-at-a-weight-loss-follow-up</loc>
+    <lastmod>2026-10-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://corephia.com/guides/medical-weight-loss-tampa-florida</loc>
+    <lastmod>2026-10-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://corephia.com/guides/why-weight-loss-slows-down</loc>
+    <lastmod>2026-10-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
 </urlset>

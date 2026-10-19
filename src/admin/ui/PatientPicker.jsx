@@ -34,7 +34,7 @@ export default function PatientPicker({ value, onChange, label = "Patient or app
   }, [records, search])
 
   const pick = (record) =>
-    onChange({ intakeId: record.id, patientName: nameOf(record), patientKind: record.status === "admitted" ? "patient" : "applicant" })
+    onChange({ intakeId: record.id, patientName: nameOf(record), patientKind: ["admitted", "discharged"].includes(record.status) ? "patient" : "applicant" })
 
   if (value.intakeId)
     return (
@@ -91,7 +91,7 @@ export default function PatientPicker({ value, onChange, label = "Patient or app
           ) : (
             matches.map((record) => {
               const name = nameOf(record)
-              const kind = record.status === "admitted" ? "patient" : "applicant"
+              const kind = ["admitted", "discharged"].includes(record.status) ? "patient" : "applicant"
               return (
                 <li key={record.id}>
                   <button

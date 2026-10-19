@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { deleteIntakeRecord, loadIntakeRecords, updateIntakeRecord } from "../lib/firebase"
 
-// Shared by Dashboard and Patients so each owns its own fetch rather than
+// Shared by Dashboard, Applicants, Patients and Analytics so each owns its own fetch rather than
 // threading records through a context — fine at this scale (a two-person
 // admin team, well under a thousand records); revisit if that changes.
 export function useIntakeRecords() {

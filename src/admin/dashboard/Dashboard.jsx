@@ -8,9 +8,7 @@ import ApplicantListModal from "../applicants/ApplicantListModal"
 import ApplicantModal from "../applicants/ApplicantModal"
 import ApplicantsTable from "../applicants/ApplicantsTable"
 import { DashboardSkeleton } from "../ui/Skeleton"
-import SampleDataNotice from "../ui/SampleDataNotice"
 import TodayStrip from "./TodayStrip"
-import { TEMP_FAKE_RECORDS } from "../lib/tempFakeRecords"
 import { useIntakeRecords } from "../applicants/useIntakeRecords"
 
 export default function Dashboard({ actor }) {
@@ -26,16 +24,12 @@ export default function Dashboard({ actor }) {
   // to guess it from a shared shape.
   const [drilldown, setDrilldown] = useState(null)
 
-  // See tempFakeRecords.js — same real-but-empty fallback Patients.jsx uses,
-  // so the charts here have something to render instead of sitting at zero.
-  const usingSampleFallback = Boolean(records && records.length === 0)
-  const baseRecords = usingSampleFallback ? TEMP_FAKE_RECORDS : records
-  const metrics = useMemo(() => (baseRecords ? deriveMetrics(baseRecords) : null), [baseRecords])
+  const metrics = useMemo(() => (records ? deriveMetrics(records) : null), [records])
 
   const drilldownMatches = useMemo(() => {
-    if (!drilldown || !baseRecords) return []
-    return baseRecords.filter(drilldown.match)
-  }, [baseRecords, drilldown])
+    if (!drilldown || !records) return []
+    return records.filter(drilldown.match)
+  }, [records, drilldown])
 
   return (
     <div>
@@ -43,16 +37,12 @@ export default function Dashboard({ actor }) {
         title="Dashboard"
       />
 
-      {/* Real records only: the sample fallback below is for the charts, and
-          a made-up pending count here would send staff to an empty page. */}
       <div className="mb-4">
         <TodayStrip
           actor={actor}
           pending={error ? "error" : records ? records.filter((record) => (record.status ?? "pending") === "pending").length : null}
         />
       </div>
-
-      {usingSampleFallback && <SampleDataNotice />}
 
       {error ? (
         <div className="rounded-2xl border border-ink-950/10 bg-white p-6">
@@ -298,7 +288,7 @@ export default function Dashboard({ actor }) {
               </Link>
             }
           >
-            <ApplicantsTable records={baseRecords.slice(0, 8)} onSelect={setSelectedRecord} />
+            <ApplicantsTable records={records.slice(0, 8)} onSelect={setSelectedRecord} />
           </Card>
         </div>
       )}
@@ -320,7 +310,7 @@ export default function Dashboard({ actor }) {
       <ApplicantModal
         record={selectedRecord}
         onClose={() => setSelectedRecord(null)}
-        audit={!usingSampleFallback}
+        audit
       />
     </div>
   )

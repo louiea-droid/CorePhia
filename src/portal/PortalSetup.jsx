@@ -13,6 +13,7 @@ import {
   watchPatientUser,
 } from "./lib/patientAuth"
 import { SUPPORT_PHONE } from "../lib/siteContact"
+import { Loading, Skeleton } from "./Skeleton"
 
 const cardClass = "rounded-3xl border border-ink-950/10 bg-white p-8"
 const primaryButton =
@@ -77,14 +78,16 @@ export default function PortalSetup() {
   useEffect(() => {
     if (!sameUser || busy) return
     let active = true
+    // "Already set up" only for this chart: a link to an older chart (a
+    // returning patient) still gets the button that moves it here.
     getMyPortalLink(user.uid).then(
-      (next) => active && setLink(next),
+      (next) => active && setLink(next?.intakeId === chartId ? next : null),
       () => active && setLink(null),
     )
     return () => {
       active = false
     }
-  }, [sameUser, user, busy])
+  }, [sameUser, user, busy, chartId])
 
   const ref = { chartId, inviteId, invite }
 
@@ -126,7 +129,7 @@ export default function PortalSetup() {
 
   const sendReset = async () => {
     try {
-      await resetPatientPassword(invite.to)
+      await resetPatientPassword(invite.to, `/portal/setup?c=${encodeURIComponent(chartId)}&i=${encodeURIComponent(inviteId)}`)
       setResetSent(true)
     } catch {
       setError("Couldn't send the link. Please try again.")
@@ -165,11 +168,27 @@ export default function PortalSetup() {
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
 
+      {state === "loading" && (
+        <Loading label="Checking your invite…" className={cardClass}>
+          <Skeleton className="h-8 w-2/3" />
+          <Skeleton className="mt-4 h-4 w-full" />
+          <Skeleton className="mt-2 h-4 w-4/5" />
+        </Loading>
+      )}
+
       {state === "invalid" && (
         <div className={cardClass}>
           <h1 className="font-serif text-3xl text-ink-950">This invite link has expired or isn't valid</h1>
           <p className="mt-3 text-ink-950/70">
             Contact us and we'll send you a new one. <ContactLine />
+          </p>
+          {/* An invite closes once it is used, so this also shows when the
+              patient opens the email again after setting up. */}
+          <p className="mt-3 text-ink-950/70">
+            Already set up your portal?{" "}
+            <Link to="/account" className="font-medium text-ink-950 underline underline-offset-2">
+              Go to your portal
+            </Link>
           </p>
         </div>
       )}

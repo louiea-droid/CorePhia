@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react"
+import { Link } from "react-router-dom"
 import { OPEN_PRIVACY_CHOICES, readConsent, writeConsent } from "../lib/analyticsConsent"
 
 // The privacy banner (meeting item 14). Shows until the visitor answers, and
 // again whenever the footer's "Privacy choices" link is pressed. Not shown on
 // the intake or admin, which App.jsx renders without it.
 export default function CookieBanner() {
-  const [open, setOpen] = useState(() => readConsent() === null)
+  // Never in the prerendered HTML (no storage at build time): it would flash
+  // for visitors who already answered, until the script loads.
+  const [open, setOpen] = useState(() => typeof window !== "undefined" && readConsent() === null)
 
   useEffect(() => {
     const reopen = () => setOpen(true)
@@ -28,8 +31,15 @@ export default function CookieBanner() {
     >
       <p className="font-serif text-lg text-paper-50">Your privacy</p>
       <p className="mt-2 text-sm leading-relaxed text-paper-100/80">
-        We use essential storage to run the site and, with your OK, anonymous counts of page visits and clicks to
-        improve it. No cookies, and nothing that identifies you.
+        We use essential storage to run the site. With your OK, we also count visits and use Google Analytics
+        cookies on our public pages to improve them. Never on the intake, the patient portal, or anything with your
+        health information.{" "}
+        <Link
+          to="/privacy#browser-storage"
+          className="rounded-sm underline underline-offset-2 transition-colors duration-200 ease-out-smooth hover:text-paper-50 focus-visible:ring-2 focus-visible:ring-paper-50 focus-visible:outline-none"
+        >
+          Read our privacy policy
+        </Link>
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
         <button

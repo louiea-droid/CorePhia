@@ -3,6 +3,7 @@ import { Link } from "react-router-dom"
 import { ChevronRightIcon, StethoscopeIcon } from "../components/icons"
 import { PRICES_ANNOUNCED, tiers } from "../data/pricingTiers"
 import Reveal from "../components/Reveal"
+import ReviewedLine from "../components/ReviewedLine"
 
 const priceList = tiers.map((tier) => `${tier.name} at $${tier.price} per month`).join(", ")
 
@@ -23,7 +24,7 @@ const faqGroups = [
       },
       {
         q: "Who qualifies for the program?",
-        a: "Eligibility is a clinical decision rather than a checkbox. A licensed provider reviews your intake, your medical history and your goals, then recommends a plan, including whether medication is appropriate for you. Some patients are a better fit for nutrition and exercise support on its own.",
+        a: "Eligibility is a clinical decision rather than a checkbox. A licensed provider reviews your intake, your medical history and your goals, then recommends a plan, including whether medication is appropriate for you. Some patients are a better fit for nutrition and exercise support on its own. The program is for adults, so you must be 18 or older to join.",
       },
     ],
   },
@@ -60,8 +61,12 @@ const faqGroups = [
         a: "A licensed provider oversees your medical care and a registered dietitian handles the nutrition side. Your provider is board certified in internal medicine and follows your care from your first review.",
       },
       {
+        q: "What if I have an urgent problem or a side effect?",
+        a: "If you think it is an emergency, call 911 or go to the nearest emergency room. For anything else, call us or send a message in your patient portal. Portal messages are read during working hours, so do not use them for anything urgent.",
+      },
+      {
         q: "What happens to the health information I submit?",
-        a: "Your intake is collected so that your care team can treat you, and you are asked to acknowledge how it will be used before you sign it. It is handled confidentially, and it is not used to sell you unrelated products.",
+        a: "Your intake is collected so that your care team can review your health and treat you. Only staff who need your records for your care can open them. We do not sell your information or use it for advertising, and notification emails never contain health details. Our privacy policy and notice of privacy practices, linked at the bottom of every page, explain exactly what we collect, who sees it, and your rights to a copy of your records.",
       },
     ],
   },
@@ -81,9 +86,10 @@ const faqGroups = [
         a: "No. CorePhia is cash pay, so there are no insurance approvals or claims standing between you and your care. Membership is billed monthly, and what each tier includes is listed on our membership page.",
       },
       {
-        // TODO: replace with the actual list of licensed states once the client confirms it.
+        // Florida only for now (Louie, 2026-10-13). Add states here, in the Terms
+        // and in areaServed (index.html, ProgramPage.jsx) as licenses are added.
         q: "Where do you operate?",
-        a: "CorePhia is based in Tampa, Florida, and your care is provided by a licensed provider. Because licensure determines where a provider is able to treat you, contact us to confirm that we can care for you where you live.",
+        a: "CorePhia is based in Tampa, Florida, and right now we can only care for patients located in Florida, where our provider is licensed. If you live in another state, contact us and we will let you know when that changes.",
       },
     ],
   },
@@ -119,12 +125,12 @@ export default function Faq() {
   return (
     <>
       <Helmet>
-        <title>FAQs | CorePhia Weight Loss Programs in Tampa</title>
+        <title>FAQs | CorePhia Weight Loss Program in Tampa</title>
         <meta
           name="description"
-          content="Answers to common questions about CorePhia's weight loss program in Tampa, Florida: who qualifies, how medication is prescribed, what the program costs, and how your care is delivered."
+          content="Answers about CorePhia's Tampa weight loss program: who qualifies, how medication is decided, what it costs, and how your care works."
         />
-        <link rel="canonical" href="https://www.corephia.com/faq" />
+        <link rel="canonical" href="https://corephia.com/faq" />
         <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
       </Helmet>
 
@@ -139,6 +145,7 @@ export default function Faq() {
           What the program includes, how medication is actually handled, who it's for and what it costs. If
           something you need isn't here, ask us directly. We would rather answer it properly.
         </p>
+        <ReviewedLine className="mt-4" />
       </section>
 
       {faqGroups.map((group, groupIndex) => (
@@ -179,7 +186,7 @@ export default function Faq() {
             <div className="flex flex-wrap gap-3">
               <Link
                 to="/intake"
-                className="rounded-full bg-accent px-6 py-3 text-sm font-semibold text-ink-950 transition-colors duration-200 ease-out-smooth hover:bg-accent-dark"
+                className="rounded-full bg-accent px-6 py-3 text-sm font-semibold text-ink-950 transition-colors duration-200 ease-out-smooth hover:bg-ink-950 hover:text-paper-50"
               >
                 Get started
               </Link>

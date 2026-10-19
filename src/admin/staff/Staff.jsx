@@ -103,7 +103,7 @@ function RowMenu({ label, items }) {
         <MoreIcon className="size-4" />
       </button>
       {open && (
-        <div role="menu" className="absolute top-full right-0 z-20 mt-1.5 w-48 rounded-xl bg-white p-1 shadow-xl ring-1 ring-ink-950/10">
+        <div role="menu" className="animate-pop-in absolute top-full right-0 z-20 mt-1.5 w-48 rounded-xl bg-white p-1 shadow-xl ring-1 ring-ink-950/10">
           {items.map((item) =>
             item.to ? (
               <Link key={item.label} role="menuitem" to={item.to} className="block rounded-lg px-3 py-2 text-sm text-ink-950 transition-colors duration-150 hover:bg-paper-100">

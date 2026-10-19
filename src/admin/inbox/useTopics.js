@@ -3,7 +3,7 @@ import { listenTopics } from "./topicStore"
 
 // Every patient topic, live. The sidebar count and the Messages page each
 // hold one listener.
-export function useTopics({ enabled = true } = {}) {
+export function useTopics({ enabled = true, chartId } = {}) {
   const [topics, setTopics] = useState(null)
   const [error, setError] = useState(null)
   useEffect(() => {
@@ -17,7 +17,8 @@ export function useTopics({ enabled = true } = {}) {
         console.error("Could not load messages:", cause.code ?? cause.message)
         setError(cause.message ?? "error")
       },
+      chartId,
     )
-  }, [enabled])
+  }, [enabled, chartId])
   return { topics, error }
 }

@@ -4,7 +4,7 @@ import { Link } from "react-router-dom"
 import { useReveal } from "../hooks/useReveal"
 import { CheckCircleIcon, MailIcon, MapPinIcon, PhoneIcon } from "../components/icons"
 import Select from "../components/Select"
-import { SUPPORT_PHONE } from "../lib/siteContact"
+import { LOCATION, LOCATION_MAP_URL, SUPPORT_PHONE } from "../lib/siteContact"
 
 const INTERESTS = [
   "Starting a weight loss program",
@@ -21,9 +21,9 @@ const inputClass =
 const labelClass = "mb-1.5 block text-sm font-medium text-ink-950/80"
 
 const contactDetails = [
-  { icon: PhoneIcon, label: "Phone", value: SUPPORT_PHONE },
-  { icon: MailIcon, label: "Email", value: "info@corephia.com" },
-  { icon: MapPinIcon, label: "Location", value: "Tampa, Florida" },
+  { icon: PhoneIcon, label: "Phone", value: SUPPORT_PHONE, href: `tel:${SUPPORT_PHONE.replace(/\D/g, "")}` },
+  { icon: MailIcon, label: "Email", value: "info@corephia.com", href: "mailto:info@corephia.com" },
+  { icon: MapPinIcon, label: "Location", value: LOCATION, href: LOCATION_MAP_URL },
 ]
 
 function buildContactMessage(form) {
@@ -71,9 +71,9 @@ export default function Contact() {
         <title>Contact CorePhia | Tampa Weight Loss Program</title>
         <meta
           name="description"
-          content="Get in touch with CorePhia's care team in Tampa, Florida. Ask a question or tell us what you're looking for and we'll reach out to get you started."
+          content="Contact CorePhia's care team in Tampa, Florida. Ask a question or tell us what you need, and we will reach out to get you started."
         />
-        <link rel="canonical" href="https://www.corephia.com/contact" />
+        <link rel="canonical" href="https://corephia.com/contact" />
       </Helmet>
 
       <section aria-labelledby="contact-heading" className="mx-auto max-w-5xl px-4 pt-12 pb-8 sm:px-6 sm:pt-16 sm:pb-12">
@@ -199,7 +199,7 @@ export default function Contact() {
             <div>
               <h2 className="font-serif text-xl text-ink-950">Reach us directly</h2>
               <ul className="mt-4 space-y-4">
-                {contactDetails.map(({ icon: Icon, label, value }) => (
+                {contactDetails.map(({ icon: Icon, label, value, href }) => (
                   <li key={label} className="flex items-start gap-3">
                     <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-paper-100 text-accent-dark">
                       <Icon className="size-5" />
@@ -208,7 +208,19 @@ export default function Contact() {
                       <span className="block text-xs font-semibold tracking-wide text-ink-950/50 uppercase">
                         {label}
                       </span>
-                      <span className="text-ink-950">{value}</span>
+                      {href ? (
+                        <a
+                          href={href}
+                          target={href.startsWith("http") ? "_blank" : undefined}
+                          rel={href.startsWith("http") ? "noopener noreferrer" : undefined}
+                          aria-label={href.startsWith("http") ? `${value}, opens in Google Maps` : undefined}
+                          className="text-ink-950 underline decoration-ink-950/30 underline-offset-4 transition-colors duration-200 ease-out-smooth hover:text-accent-dark hover:decoration-accent-dark"
+                        >
+                          {value}
+                        </a>
+                      ) : (
+                        <span className="text-ink-950">{value}</span>
+                      )}
                     </span>
                   </li>
                 ))}
@@ -222,7 +234,7 @@ export default function Contact() {
               </p>
               <Link
                 to="/intake"
-                className="mt-5 inline-flex rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-ink-950 transition-colors duration-200 ease-out-smooth hover:bg-accent-dark"
+                className="mt-5 inline-flex rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-ink-950 transition-colors duration-200 ease-out-smooth hover:bg-ink-950 hover:text-paper-50"
               >
                 Get started
               </Link>

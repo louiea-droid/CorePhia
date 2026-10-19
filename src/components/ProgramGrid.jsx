@@ -1,19 +1,7 @@
 import { Link } from "react-router-dom"
 import { useReveal } from "../hooks/useReveal"
 import { ActivityArt, CareShieldArt, HealthCheckArt, MealPlateArt } from "./Artwork"
-import { BadgeCheckIcon, ClipboardCheckIcon } from "./icons"
-
-function FdaSeal() {
-  return (
-    <span
-      className="absolute top-3 right-3 flex size-11 items-center justify-center rounded-full border border-dashed border-paper-50/70 text-center text-[5px] leading-tight font-semibold tracking-wide text-paper-50 uppercase sm:top-4 sm:right-4 sm:size-14 sm:text-[6px]"
-      aria-label="FDA approved medication, when prescribed"
-    >
-      <BadgeCheckIcon className="absolute size-5 opacity-25 sm:size-6" />
-      <span className="relative px-1.5">FDA approved</span>
-    </span>
-  )
-}
+import { ClipboardCheckIcon } from "./icons"
 
 function PillarCard({ pillar, index }) {
   const [ref, visible] = useReveal()
@@ -24,8 +12,14 @@ function PillarCard({ pillar, index }) {
       data-reveal={visible ? "shown" : "hidden"}
       style={{ "--reveal-i": index + 1 }}
     >
-      <article className="group relative flex h-full min-h-48 flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-b from-brand to-brand-dark p-4 shadow-lg transition-shadow duration-300 ease-out-smooth hover:shadow-2xl sm:min-h-80 sm:rounded-3xl sm:p-6">
-        {pillar.fda && <FdaSeal />}
+      <article className="group relative isolate flex h-full min-h-48 flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-b from-brand to-brand-dark p-4 shadow-lg transition-shadow duration-500 ease-out-smooth hover:shadow-[0_22px_44px_-18px_rgb(96_165_250/0.5)] focus-within:shadow-[0_22px_44px_-18px_rgb(96_165_250/0.5)] sm:min-h-80 sm:rounded-3xl sm:p-6">
+        {/* Hover highlight, colour only (no movement, per Louie): a pale blue
+            light fades up from the bottom corner, like the hero card. Also
+            on keyboard focus. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 -z-10 bg-radial-[at_85%_100%] from-accent/50 via-accent/15 via-45% to-transparent to-70% opacity-0 transition-opacity duration-500 ease-out-smooth group-hover:opacity-100 group-focus-within:opacity-100"
+        />
 
         <div
           className="flex flex-1 items-center justify-center py-2 sm:py-6"
@@ -56,28 +50,24 @@ const pillars = [
     to: "/programs/medical-care",
     description: "Prescription medication, guided by a licensed provider.",
     art: <CareShieldArt className="h-20 sm:h-40" />,
-    fda: true,
   },
   {
     name: "Dietitian services",
     to: "/programs/dietitian-services",
     description: "A meal plan built around your goals, preferences, and lifestyle.",
     art: <MealPlateArt className="size-16 sm:size-28" />,
-    fda: false,
   },
     {
     name: "Follow-ups",
     to: "/programs/follow-ups",
     description: "Regular check-ins and progress tracking to keep your plan on target.",
     art: <HealthCheckArt className="size-16 sm:size-28" />,
-    fda: false,
   },
   {
     name: "Comprehensive Exercise Plan",
     to: "/programs/exercise-plan",
     description: "Workouts tailored to your fitness level, with a plan that grows with you.",
     art: <ActivityArt className="h-14 w-32 sm:h-24 sm:w-56" />,
-    fda: false,
   },
 
 

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react"
+import Select from "../../components/Select"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { BarList, Card, ColumnChart, StatTile } from "../ui/charts"
 import { loadSiteEvents } from "../lib/firebase"
 import { TIME_ZONE, addDays, todayInTampa } from "../calendar/calendarMath"
@@ -7,6 +8,15 @@ import { BarListSkeleton, ColumnChartSkeleton, StatTileSkeleton } from "../ui/Sk
 import { useIntakeRecords } from "../applicants/useIntakeRecords"
 
 const RANGES = [7, 30, 90]
+const UNIT_DAYS = { days: 1, weeks: 7, months: 30 }
+const MAX_DAYS = 365
+const UNIT_OPTIONS = ["days", "weeks", "months"].map((value) => ({ value, label: value }))
+const QUICK_PICKS = [
+  [14, "days", "14 days"],
+  [8, "weeks", "8 weeks"],
+  [6, "months", "6 months"],
+  [12, "months", "12 months"],
+]
 
 // Readable names for paths, so the table says "Membership" rather than "/membership".
 const PAGE_NAMES = {
@@ -116,22 +126,122 @@ function Funnel({ steps }) {
   )
 }
 
+const pill = (on) =>
+  `rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors duration-200 ease-out-smooth ${
+    on ? "bg-accent-dark text-oncolor" : "text-ink-950/60 hover:text-ink-950"
+  }`
+
+// 7, 30 and 90 days, or "Custom": a number plus days, weeks or months.
+// A month is 30 days. Applied on Enter or Apply, not per keystroke, since a
+// longer range reloads the data. Custom opens a dropdown under its pill.
 function RangeSwitch({ value, onChange }) {
+  const custom = !RANGES.includes(value)
+  const [open, setOpen] = useState(false)
+  const [amount, setAmount] = useState("14")
+  const [unit, setUnit] = useState("days")
+  const root = useRef(null)
+
+  // Close on Escape or a click outside the menu.
+  useEffect(() => {
+    if (!open) return
+    const close = (event) => {
+      if (event.key === "Escape" || (event.type === "mousedown" && !root.current?.contains(event.target))) setOpen(false)
+    }
+    document.addEventListener("keydown", close)
+    document.addEventListener("mousedown", close)
+    return () => {
+      document.removeEventListener("keydown", close)
+      document.removeEventListener("mousedown", close)
+    }
+  }, [open])
+
+  const apply = (event) => {
+    event.preventDefault()
+    const days = Math.round(Number(amount) * UNIT_DAYS[unit])
+    if (days < 1) return
+    onChange(Math.min(days, MAX_DAYS))
+    setOpen(false)
+  }
+
   return (
-    <div role="group" aria-label="Date range" className="inline-flex rounded-full border border-ink-950/10 bg-white p-1">
-      {RANGES.map((days) => (
-        <button
-          key={days}
-          type="button"
-          aria-pressed={value === days}
-          onClick={() => onChange(days)}
-          className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors duration-200 ease-out-smooth ${
-            value === days ? "bg-accent-dark text-oncolor" : "text-ink-950/60 hover:text-ink-950"
-          }`}
-        >
-          {days} days
+    <div ref={root} className="relative">
+      <div role="group" aria-label="Date range" className="inline-flex rounded-full border border-ink-950/10 bg-white p-1">
+        {RANGES.map((days) => (
+          <button
+            key={days}
+            type="button"
+            aria-pressed={value === days}
+            onClick={() => {
+              setOpen(false)
+              onChange(days)
+            }}
+            className={pill(value === days)}
+          >
+            {days} days
+          </button>
+        ))}
+        <button type="button" aria-expanded={open} aria-haspopup="true" onClick={() => setOpen(!open)} className={pill(custom)}>
+          {custom ? `${value} days` : "Custom"}
+          <svg viewBox="0 0 12 12" aria-hidden="true" className={`ml-1.5 inline size-2.5 transition-transform duration-200 ${open ? "rotate-180" : ""}`}>
+            <path d="M2 4.5l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </button>
-      ))}
+      </div>
+      {open && (
+        <form
+          onSubmit={apply}
+          className="animate-pop-in absolute right-0 top-full z-20 mt-2 w-72 rounded-2xl border border-ink-950/10 bg-white p-4 shadow-xl"
+        >
+          <p className="text-sm font-semibold text-ink-950">Custom range</p>
+          <p className="mt-0.5 text-xs text-ink-950/55">Count back from today, up to a year.</p>
+
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {QUICK_PICKS.map(([amount, unit, label]) => (
+              <button
+                key={label}
+                type="button"
+                onClick={() => {
+                  setAmount(String(amount))
+                  setUnit(unit)
+                }}
+                className="cursor-pointer rounded-full border border-ink-950/15 px-2.5 py-1 text-xs font-medium text-ink-950/70 transition-colors duration-200 hover:border-accent-dark hover:text-accent-text"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-4 grid grid-cols-[auto_5rem_1fr] items-center gap-2">
+            <label htmlFor="range-amount" className="text-sm text-ink-950/60">
+              Last
+            </label>
+            <input
+              id="range-amount"
+              type="number"
+              inputMode="numeric"
+              min="1"
+              max={Math.floor(MAX_DAYS / UNIT_DAYS[unit])}
+              step="1"
+              required
+              autoFocus
+              value={amount}
+              onChange={(event) => setAmount(event.target.value)}
+              className="w-full rounded-xl border border-ink-950/15 bg-paper-50 px-3 py-2 text-sm text-ink-950 tabular-nums outline-none transition-colors duration-200 focus:border-ink-950/40 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            />
+            <Select
+              value={unit}
+              onChange={setUnit}
+              ariaLabel="Unit"
+              options={UNIT_OPTIONS}
+              triggerClassName="px-3 py-2 text-sm"
+            />
+          </div>
+
+          <button type="submit" className={`${pill(true)} mt-4 w-full`}>
+            Apply
+          </button>
+        </form>
+      )}
     </div>
   )
 }
@@ -145,20 +255,28 @@ export default function SiteTraffic() {
   const [days, setDays] = useState(30)
   const { records } = useIntakeRecords()
 
-  // One load of the longest range; switching ranges filters it in place.
+  // Loads the chosen range (30 days on open) and keeps the longest loaded so
+  // far: a shorter range filters it in place, only a longer one reloads.
+  // Each event is one document read, so this used to read 90 days on every open.
+  // ponytail: still one read per event; per-day totals need a server
+  // (Cloud Functions, Blaze plan) once traffic makes this expensive.
+  const [loadDays, setLoadDays] = useState(days)
+  if (days > loadDays) setLoadDays(days)
   useEffect(() => {
     let active = true
-    loadSiteEvents(Math.max(...RANGES))
-      .then((result) => active && setEvents(result))
+    loadSiteEvents(loadDays)
+      .then((result) => active && setEvents({ days: loadDays, list: result }))
       .catch((cause) => active && setError(cause.message))
     return () => {
       active = false
     }
-  }, [])
+  }, [loadDays])
 
-  const metrics = useMemo(() => (events ? derive(events, days) : null), [events, days])
+  // Hold the skeleton until the load covers the chosen range.
+  const ready = events && events.days >= days
+  const metrics = useMemo(() => (ready ? derive(events.list, days) : null), [ready, events, days])
   const submitted = useMemo(() => (records ? submittedSince(records, days) : null), [records, days])
-  const rangeLabel = `Last ${days} days`
+  const rangeLabel = days === 1 ? "Today" : `Last ${days} days`
 
   return (
     <div>
@@ -191,7 +309,7 @@ export default function SiteTraffic() {
             <BarListSkeleton rows={6} />
           </div>
         </div>
-      ) : !events.length ? (
+      ) : !events.list.length ? (
         <div className="rounded-2xl border border-ink-950/10 bg-white p-8 text-center">
           <h2 className="font-serif text-2xl text-ink-950">No visits counted yet</h2>
           <p className="mx-auto mt-3 max-w-md text-sm text-ink-950/60">

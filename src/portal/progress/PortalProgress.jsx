@@ -3,6 +3,7 @@ import { Link } from "react-router-dom"
 import WeightChart from "../../components/WeightChart"
 import { series, summary, vitalsText } from "../../lib/progressMath"
 import { deleteWeighIn, getMyProgress } from "../lib/patientAuth"
+import { listenMyChartStatus } from "../lib/messageStore"
 import LogWeightForm from "./LogWeightForm"
 import Collapse from "../../components/Collapse"
 import { Loading, Skeleton } from "../Skeleton"
@@ -23,10 +24,14 @@ export default function PortalProgress({ intakeId, compact = false }) {
   const [attempt, setAttempt] = useState(0)
   const [result, setResult] = useState(null) // { attempt, data } | { attempt, failed }
   const [logging, setLogging] = useState(false)
+  // Only an active chart takes new weigh-ins (firestore.rules isHomeEntry).
+  const [active, setActive] = useState(false)
   const [deleting, setDeleting] = useState(null)
   const [removing, setRemoving] = useState(false)
   const dialogRef = useRef(null)
   const [deleteError, setDeleteError] = useState(null)
+
+  useEffect(() => listenMyChartStatus(intakeId, (status) => setActive(status === "active")), [intakeId])
 
   useEffect(() => {
     let live = true
@@ -87,6 +92,7 @@ export default function PortalProgress({ intakeId, compact = false }) {
           </Link>
         ) : (
           current?.data &&
+          active &&
           !logging && (
           <button
             type="button"

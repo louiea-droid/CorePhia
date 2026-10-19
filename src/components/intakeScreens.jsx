@@ -17,6 +17,13 @@ const US_STATES = [
   "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
 ]
 
+// The program is for adults (Terms of service): the latest birth date that is
+// 18 today. Feb 29 falls back to Feb 28 in years without one.
+function adultBirthdayCutoff(today) {
+  const [year, month, day] = today.split("-")
+  return `${Number(year) - 18}-${month}-${month === "02" && day === "29" ? "28" : day}`
+}
+
 export const PLANS = ["Core", "Core+", "Core Complete"]
 
 // The four programs, in Dr. Antonious's words (CLAUDE.md, 2026-09-30).
@@ -378,7 +385,7 @@ export const SCREENS = [
     showIf: (a) => a.hasMedications === "yes",
     render: () => (
       <Field label="Medications and doses" required>
-        <textarea name="medications" rows={4} required className={inputClass} />
+        <textarea name="medications" maxLength={2000} rows={4} required className={inputClass} />
       </Field>
     ),
   },
@@ -395,7 +402,7 @@ export const SCREENS = [
     showIf: (a) => a.hasAllergies === "yes",
     render: () => (
       <Field label="Allergies" required>
-        <textarea name="allergies" rows={3} required className={inputClass} />
+        <textarea name="allergies" maxLength={2000} rows={3} required className={inputClass} />
       </Field>
     ),
   },
@@ -407,7 +414,7 @@ export const SCREENS = [
         <ChoiceCards name="hasSurgeries" options={YES_NO} columns={2} />
         {answers.hasSurgeries === "yes" && (
           <Field label="Which surgeries, and roughly when?" required>
-            <textarea name="surgeries" rows={3} required className={inputClass} />
+            <textarea name="surgeries" maxLength={2000} rows={3} required className={inputClass} />
           </Field>
         )}
       </>
@@ -421,7 +428,7 @@ export const SCREENS = [
         <ChoiceCards name="hasPriorTreatment" options={YES_NO} columns={2} />
         {answers.hasPriorTreatment === "yes" && (
           <Field label="What you tried, and how it went" required>
-            <textarea name="priorWeightLossTreatment" rows={3} required className={inputClass} />
+            <textarea name="priorWeightLossTreatment" maxLength={2000} rows={3} required className={inputClass} />
           </Field>
         )}
       </>
@@ -436,7 +443,7 @@ export const SCREENS = [
         <CheckCards name="familyHistory" options={FAMILY_HISTORY} />
         {answers.familyHistory?.some((value) => value !== NONE) && (
           <Field label="Who was affected, and at what age, if you know">
-            <textarea name="familyHistoryNotes" rows={2} className={inputClass} />
+            <textarea name="familyHistoryNotes" maxLength={2000} rows={2} className={inputClass} />
           </Field>
         )}
       </>
@@ -497,6 +504,7 @@ export const SCREENS = [
       <Field label="A typical day of eating">
         <textarea
           name="dietNotes"
+          maxLength={2000}
           rows={4}
           placeholder="Snacking habits, dietary restrictions, or anything else we should know"
           className={inputClass}
@@ -507,6 +515,7 @@ export const SCREENS = [
   {
     id: "about-you",
     question: "A little about you.",
+    hint: "You must be 18 or older to join.",
     render: ({ today }) => (
       <div className="grid gap-5 sm:grid-cols-2">
         {/* NOT_BLANK: spaces alone pass `required` but are trimmed to nothing on
@@ -537,7 +546,7 @@ export const SCREENS = [
           />
         </Field>
         <Field label="Date of birth" required>
-          <DatePicker name="dob" required max={today} ariaLabel="Date of birth" />
+          <DatePicker name="dob" required max={adultBirthdayCutoff(today)} ariaLabel="Date of birth" />
         </Field>
         <Field label="Sex assigned at birth" required>
           <Select name="sexAssigned" required placeholder="Select one" options={SEX_OPTIONS} ariaLabel="Sex assigned at birth" />
@@ -579,11 +588,11 @@ export const SCREENS = [
         </Field>
         <div className="sm:col-span-2">
           <Field label="Street address" required>
-            <input name="address" type="text" required autoComplete="address-line1" className={inputClass} />
+            <input name="address" type="text" required pattern={NOT_BLANK} maxLength={200} autoComplete="address-line1" className={inputClass} />
           </Field>
         </div>
         <Field label="City" required>
-          <input name="city" type="text" required autoComplete="address-level2" className={inputClass} />
+          <input name="city" type="text" required pattern={NOT_BLANK} maxLength={100} autoComplete="address-level2" className={inputClass} />
         </Field>
         <div className="grid grid-cols-2 gap-5">
           <Field label="State" required>
@@ -641,7 +650,7 @@ export const SCREENS = [
           </Field>
         </div>
         <Field label="Anything else you'd like to discuss?">
-          <textarea name="notes" rows={3} className={inputClass} />
+          <textarea name="notes" maxLength={2000} rows={3} className={inputClass} />
         </Field>
       </>
     ),
@@ -671,7 +680,16 @@ export const SCREENS = [
               required
               className="mt-0.5 size-4 shrink-0 rounded border-ink-950/30 text-accent-dark focus:ring-accent-dark"
             />
-            I acknowledge that I have received and reviewed the Notice of Privacy Practices (HIPAA).{" "}
+            I acknowledge that I have received and reviewed the{" "}
+            <a
+              href="/privacy-practices"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-accent-dark underline underline-offset-4"
+            >
+              Notice of Privacy Practices
+            </a>{" "}
+            (HIPAA).{" "}
             <span className="text-brand-dark">*</span>
           </label>
         </div>

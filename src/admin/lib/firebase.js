@@ -1,4 +1,4 @@
-import { initializeApp } from "firebase/app"
+import { getApps, initializeApp } from "firebase/app"
 import {
   EmailAuthProvider,
   getAuth,
@@ -77,7 +77,8 @@ export const AUDIT_ACTIONS = {
 
 // A record with no status field yet (every one submitted before this feature
 // existed) reads as pending rather than needing a backfill migration.
-export const INTAKE_STATUSES = ["pending", "admitted", "declined"]
+// discharged = was a patient, chart made inactive from Patients (not declined).
+export const INTAKE_STATUSES = ["pending", "admitted", "declined", "discharged"]
 
 export const isConfigured = Boolean(config.apiKey && config.projectId)
 
@@ -87,7 +88,7 @@ export const isConfigured = Boolean(config.apiKey && config.projectId)
 // there is unreachable without a real signed-in Firebase user.
 export const usingSeedData = import.meta.env.DEV && !isConfigured
 
-const app = isConfigured ? initializeApp(config) : null
+const app = isConfigured ? (getApps().find((existing) => existing.name === "[DEFAULT]") ?? initializeApp(config)) : null
 const auth = app ? getAuth(app) : null
 const db = app ? getFirestore(app) : null
 
@@ -308,6 +309,24 @@ export async function getAdminAccess(user) {
   }
 }
 
+// Keeps the role and signing name live while someone is signed in. The rules
+// check the current staff record on every write (role(), myName()), so after
+// the admin renames someone or changes their role, a value read once at
+// sign-in would get every note, message and booking refused until they
+// signed in again. Same mapping as getAdminAccess; a failed listen keeps
+// what was already loaded.
+export function watchAdminAccess(user, onChange) {
+  if (!user || !db || usingSeedData) return () => {}
+  return onSnapshot(
+    doc(db, USERS_COLLECTION, user.uid),
+    (snapshot) => {
+      const { role, name } = snapshot.data() ?? {}
+      onChange(isClinicalRole(role) ? { role, name: name || user.email } : { role: null, name: null })
+    },
+    (cause) => console.warn("Couldn't watch the staff record:", cause.code ?? cause.message),
+  )
+}
+
 // firestore.rules restricts this to superAdmin — a signed-in admin without
 // that role gets permission-denied from Firestore itself even if this were
 // somehow called, so the UI-side role check is a courtesy, not the boundary.
@@ -326,6 +345,9 @@ export async function updateIntakeRecord(id, patch) {
   await updateDoc(doc(db, INTAKE_COLLECTION, id), patch)
 }
 
+const LIST_LOG_EVERY_MS = 30 * 60 * 1000
+let lastListLoggedAt = 0
+
 export async function loadIntakeRecords() {
   // Imported dynamically so the sample records are not bundled into a
   // production build, where this branch is unreachable anyway.
@@ -336,7 +358,11 @@ export async function loadIntakeRecords() {
   if (!db) throw new Error("Firebase is not configured.")
   const snapshot = await getDocs(query(collection(db, INTAKE_COLLECTION), orderBy("submittedAt", "desc")))
   // Every caller (Dashboard, Applicants, Analytics, the patient search) reads
-  // every applicant's record here, so the bulk read itself is logged once.
+  // every applicant's record here, so the bulk read itself is logged, at
+  // most once per half hour per tab: moving between those pages used to add
+  // an entry each time and push chart opens and signings off Activity.
+  if (Date.now() - lastListLoggedAt < LIST_LOG_EVERY_MS) return snapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() }))
+  lastListLoggedAt = Date.now()
   recordAuditEvent({
     action: AUDIT_ACTIONS.listIntakes,
     targetCollection: INTAKE_COLLECTION,

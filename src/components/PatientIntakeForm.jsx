@@ -26,9 +26,16 @@ function readAnswers(form) {
 
 // A fieldset is barred from constraint validation, so its own checkValidity()
 // and reportValidity() always return true. Find the first invalid control
-// inside it instead.
+// inside it instead. A textarea can't take a pattern, so spaces alone would
+// pass `required` and then be stored as "" (read as "none" for medications,
+// allergies...); mark that invalid here.
 const firstInvalid = (fieldset) =>
-  [...fieldset.elements].find((element) => element.willValidate && !element.checkValidity())
+  [...fieldset.elements].find((element) => {
+    if (element.tagName === "TEXTAREA") {
+      element.setCustomValidity(element.required && !element.value.trim() ? "Please fill in this field." : "")
+    }
+    return element.willValidate && !element.checkValidity()
+  })
 
 // Whether the patient has answered anything on a screen yet: a card or box
 // ticked, or something typed (typedOnly: typed only). Read-only fields (the
@@ -41,6 +48,9 @@ const hasAnswer = (fieldset, { typedOnly = false } = {}) =>
   )
 
 const screenState = (fieldset) => ({ any: hasAnswer(fieldset), typed: hasAnswer(fieldset, { typedOnly: true }) })
+
+// After this long on "Sending…", say the connection may have dropped.
+const SLOW_SEND_MS = 20000
 
 // The form ignores pointer input this soon after a screen appears (see goTo).
 const EARLY_TAP_MS = 400
@@ -66,7 +76,11 @@ function reportInvalid(invalid, showError) {
   }
   invalid.parentElement.querySelector("button")?.focus()
   const label = invalid.closest("label")?.querySelector("span")?.textContent.replace("*", "").trim()
-  showError(`${label || "This field"} is required.`)
+  showError(
+    invalid.validity.valueMissing
+      ? `${label || "This field"} is required.`
+      : `Pick another date for ${(label || "this field").toLowerCase()}.`,
+  )
 }
 
 const fieldNames = (form) => new Set([...form.elements].map((element) => element.name).filter(Boolean))
@@ -309,7 +323,7 @@ async function submitIntakeRecord(record) {
 function TopBar() {
   return (
     <header className="mx-auto max-w-xl px-4 pt-8 sm:px-6 sm:pt-12">
-      <img src="/cp-health.webp" alt="CorePhia Health" className="h-10 w-auto" />
+      <img src="/cp-health-header.webp" width="336" height="112" alt="CorePhia Health" className="h-10 w-auto" />
     </header>
   )
 }
@@ -402,7 +416,9 @@ function Splash({ onDone }) {
 
       <div className="relative mx-auto flex h-full max-w-2xl flex-col px-6 pt-16 pb-24 sm:pt-24">
         <img
-          src="/cp-health.webp"
+          src="/cp-health-header.webp"
+          width="336"
+          height="112"
           alt=""
           className="animate-splash-in h-10 w-auto self-start brightness-0 invert sm:h-12"
         />
@@ -448,6 +464,9 @@ export default function PatientIntakeForm() {
   const [answered, setAnswered] = useState({ any: false, typed: false })
   const [keyboardPick, setKeyboardPick] = useState(false)
   const [status, setStatus] = useState("idle")
+  // Offline, Firestore holds the write until the connection is back and the
+  // send never fails, so "Sending…" would sit there with no word of why.
+  const [slowSend, setSlowSend] = useState(false)
   const [splashDone, setSplashDone] = useState(splashSeen)
   useEffect(() => {
     markSplashSeen(true)
@@ -660,8 +679,12 @@ export default function PatientIntakeForm() {
     }
     // Read the form before awaiting: currentTarget is only valid for the
     // lifetime of the event dispatch.
+    if (status === "sending") return
     const record = buildIntakeRecord(form)
     setStatus("sending")
+    // Not a retry: the queued write still goes through once back online, and
+    // a second send would make a duplicate record.
+    const slowTimer = setTimeout(() => setSlowSend(true), SLOW_SEND_MS)
     try {
       await submitIntakeRecord(record)
       setStatus("sent")
@@ -670,6 +693,9 @@ export default function PatientIntakeForm() {
       // the patient a care team has their information when nothing was stored.
       console.error("Intake submission failed:", cause.code ?? cause.message)
       setStatus("error")
+    } finally {
+      clearTimeout(slowTimer)
+      setSlowSend(false)
     }
   }
 
@@ -679,7 +705,7 @@ export default function PatientIntakeForm() {
         <Helmet>
           <title>Request Received | CorePhia</title>
           <meta name="robots" content="noindex, follow" />
-          <link rel="canonical" href="https://www.corephia.com/intake" />
+          <link rel="canonical" href="https://corephia.com/intake" />
         </Helmet>
         <TopBar />
         <main className="mx-auto max-w-xl px-4 py-16 sm:px-6">
@@ -710,7 +736,7 @@ export default function PatientIntakeForm() {
           name="description"
           content="Start your CorePhia program. Answer a few questions in our secure patient intake, about ten minutes, and your care team takes it from there."
         />
-        <link rel="canonical" href="https://www.corephia.com/intake" />
+        <link rel="canonical" href="https://corephia.com/intake" />
       </Helmet>
       {!splashDone && <Splash onDone={setSplashDone} />}
       <TopBar />
@@ -753,6 +779,15 @@ export default function PatientIntakeForm() {
             </fieldset>
           ))}
 
+          {status === "sending" && slowSend && isLast && (
+            <div role="status" className="mt-8 rounded-2xl border border-ink-950/15 bg-paper-100 p-5">
+              <p className="font-medium text-ink-950">Still sending your intake form.</p>
+              <p className="mt-1 text-sm text-ink-950/70">
+                This is taking longer than usual, which usually means the internet connection dropped. Keep this page
+                open and it will send once you are back online. If nothing changes, call us at {SUPPORT_PHONE}.
+              </p>
+            </div>
+          )}
           {status === "error" && isLast && (
             <div role="alert" className="mt-8 rounded-2xl border border-brand-dark/30 bg-paper-100 p-5">
               <p className="font-medium text-ink-950">We could not send your intake form.</p>

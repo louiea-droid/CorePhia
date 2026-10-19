@@ -24,7 +24,7 @@ export const tiers = [
       "Personalized weight loss plan",
       "Prescription medication",
       "Regular progress check-ins",
-      "24/7 patient support",
+      "Patient support through your portal",
     ],
   },
   {

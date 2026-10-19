@@ -1,4 +1,4 @@
-import { getApp, getApps, initializeApp } from "firebase/app"
+import { getApps, initializeApp } from "firebase/app"
 import { addDoc, collection, getFirestore } from "firebase/firestore"
 
 const config = {
@@ -12,10 +12,10 @@ const config = {
 
 export const isConfigured = Boolean(config.apiKey && config.projectId)
 
-// Same getApps() guard as lib/intakeSubmission.js and portal/lib/patientAuth.js: any
+// Same getApps() guard as lib/intakeSubmission.js and admin/lib/firebase.js: any
 // of these can be live on the same page, and Firebase throws if the default
 // app is initialized twice.
-const app = isConfigured ? (getApps().length ? getApp() : initializeApp(config)) : null
+const app = isConfigured ? (getApps().find((existing) => existing.name === "[DEFAULT]") ?? initializeApp(config)) : null
 const db = app ? getFirestore(app) : null
 
 // Matches MESSAGES_COLLECTION in admin/lib/firebase.js, which is what reads these

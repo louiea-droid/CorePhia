@@ -26,7 +26,7 @@ const quickLinks = [
 ]
 
 const trustPoints = [
-  { label: "Physician Guided", icon: StethoscopeIcon },
+  { label: "Physician-Built", icon: StethoscopeIcon },
   { label: "Evidence-Based", icon: ClipboardCheckIcon },
   { label: "Personalized Care", icon: PersonIcon },
   { label: "Sustainable Results", icon: LeafIcon },
@@ -34,7 +34,6 @@ const trustPoints = [
 
 export default function Hero() {
   const headlineIn = useIntro(350)
-  const subheadIn = useIntro(520)
   const trustIn = useIntro(650)
   const cardsIn = useIntro(780)
   const quickLinksIn = useIntro(950)
@@ -76,7 +75,7 @@ export default function Hero() {
         >
           <Link
             to="/intake"
-            className="group relative isolate flex min-h-64 flex-col justify-between overflow-hidden rounded-3xl bg-gradient-to-br from-ink-950 via-ink-900 to-accent-dark p-7 text-paper-100 shadow-lg transition-shadow duration-300 ease-out-smooth hover:shadow-2xl"
+            className="group relative isolate flex min-h-64 flex-col justify-between overflow-hidden rounded-3xl bg-gradient-to-br from-ink-950 via-ink-900 to-accent-dark p-7 text-paper-100 shadow-[0_10px_28px_-14px_rgb(13_26_61/0.4)] transition-shadow duration-500 ease-out-smooth hover:shadow-[0_22px_44px_-18px_rgb(37_99_235/0.55)] focus-visible:shadow-[0_22px_44px_-18px_rgb(37_99_235/0.55)]"
           >
             {/* Hover highlight, colour only (no movement, per Louie): a blue glow
                 fades up from the plate's corner. Also on keyboard focus. */}
@@ -149,7 +148,7 @@ export default function Hero() {
             className="group flex min-h-64 flex-col justify-between rounded-3xl border border-ink-950/10 bg-paper-100 p-7 inset-shadow-[0_1px_0_rgb(255_255_255/0.85),0_0_60px_-12px_color-mix(in_oklab,var(--color-accent)_40%,transparent)] transition-shadow duration-300 ease-out-smooth hover:shadow-xl"
           >
             <div>
-              <p className="text-xs font-semibold tracking-widest text-accent-dark uppercase">
+              <p className="text-xs font-semibold tracking-widest text-brand-dark uppercase">
                 What's included
               </p>
               <ul className="mt-4 space-y-3">
@@ -160,7 +159,7 @@ export default function Hero() {
                     </span>
                     <span>
                       <span className="block text-sm font-semibold text-ink-950">{label}</span>
-                      <span className="block text-xs text-ink-950/60">{detail}</span>
+                      <span className="block text-xs text-ink-950/70">{detail}</span>
                     </span>
                   </li>
                 ))}

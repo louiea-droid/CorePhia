@@ -88,6 +88,7 @@ describe("roles", () => {
   test("'added by' must be the person adding, at server time", async () => {
     const db = as("admin")
     await assertFails(setDoc(doc(db, "user", "newbie"), { role: "provider", name: "N", addedBy: { uid: "super", name: "S" } }))
+    await assertFails(setDoc(doc(db, "user", "newbie"), { role: "provider", name: "N", addedBy: { uid: "admin", name: "Someone else" }, addedAt: serverTimestamp() }))
     await assertFails(
       setDoc(doc(db, "user", "newbie"), { role: "provider", name: "N", addedBy: { uid: "admin", name: "admin" }, addedAt: new Date("2020-01-01") }),
     )
@@ -223,11 +224,26 @@ describe("charts", () => {
     })
     await assertSucceeds(batch.commit())
   })
-  test("a chart's last-note summary can't be forged or backdated", async () => {
-    const chart = doc(as("provider"), "patients", "chart1")
-    await assertFails(updateDoc(chart, { lastNote: { type: "progress", signedAt: new Date("2020-01-01") }, updatedAt: serverTimestamp() }))
-    await assertFails(updateDoc(chart, { lastNote: { type: "anything", signedAt: serverTimestamp() }, updatedAt: serverTimestamp() }))
-    await assertSucceeds(updateDoc(chart, { lastNote: { type: "progress", signedAt: serverTimestamp() }, updatedAt: serverTimestamp() }))
+  test("a chart's last-note summary moves only with a signing in the same batch", async () => {
+    await env.withSecurityRulesDisabled((c) => setDoc(doc(c.firestore(), "patients/chart1/notes/ln1"), draft("provider", "provider")))
+    const db = as("provider")
+    const chart = doc(db, "patients", "chart1")
+    const last = (overrides = {}) => ({ type: "progress", signedAt: serverTimestamp(), noteId: "ln1", ...overrides })
+    await assertFails(updateDoc(chart, { lastNote: last(), updatedAt: serverTimestamp() }))
+    await assertFails(updateDoc(chart, { lastNote: { type: "progress", signedAt: serverTimestamp() }, updatedAt: serverTimestamp() }))
+    const signWith = (lastNote) => {
+      const batch = writeBatch(db)
+      batch.update(doc(db, "patients/chart1/notes/ln1"), {
+        status: "signed",
+        signedAt: serverTimestamp(),
+        signedBy: { uid: "provider", name: "provider", role: "provider" },
+        updatedAt: serverTimestamp(),
+      })
+      batch.update(chart, { lastNote, updatedAt: serverTimestamp() })
+      return batch.commit()
+    }
+    await assertFails(signWith(last({ type: "dietitian" })))
+    await assertSucceeds(signWith(last()))
   })
   test("charts are never deleted", async () => {
     await assertFails(deleteDoc(doc(as("super"), "patients", "chart1")))
@@ -330,6 +346,10 @@ describe("dietitian and exercise notes", () => {
   test("a dietitian can't admit or decline an applicant", async () => {
     await assertFails(updateDoc(doc(as("dietitian"), "intakeRecords", "pending1"), { status: "admitted" }))
   })
+  test("a provider can mark a patient discharged, not an unknown status", async () => {
+    await assertSucceeds(updateDoc(doc(as("provider"), "intakeRecords", "chart1"), { status: "discharged" }))
+    await assertFails(updateDoc(doc(as("provider"), "intakeRecords", "chart1"), { status: "gone" }))
+  })
   test("a dietitian reads charts and signed notes", async () => {
     await assertSucceeds(getDoc(doc(as("dietitian"), "patients", "chart1")))
     await assertSucceeds(getDoc(doc(as("dietitian"), "patients/chart1/notes/signed1")))
@@ -364,12 +384,24 @@ describe("dietitian and exercise notes", () => {
     await assertSucceeds(updateDoc(doc(as("dietitian"), "patients/chart1/notes/mine"), sign("dietitian", "dietitian")))
   })
   test("a dietitian's signing updates the chart's last note", async () => {
-    await assertSucceeds(
-      updateDoc(doc(as("dietitian"), "patients", "chart1"), {
-        lastNote: { type: "dietitian", signedAt: serverTimestamp() },
-        updatedAt: serverTimestamp(),
-      }),
+    await env.withSecurityRulesDisabled((c) =>
+      setDoc(doc(c.firestore(), "patients/chart1/notes/dn1"), draft("dietitian", "dietitian", { type: "dietitian" })),
     )
+    const db = as("dietitian")
+    const batch = writeBatch(db)
+    batch.update(doc(db, "patients/chart1/notes/dn1"), sign("dietitian", "dietitian"))
+    batch.update(doc(db, "patients", "chart1"), {
+      lastNote: { type: "dietitian", signedAt: serverTimestamp(), noteId: "dn1" },
+      updatedAt: serverTimestamp(),
+    })
+    await assertSucceeds(batch.commit())
+  })
+  test("a draft on an inactive chart can't be edited or signed, only deleted", async () => {
+    await env.withSecurityRulesDisabled((c) => setDoc(doc(c.firestore(), "patients/inactive1/notes/old"), draft("provider", "provider")))
+    const note = doc(as("provider"), "patients/inactive1/notes/old")
+    await assertFails(updateDoc(note, { sections: { plan: "x" }, updatedAt: serverTimestamp() }))
+    await assertFails(updateDoc(note, sign("provider", "provider")))
+    await assertSucceeds(deleteDoc(note))
   })
   test("a dietitian can't make a chart inactive", async () => {
     await assertFails(updateDoc(doc(as("dietitian"), "patients", "chart1"), { status: "inactive", updatedAt: serverTimestamp() }))
@@ -431,6 +463,10 @@ describe("appointments", () => {
     env.withSecurityRulesDisabled((c) =>
       setDoc(doc(c.firestore(), "appointments", "ap1"), { ...booking("admin", "admin"), addedAt: new Date(), updatedAt: new Date() }),
     )
+  test("a booking is with a real staff member", async () => {
+    await assertFails(setDoc(doc(as("provider"), "appointments", "ghost"), booking("provider", "provider", { staffUid: "nobody" })))
+    await assertSucceeds(setDoc(doc(as("provider"), "appointments", "real"), booking("provider", "provider")))
+  })
   const move = (db, uid, role, changeId, patch = { start: new Date("2026-10-07T18:00:00Z") }, entry = change(uid, role)) => {
     const batch = writeBatch(db)
     batch.update(doc(db, "appointments", "ap1"), { ...patch, updatedAt: serverTimestamp(), lastChangeId: changeId })
@@ -713,6 +749,27 @@ describe("portal setup links", () => {
     await assertFails(setDoc(doc(asPatient("p1"), "patientAccounts", "someoneElse"), link()))
     await assertFails(setDoc(doc(asPatient("p2"), "patientAccounts", "p2"), link()))
   })
+  test("a returning patient's link moves to a new chart only with that chart's invite", async () => {
+    await env.withSecurityRulesDisabled(async (c) => {
+      const db = c.firestore()
+      await setDoc(doc(db, "patientAccounts", "p9"), { email: "pat@x.co", intakeId: "inactive1", firstName: "Pat", inviteId: "x", linkedAt: new Date() })
+      await setDoc(doc(db, "patientAccounts", "p10"), { email: "pat@x.co", createdAt: new Date() })
+    })
+    await assertSucceeds(setDoc(doc(asPatient("p9"), "patientAccounts", "p9"), link()))
+    await assertSucceeds(setDoc(doc(asPatient("p10"), "patientAccounts", "p10"), link()))
+    await assertFails(updateDoc(doc(asPatient("p9"), "patientAccounts", "p9"), { intakeId: "pending1" }))
+  })
+  test("linking marks the invite used in the same batch, and a used invite can't be read by link", async () => {
+    const db = asPatient("p1")
+    const lone = writeBatch(db)
+    lone.update(doc(db, "patients/chart1/invites/sent1"), { status: "used", usedAt: serverTimestamp() })
+    await assertFails(lone.commit())
+    const batch = writeBatch(db)
+    batch.set(doc(db, "patientAccounts", "p1"), link())
+    batch.update(doc(db, "patients/chart1/invites/sent1"), { status: "used", usedAt: serverTimestamp() })
+    await assertSucceeds(batch.commit())
+    await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), "patients/chart1/invites/sent1")))
+  })
   test("signed out, an expired invite can't be read", async () => {
     const anon = env.unauthenticatedContext().firestore()
     await assertFails(getDoc(doc(anon, "patients/chart1/invites/old1")))
@@ -846,6 +903,12 @@ describe("portal progress", () => {
     await assertFails(setDoc(ref(db, "x9"), home({ removed: true })))
     await assertFails(setDoc(ref(as("provider"), "x10"), home()))
     await assertFails(setDoc(ref(asPatient("stranger", "s@x.co"), "x11"), home()))
+  })
+  test("a discharged patient can't log a weigh-in", async () => {
+    await env.withSecurityRulesDisabled((c) =>
+      setDoc(doc(c.firestore(), "patientAccounts", "p3"), { email: "p3@x.co", intakeId: "inactive1", firstName: "Ina", linkedAt: new Date() }),
+    )
+    await assertFails(setDoc(ref(asPatient("p3", "p3@x.co"), "h1", "inactive1"), home()))
   })
   test("the earliest date the form offers is accepted all evening (31 days back by UTC)", async () => {
     await assertSucceeds(setDoc(ref(asPatient("patient1", "p1@x.co"), "early"), home({ date: day(-31) })))
@@ -1107,7 +1170,7 @@ describe("public intake and contact forms", () => {
       email: "test@x.co",
       address: { line1: "", city: "Tampa", state: "FL", postalCode: "33601" },
     },
-    vitals: { heightFeet: "5", heightInches: "6", currentWeightLb: "210", goalWeightLb: "170" },
+    vitals: { heightFeet: "5", heightInches: "6", currentWeightLb: "210", goalWeightLb: "170", weightLossGoalRange: "", highestAdultWeightLb: "230" },
     medicalHistory: { conditions: ["None of the above"], medications: "", allergies: "", surgeries: "", priorWeightLossTreatment: "No", medicationInterest: "unsure" },
     familyHistory: { conditions: [], notes: "" },
     socialHistory: { tobacco: "Never", alcohol: "None", exerciseFrequency: "Rarely" },
@@ -1138,6 +1201,19 @@ describe("public intake and contact forms", () => {
       setDoc(doc(visitor(), "intakeRecords", "i6"), intake({ demographics: { ...intake().demographics, dateOfBirth: "03/15/1980" } })),
     )
     await assertFails(setDoc(doc(visitor(), "intakeRecords", "i7"), intake({ emergencyContact: { name: "X" } })))
+  })
+  test("an intake section holds only the form's fields, each capped", async () => {
+    const d = intake().demographics
+    await assertFails(setDoc(doc(visitor(), "intakeRecords", "i8"), intake({ demographics: { ...d, emergencyContact: { name: "X" } } })))
+    await assertFails(setDoc(doc(visitor(), "intakeRecords", "i9"), intake({ insurance: {} })))
+    await assertFails(
+      setDoc(doc(visitor(), "intakeRecords", "i10"), intake({ medicalHistory: { ...intake().medicalHistory, medications: "x".repeat(2001) } })),
+    )
+    await assertFails(setDoc(doc(visitor(), "intakeRecords", "i11"), intake({ consent: { ...intake().consent, signature: "x".repeat(201) } })))
+    await assertFails(setDoc(doc(visitor(), "intakeRecords", "i12"), intake({ visit: { ...intake().visit, extra: "x" } })))
+    await assertSucceeds(
+      setDoc(doc(visitor(), "intakeRecords", "i13"), intake({ medicalHistory: { ...intake().medicalHistory, medications: "x".repeat(2000) } })),
+    )
   })
   test("a contact message needs the form's time format", async () => {
     await assertSucceeds(setDoc(doc(visitor(), "contactMessages", "c1"), contact()))
@@ -1187,6 +1263,6 @@ describe("staff photos", () => {
   test("signed-out visitors and patients can't read staff photos", async () => {
     await assertSucceeds(setDoc(doc(as("provider"), "staffPhotos", "provider"), photo()))
     await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), "staffPhotos", "provider")))
-    await assertFails(getDoc(doc(asPatient("patient1", "p1@x.co"), "staffPhotos", "provider")))
+    await assertFails(getDoc(doc(env.authenticatedContext("patient1", { email: "p1@x.co" }).firestore(), "staffPhotos", "provider")))
   })
 })

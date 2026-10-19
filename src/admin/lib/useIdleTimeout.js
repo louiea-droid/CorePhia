@@ -16,17 +16,17 @@ const TICK_MS = 1000
 // and a session reopened after more than the timeout is signed out at once.
 const STORAGE_KEY = "corephia-admin-last-activity"
 
-function readStoredActivity() {
+function readStoredActivity(key) {
   try {
-    return Number(localStorage.getItem(STORAGE_KEY)) || 0
+    return Number(localStorage.getItem(key)) || 0
   } catch {
     return 0
   }
 }
 
-function writeStoredActivity(time) {
+function writeStoredActivity(key, time) {
   try {
-    localStorage.setItem(STORAGE_KEY, String(time))
+    localStorage.setItem(key, String(time))
   } catch {
     // Private mode or blocked storage: the in-memory clock still works for this tab.
   }
@@ -34,7 +34,11 @@ function writeStoredActivity(time) {
 
 // Called just before a real sign-in (lib/firebase.js), so a fresh sign-in
 // isn't mistaken for a session left open since the last visit.
-export const markAdminActivity = () => writeStoredActivity(Date.now())
+export const markAdminActivity = () => writeStoredActivity(STORAGE_KEY, Date.now())
+// The portal keeps its own clock (portal/lib/patientAuth.js), since its login
+// is separate from the admin one.
+export const PORTAL_ACTIVITY_KEY = "corephia-portal-last-activity"
+export const markPortalActivity = () => writeStoredActivity(PORTAL_ACTIVITY_KEY, Date.now())
 
 // Returns the number of whole seconds left before onIdle fires, once that's
 // within warningMs, or null the rest of the time. Any tracked activity —
@@ -42,7 +46,7 @@ export const markAdminActivity = () => writeStoredActivity(Date.now())
 // on `document` and clicks bubble — pushes the deadline back out and clears
 // the countdown, so the modal's "stay signed in" affordance needs no
 // separate handler.
-export function useIdleTimeout({ enabled, timeoutMs, warningMs, onIdle }) {
+export function useIdleTimeout({ enabled, timeoutMs, warningMs, onIdle, storageKey = STORAGE_KEY }) {
   const [warningSecondsLeft, setWarningSecondsLeft] = useState(null)
   const lastActivityRef = useRef(0)
   const lastActivityWriteRef = useRef(0)
@@ -56,23 +60,23 @@ export function useIdleTimeout({ enabled, timeoutMs, warningMs, onIdle }) {
     firedRef.current = false
     // A stored time (from this tab before a reload, another tab, or the last
     // visit) wins; with none at all, the session starts its clock now.
-    const stored = readStoredActivity()
+    const stored = readStoredActivity(storageKey)
     lastActivityRef.current = stored || Date.now()
-    if (!stored) writeStoredActivity(lastActivityRef.current)
+    if (!stored) writeStoredActivity(storageKey, lastActivityRef.current)
 
     const markActive = () => {
       const now = Date.now()
       if (now - lastActivityWriteRef.current < ACTIVITY_THROTTLE_MS) return
       lastActivityWriteRef.current = now
       lastActivityRef.current = now
-      writeStoredActivity(now)
+      writeStoredActivity(storageKey, now)
     }
     ACTIVITY_EVENTS.forEach((event) => document.addEventListener(event, markActive, { passive: true }))
 
     const check = () => {
       if (firedRef.current) return
       // Activity in any other tab counts as activity here.
-      const last = Math.max(lastActivityRef.current, readStoredActivity())
+      const last = Math.max(lastActivityRef.current, readStoredActivity(storageKey))
       const remaining = timeoutMs - (Date.now() - last)
       if (remaining <= 0) {
         firedRef.current = true
@@ -91,7 +95,7 @@ export function useIdleTimeout({ enabled, timeoutMs, warningMs, onIdle }) {
       ACTIVITY_EVENTS.forEach((event) => document.removeEventListener(event, markActive))
       clearInterval(interval)
     }
-  }, [enabled, timeoutMs, warningMs, onIdle])
+  }, [enabled, timeoutMs, warningMs, onIdle, storageKey])
 
   return enabled ? warningSecondsLeft : null
 }

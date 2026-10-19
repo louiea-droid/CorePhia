@@ -2,6 +2,8 @@ import { Helmet } from "react-helmet-async"
 import { Link, useParams } from "react-router-dom"
 import { CheckCircleIcon, ChevronRightIcon, ClipboardCheckIcon } from "../components/icons"
 import Reveal from "../components/Reveal"
+import ReviewedLine from "../components/ReviewedLine"
+import { guides } from "../data/guides"
 import { PROGRAM_NAMES, programs } from "../data/programs"
 import NotFound from "./NotFound"
 
@@ -14,15 +16,37 @@ export default function ProgramPage() {
   const program = programs.find((entry) => entry.slug === slug)
   if (!program) return <NotFound />
 
-  const url = `https://www.corephia.com/programs/${program.slug}`
-  const faqSchema = {
+  const url = `https://corephia.com/programs/${program.slug}`
+  const programGuides = guides.filter((entry) => entry.program === program.slug)
+  // FAQ, the program as a Service of the business declared in index.html, and
+  // the breadcrumb trail, in one graph.
+  const schema = {
     "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: program.faqs.map(({ q, a }) => ({
-      "@type": "Question",
-      name: q,
-      acceptedAnswer: { "@type": "Answer", text: a },
-    })),
+    "@graph": [
+      {
+        "@type": "FAQPage",
+        mainEntity: program.faqs.map(({ q, a }) => ({
+          "@type": "Question",
+          name: q,
+          acceptedAnswer: { "@type": "Answer", text: a },
+        })),
+      },
+      {
+        "@type": "Service",
+        name: program.name,
+        description: program.description,
+        url,
+        provider: { "@id": "https://corephia.com/#business" },
+        areaServed: { "@type": "State", name: "Florida" },
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: "https://corephia.com/" },
+          { "@type": "ListItem", position: 2, name: program.name, item: url },
+        ],
+      },
+    ],
   }
 
   return (
@@ -31,7 +55,7 @@ export default function ProgramPage() {
         <title>{program.title}</title>
         <meta name="description" content={program.description} />
         <link rel="canonical" href={url} />
-        <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
+        <script type="application/ld+json">{JSON.stringify(schema)}</script>
       </Helmet>
 
       {/* Same dark band and glow as the homepage programs section, so the page
@@ -187,12 +211,23 @@ export default function ProgramPage() {
             </details>
           ))}
         </Reveal>
+        {programGuides.map((guide) => (
+          <Link
+            key={guide.slug}
+            to={`/guides/${guide.slug}`}
+            className="mt-8 mr-6 inline-flex items-center gap-1 font-semibold text-accent-dark underline-offset-4 hover:underline"
+          >
+            Read the guide: {guide.name}
+            <ChevronRightIcon className="size-4" />
+          </Link>
+        ))}
+        <ReviewedLine className="mt-6" />
       </section>
 
       <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
         <p className="mx-auto max-w-3xl text-center text-xs text-ink-950/70">
           <ClipboardCheckIcon className="mr-1 inline size-3.5 align-[-2px]" />
-          Medication is prescribed by a licensed provider as part of your plan. An active CorePhia Weight Loss
+          CorePhia is based in Tampa, Florida, and cares for patients located in Florida. Medication is prescribed by a licensed provider as part of your plan. An active CorePhia Weight Loss
           Membership is required. Membership does not include or guarantee a prescription.
         </p>
         <div className="mt-10 flex flex-col items-start gap-6 rounded-3xl bg-ink-950 p-8 sm:flex-row sm:items-center sm:justify-between sm:p-10">

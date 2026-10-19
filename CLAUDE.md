@@ -37,6 +37,8 @@ From the client meeting (`docs/meeting-analysis.md`, which also holds the full l
   insurance?" with a plain no (2026-10-08). HSA/FSA cards are unconfirmed, so no copy mentions them.
 - **No emergency contact** in the intake or the admin (Dr. Antonious, via Louie, 2026-10-08).
   The record has no `emergencyContact` key and `firestore.rules` refuses one.
+- **Address is "Tampa, Florida", final** (Louie, 2026-10-13). No street address: the JSON-LD,
+  legal pages and contact lines use the city only.
 - **The site does not name him.** Use "our provider" (About, homepage provider section, FAQ). Done 2026-09-30; his name only appears in code comments.
 - Services: "physical therapy" in the meeting means the **exercise plan**. There is no physical
   therapy service. **Nutrition coaching and dietitian services are one service, one page.**
@@ -57,12 +59,14 @@ From the client meeting (`docs/meeting-analysis.md`, which also holds the full l
 
 ```bash
 npm run dev      # vite dev server (usually :5173, falls back to :5174 if occupied)
-npm run build    # vite production build -> dist/
+npm run build    # vite build + SSR build + scripts/prerender.mjs -> dist/ (see Prerendering)
 npm run lint     # oxlint
 npm run preview  # serve the built dist/
 ```
 
-Deployed via Firebase Hosting (`firebase.json` → `public: "dist"`, SPA rewrite to `/index.html`).
+Deployed via Firebase Hosting (`firebase.json` → `public: "dist"`, `cleanUrls: true`, SPA
+rewrite to `/app.html`). **The next hosting deploy must include the 2026-10-13 build**, since the
+rewrite target and `cleanUrls` changed with prerendering.
 Firebase project is `corephia-health`. Hosting was last deployed around 2026-10-01 (the
 `.firebase/` hosting cache changed in the 2026-09-30 and 2026-10-01 commits). Whether the
 Firestore rules were deployed with it is not recorded; ask Louie.
@@ -71,31 +75,62 @@ Firestore rules were deployed with it is not recorded; ask Louie.
 
 React 19 · Vite 8 · Tailwind CSS v4 · react-router-dom v7 · react-helmet-async · oxlint.
 Firebase (Auth + Firestore). No TypeScript. Tests: `npm run check` (the self-checks: chartMath,
-roles, calendarMath, todoMath, staffMath, inviteMath, progressMath, messageMath, and
+roles, calendarMath, todoMath, staffMath, inviteMath, progressMath, messageMath,
+`googleAnalytics.check.js` (only public pages are trackable), and
 `auditActions.check.js`, which fails if `AUDIT_ACTIONS` in `admin/lib/firebase.js` and the action
 list in `firestore.rules` drift apart) and `npm run test:rules` (Firestore rules against the
-emulator; see the blockers).
+emulator: Java 21 is installed now, and all 150 tests pass as of 2026-10-19).
 
 ## Architecture
 
-Client-rendered SPA, no SSR or prerendering.
+Client-rendered SPA, with the public pages prerendered at build time (below).
+
+### Prerendering (2026-10-13)
+
+`npm run build` runs `vite build`, then `vite build --ssr src/entry-server.jsx`, then
+`scripts/prerender.mjs`, which renders each public page with `renderToString` into
+`dist/<route>.html` (`dist/index.html` for home). Hosting's `cleanUrls` serves `/about` from
+`about.html` with no redirect, so canonicals stay slash-free. The route list is in the script:
+home, about, contact, faq, membership, privacy, terms, privacy-practices, the four programs and
+the guides (both read from their data files). Add a page there when you add a public route.
+
+- React 19 hoists each page's Helmet `<title>`/`<meta>`/`<link>` to the front of the output; the
+  script moves them into `<head>` tagged `data-prerender`, and `main.jsx` deletes those before
+  `createRoot` so React's own tags are the only ones (otherwise titles and canonicals go stale on
+  navigation). The browser does not hydrate; `createRoot` replaces the prerendered markup.
+- Every other address (admin, portal, intake, 404s) is rewritten to `dist/app.html`, the plain
+  shell, so none of them shows the prerendered home page to crawlers.
+- The script fails the build if a page lacks a title, its exact canonical, or exactly one `<h1>`.
+- Anything that renders on a public page must not touch `window`/`document`/`localStorage` while
+  rendering (effects are fine). `MobileMenu` and `LoginPanel` return `null` when there is no
+  `document`, because they portal into `document.body`.
+- To test it, use the Firebase hosting emulator (`firebase emulators:start --only hosting`),
+  not `vite preview`, which falls back to `index.html` for every path. The emulator ignores
+  `firebase.json`'s `headers` and `redirects`: check those with `curl -I` after deploying.
+- **First paint (2026-10-19):** `useIntro` starts visible on the build-time render and on the
+  first render over a prerendered page (`App` calls `endPrerenderedStart` after that), so the
+  hero and header are on screen from the HTML, and the intro only plays on later navigations.
+  `CookieBanner` is never in the prerendered HTML; it appears once the script runs.
 
 ```
 src/main.jsx          ErrorBoundary > HelmetProvider > BrowserRouter > App
 src/App.jsx           ScrollManager + Header + <Routes> + Footer
-src/pages/            Home, About, Contact, Faq, Membership, ProgramPage, SuccessStories, NotFound
+src/pages/            Home, About, Contact, Faq, Membership, ProgramPage, SuccessStories, NotFound,
+                      Legal (Privacy, Terms, PrivacyPractices), GuidePage
+src/entry-server.jsx  build-time render for scripts/prerender.mjs
 src/components/       PatientIntakeForm + intakeScreens (the /intake route) + all homepage sections,
                       ErrorBoundary (a plain "Something went wrong" screen instead of a blank page)
 src/portal/           the patient portal (/account/*, /portal/setup, /portal/reset)
 src/admin/            the staff admin (/admin/*)
 src/lib/              Firebase submission, patient auth, analytics consent/tracking, siteContact
-src/data/             programs.js, pricingTiers.js
+src/data/             programs.js, pricingTiers.js, guides.js
 src/hooks/            useIntro (timed reveal), useReveal (IntersectionObserver reveal)
 ```
 
-Routes: `/` · `/about` · `/contact` · `/faq` · `/membership` (`/pricing` redirects) ·
+Routes: `/` · `/about` · `/contact` · `/faq` · `/membership` (`/pricing` redirects: a 301 in
+`firebase.json`, plus `<Navigate>` in the app) ·
 `/programs/:slug` (medical-care, dietitian-services, exercise-plan, follow-ups; an unknown slug
-shows NotFound) · `/success-stories` · `/intake` · `/account/*` · `/portal/setup` ·
+shows NotFound) · `/guides/:slug` (the 8 guides in `data/guides.js`) · `/success-stories` · `/privacy` · `/terms` · `/privacy-practices` · `/intake` · `/account/*` · `/portal/setup` ·
 `/portal/reset` · `/admin/*` · anything else shows `NotFound` (marked `noindex`, because hosting
 serves the app with a 200 for every path).
 
@@ -116,7 +151,8 @@ All colour lives in `@theme` in `src/index.css`. Changing those tokens re-themes
 | `accent` / `accent-dark` | `#60a5fa` / `#2563eb` | highlights, CTAs |
 | `brand` / `brand-dark` | `#3b5bdb` / `#1e3a8a` | card gradients |
 
-Fonts: Fraunces (serif, headings) + Inter (sans, body), via Google Fonts.
+Fonts: Fraunces (serif, headings) + Inter (sans, body), self-hosted from `public/fonts/` (`@font-face`
+in `index.css`, preloaded in `index.html`). No Google Fonts request.
 
 **Inline SVGs in `Artwork.jsx` use hardcoded hex and do NOT inherit these tokens.** Any palette
 change must update them by hand — this has been missed twice already.
@@ -144,6 +180,52 @@ Messages, Updates) · compliance copy fixes · accessibility and visual pass.
   The confirmation screen only shows after the write succeeds.
 - **Domain is settled on `corephia.com`**: canonicals, OG tags, sitemap, footer and email
   (`info@corephia.com`) all agree. The Firebase project name `corephia-health` is just the project.
+- **SEO (2026-10-13):** `index.html` has one JSON-LD `@graph` (`WebSite` + `MedicalBusiness` with
+  logo, image, phone and a Tampa, FL address, `@id` `https://corephia.com/#business`). Program
+  pages add `Service` (provider = that `@id`) and `BreadcrumbList` next to their FAQPage.
+  `public/llms.txt` summarizes the site for AI crawlers. Sitemap `lastmod` is 2026-10-13. Left
+  for the console: redirect `www.corephia.com` to `corephia.com` in Hosting, and submit the
+  sitemap in Google Search Console. Not yet: `sameAs` (no real social links). `areaServed` is
+  Florida (`index.html` and `ProgramPage.jsx`).
+- **Florida only** (Louie, 2026-10-13): the provider is licensed in Florida, so the FAQ, the
+  Terms (patients must be in Florida at each visit), the JSON-LD and `llms.txt` say Florida.
+  When licenses are added, update all four.
+- **Guides (2026-10-13, 5 more 2026-10-15)** at `/guides/:slug` (`GuidePage.jsx`, content in
+  `data/guides.js`): 8 guides, from how medical weight loss works to why weight loss slows down. Each links
+  from its program page, has `MedicalWebPage` + `BreadcrumbList` JSON-LD, and is in the sitemap
+  and `llms.txt`. Draft copy with the same rules as `programs.js` (no stats without a source,
+  no medication names, medication only as one part of the program). The only number is the US
+  Physical Activity Guidelines (150 minutes a week plus two strength days).
+- **"Medically reviewed by a board-certified physician. Last reviewed …"** (`ReviewedLine.jsx`,
+  date in `LAST_REVIEWED`) on the program pages, the FAQ and the guides. The provider is not
+  named (Louie). **It is only true once Dr. Antonious has read those pages: get his sign-off
+  before deploying**, and change the date when he reviews again. A guide written after the last
+  review carries `reviewed: false` in `guides.js` (the 5 from 2026-10-15), which hides the line
+  and the JSON-LD `lastReviewed` until he has read it; then remove the flag and move the date.
+- **Tampa map link** (2026-10-13): "Tampa, Florida" in the footer and on Contact opens Google
+  Maps in a new tab (`LOCATION` and `LOCATION_MAP_URL` in `lib/siteContact.js`).
+- **Footer Social block is hidden** while every link in `socialLinks` (`Footer.jsx`) is `#`
+  (Louie, 2026-10-13). It comes back by itself once one is a real URL.
+- **Lighthouse (2026-10-13, mobile, local hosting emulator):** SEO 100, Best Practices 100,
+  Accessibility 100, Performance 77 to 85 (it varies between runs). Fixed: the header and intake
+  logo is `public/cp-health-header.webp`, a 336x112 copy (11 KB) of `cp-health.webp` (2172x724,
+  kept); low-contrast small text; cache headers in `firebase.json` (`/assets/**` a year, images
+  a day; the emulator doesn't apply them, so check with `curl -I` after deploying). Since then
+  the fonts are self-hosted and the hero no longer waits for JavaScript (2026-10-19, see
+  Prerendering); not re-measured yet.
+- **Security headers (2026-10-19)** in `firebase.json` for every path: HSTS, `nosniff`,
+  `X-Frame-Options: DENY` plus `frame-ancestors 'none'` (no framing of the intake or admin),
+  a referrer policy and a permissions policy. Not testable on the emulator.
+- **Google Business Profile:** to be set up by Louie (needs the business's Google account):
+  CorePhia, category "Weight loss service", service-area business with the address hidden,
+  Florida, +1 (850) 454-6700, corephia.com.
+- **Legal pages (2026-10-13), drafts awaiting a Florida health-care attorney:** `/privacy`,
+  `/terms` and `/privacy-practices` (the HIPAA Notice of Privacy Practices the intake checkbox
+  links to, opening in a new tab) in `pages/Legal.jsx`, linked from the footer. They describe
+  what the system really does (intake fields, portal, opt-in visit counts, Google Firebase and
+  EmailJS as service providers, Google Fonts, server logs). **Change the system, change these.**
+  Still open for the client: the legal entity name, the cancellation and refund policy (the
+  Terms say it is confirmed in writing at enrollment), and more licensed states when there are any.
 
 ### Blockers before going live with real patients
 
@@ -155,19 +237,20 @@ Messages, Updates) · compliance copy fixes · accessibility and visual pass.
    See `docs/meeting-analysis.md`. `buildIntakeRecord()` deliberately groups fields to mirror
    standard EMR intake sections (demographics / vitals / medicalHistory /
    familyHistory / socialHistory / nutrition / visit / consent) so a vendor mapping is direct.
-2. **Firestore rules: test and deploy.** `npm run test:rules` has never been run: it needs Java 21+
-   for the emulator, and Java is not installed on this machine (checked 2026-10-02). The rules
-   must then be deployed (`firebase deploy --only firestore:rules`) for submissions,
-   charts and analytics to work against the live project. **Rules changed on 2026-10-08 and are
-   not deployed or emulator-tested yet:** audit entries (own email, server time, known actions
-   only), intake and contact shape checks (time format, date of birth `YYYY-MM-DD`, sections are
-   maps, no `emergencyContact`), only the admin tiers set a staff name, dietitian notes by
-   super admin, and the new `staffPhotos` collection. The tests for all of these are written
-   (`tests/firestore.rules.test.js`) but unrun. Deploy the rules together with the site.
-   Keep `firestore.rules` free of a byte-order mark: PowerShell's `Set-Content -Encoding utf8`
-   adds one.
-3. **Placeholder phone number** `(000) 123-4567`, set once in `lib/siteContact.js` (Contact,
-   footer, intake help line). Footer social links are still `#`. Tampa is real.
+2. **Firestore rules: deploy.** `npm run test:rules` runs now (Java 21 installed) and all 150
+   tests pass (2026-10-19). The rules are not deployed: `firebase deploy --only firestore:rules`,
+   **together with the site**, since the 2026-10-19 rules expect the new client (a chart's
+   `lastNote` names its `noteId`, linking a portal login marks the invite used in the same batch,
+   the intake sections are checked key by key). Keep `firestore.rules` free of a byte-order mark
+   (PowerShell's `Set-Content -Encoding utf8` adds one). When editing it from a script, never put
+   new text through `String.prototype.replace`: a `$'` in the rules' regexes expands to "the rest
+   of the file" and once duplicated the whole file (2026-10-19). Use `split(a).join(b)`.
+   **Not done yet: App Check** (reCAPTCHA) in the Firebase console, so scripts can't flood
+   `intakeRecords`; the rules limit what each write holds, not how many arrive. It would need a
+   privacy policy line and the attorney's view, since reCAPTCHA would run on the intake.
+3. **Phone number is real** (`+1 (850) 454-6700`, 2026-10-13), set once in `lib/siteContact.js`
+   (Contact, footer, intake help line, portal). Footer social links are still `#` (the Social
+   block is hidden until they are real). Tampa, Florida is the final address.
 
 ### Waiting on assets from the client
 
@@ -176,36 +259,47 @@ Messages, Updates) · compliance copy fixes · accessibility and visual pass.
   placeholder cutouts (`public/start-here.webp`, `public/programs/{slug}.webp` on the program
   page heroes), all to be replaced with the client's own.
 - A logo without orange in it. `cp-health.webp` (the logo, ~98 KB) still has the two orange arcs
-  around the infinity mark (looked at 2026-10-02).
+  around the infinity mark (looked at 2026-10-02). Louie said to set this aside (2026-10-13). When
+  it arrives, also regenerate `cp-health-header.webp` (336x112) and update `cp-logo.webp`.
 - Real social profile URLs, success stories with signed patient consent, the how-it-works video.
 
 ### Known remaining gaps
 
-- No Privacy Policy or Terms pages exist (needed for a health site). The footer lists both as
-  plain text; footer entries without a `to`/`href` render muted by design, not broken links.
-- One FAQ answer is still a TODO in `Faq.jsx`: the list of licensed states. (Insurance is
-  answered: cash pay.)
-- **Medication wording, saved for later (2026-10-08, Louie):** the home page Medical care card
-  (`ProgramGrid.jsx`) shows "Prescription medication, guided by a licensed provider" under a
-  visible "FDA approved" seal, with the "when prescribed" qualifier only in a hidden `aria-label`;
-  and the About page (`About.jsx`) lists "weight loss medication" with "when clinically
-  appropriate" removed, plus a pillar that implies everyone gets medication. Both come close to the
-  compliance boundary above. Fix both together, matching the Hero's wording.
-- **Open portal issues (audit 2026-10-08):** the portal and the admin share one Firebase login,
-  so signing out of one signs out of the other (give the portal a named app); an old
-  `patientAccounts` doc with no `intakeId` can never link an invite (delete them before go-live);
-  a returning patient admitted a second time keeps their old chart; "Forgot password" from the
-  invite page loses the invite; a discharged patient can still log weights.
+- Footer entries without a `to`/`href` render muted by design, not broken links.
+- The FAQ's "Where do you operate?" now says Florida only (2026-10-13). (Insurance is
+  answered: cash pay.) The FAQ also says 18 or older, points to the privacy policy and notice,
+  and has an urgent-problem answer (911; portal messages read in working hours), 2026-10-13.
+- **Medication wording is approved as is** (Dr. Antonious, via Louie, 2026-10-14): the home Medical
+  care card (`ProgramGrid.jsx`), the pricing badge (`PricingSection.jsx`), the Core tier feature and
+  the About pillar stay as written. Do not re-flag or reword them. The About intro now says
+  "weight loss medication when clinically appropriate".
+- **Portal issues from the 2026-10-08 audit, fixed 2026-10-19:** the portal has its own named
+  Firebase app (`"portal"` in `portal/lib/patientAuth.js`; the intake, contact, site events and
+  admin share the default app and look it up by name, never `getApps().length`); the portal signs
+  out after 15 idle minutes (`useIdleTimeout` with `PORTAL_ACTIVITY_KEY`); a login can move to
+  a new chart with that chart's invite (a returning patient, or an old `patientAccounts` doc with
+  no `intakeId`); "Forgot password" from an invite returns to it; a discharged chart takes no
+  weigh-ins (rules and UI); `/portal/*` visits are not counted. Linking marks the invite `used`,
+  so it can't be read by its link afterwards.
+- **Intake (2026-10-19):** every section is checked key by key with length caps in the rules
+  (`isIntakeSections`; a new intake field must be added there too, or sends are refused), and
+  textareas carry `maxLength={2000}`. A required textarea of spaces only is invalid
+  (`firstInvalid`), which matters for the Edit dialog on the review screen. After 20 seconds on
+  "Sending…" the intake says the connection may have dropped (Firestore queues the write offline).
+- Left on purpose: the Dashboard's Today strip and To-do still read every active chart's notes
+  (fine for a few hundred patients; past that, store the next due dates on the chart), and
+  Analytics still reads one document per event (per-day totals need a server).
 - Two-step sign-in is optional for staff and not enforced by the rules. Enforcing it needs
   Identity Platform in the Firebase console, then a rules check on the second factor.
-- No under-18 check on the intake (the age rule isn't decided): the date of birth only refuses
-  future dates.
+- **18 or older** (decided 2026-10-13): the intake's date of birth refuses anyone under 18
+  (`adultBirthdayCutoff` in `intakeScreens.jsx`) and the Terms say so. Client-side only; the
+  rules check only the date format.
 - Focus is not trapped in the mobile menu and login panel (Tab can leave them).
-- Unsourced claims: "Members lose up to 20% body weight*" (`ScienceSection.jsx`) has a footnote
-  with no study, N, or date; the "Proven Results" badge (`PricingSection.jsx`) has nothing behind
-  it. YMYL/E-E-A-T liability.
-- No "medically reviewed by" attribution or last-updated dates.
-- A "Certified" badge in the footer that does not say certified by whom.
+- Unsourced claims removed 2026-10-13: the science card now reads "Built around you" / "Your
+  plan is adjusted as you progress" with the gauge on "On target" (no number), and the "Proven
+  Results" badge and the footer "Certified" badge are gone. Don't reintroduce a result number
+  without a cited source.
+- Success stories: the page stays `noindex` until real stories with signed patient consent exist.
 - Open client questions are tracked in `docs/meeting-analysis.md` §7.
 
 ---
@@ -218,8 +312,9 @@ popular" highlight; `/pricing` redirects there. Nav, footer and the Hero quick l
 switches in `data/pricingTiers.js`: `PLANS_SHOWN` (plans on the page, the intake plan question,
 `?plan=` preselect) and `PRICES_ANNOUNCED` (false = "Coming soon" on cards and in the FAQ). The
 program pages carry no pricing block. Plans and features are still placeholders awaiting the
-client; flagged: the Core tier lists "Prescription medication" as a feature, and the badges under the
-cards include "Medication Available" and "Proven Results".
+client. The Core tier's "Prescription medication" feature and the "Medication Available" badge are
+approved (2026-10-14). Core's "24/7 patient support" became "Patient support through
+your portal" (2026-10-13), to match the Terms (messages are read in working hours).
 
 ## Admin: applicants, patient charts, staff (2026-10-01)
 
@@ -248,8 +343,7 @@ Spec: `docs/superpowers/specs/2026-10-01-patient-charts-notes-staff-design.md`.
 - The public login's sign-up record moved to `patientAccounts/{uid}`. The old `patients/{uid}`
   sign-up docs can be deleted in the console.
 - **The new rules must be deployed** (`firebase deploy --only firestore:rules`) before any of this
-  works against the live project. Run `npm run test:rules` first; it needs Java 21+ for the
-  emulator and has not been run yet.
+  works against the live project. `npm run test:rules` passes (2026-10-19).
 
 ## Admin additions (2026-10-01)
 
@@ -290,8 +384,8 @@ Louie asked for a whole-admin audit and the fixes; the audit also covered the pu
 
 - **Dashboard "Today" strip** (`dashboard/TodayStrip.jsx`): four cards (visits today, due this
   week, needs a reply, pending applicants), each linking to its page, each loading on its own.
-  It counts the whole practice. Pending counts real records only. When there are no real intakes,
-  the Dashboard and Applicants show the sample records with a visible "Sample data" notice.
+  It counts the whole practice. The sample-data fallback and its notice were removed: with no real
+  intakes the pages are empty. Sample records only appear in demo mode.
 - **Patient chart layout:** the header carries allergies, current prescriptions and next
   follow-ups. Notes: one **New note** menu (`NewNoteMenu.jsx`, one line under each type), "Your
   drafts" pinned above "Signed", a preview line per note ("Nothing written yet" flags empty
@@ -302,7 +396,8 @@ Louie asked for a whole-admin audit and the fixes; the audit also covered the pu
   Demo mode keeps them in memory.
 - **Audit log** (`recordAuditEvent`): `at` is the server time, the rules require the signed-in
   email and a known action. It now also records sign-in, sign-out (idle sign-out is separate),
-  password change, two-step on/off and opening the full applicant list. Adding an action means
+  password change, two-step on/off and opening the full applicant list (at most once per half
+  hour per tab, so it doesn't push real events out of view). Adding an action means
   adding it to `AUDIT_ACTIONS`, the rules list **and** `ACTION_LABELS` in `Activity.jsx`;
   `npm run check` catches the first two drifting. Older entries (an ISO string `at`) no longer show.
 - **Idle sign-out** (`lib/useIdleTimeout.js`): the last-activity time lives in localStorage and
@@ -317,6 +412,24 @@ Louie asked for a whole-admin audit and the fixes; the audit also covered the pu
   to-do, note defaults and Analytics days. New site events store Tampa's day.
 - Unknown `/admin/...` addresses go to the dashboard. The Help page has topics for the chart,
   the dashboard and the changes above; keep them in step when a screen changes.
+
+## Admin changes (2026-10-19)
+
+From a whole-system audit (Louie asked for every finding fixed):
+
+- **Discharged:** "Make inactive" on Patients sets the intake status `discharged` (was
+  `declined`), shown and filterable on Applicants. `INTAKE_STATUSES` and the rules' status list
+  both carry it.
+- **Live role and name:** `AdminApp` follows `user/{uid}` (`watchAdminAccess`), so a rename or
+  role change applies at once instead of failing every write until the next sign-in.
+- **Rules tightened** (tests in `tests/firestore.rules.test.js`): a chart's `lastNote` must name
+  a note signed in the same batch; a draft on an inactive chart can't be edited or signed (only
+  deleted); "added by" on a staff record must be the adder's own name; an appointment must be
+  with a real staff record; `admittedBy` holds only uid, name and role.
+- Adding staff: if the staff record is refused, the new login deletes itself, so the email can
+  be added again. "Start their charts" on Patients shows only for admitters. Dashboard weeks are
+  Tampa weeks. Analytics loads the chosen range (30 days on open) and keeps the longest loaded.
+  The chart's Messages line listens to that patient's topics only.
 
 ## Client portal (decisions 2026-10-02)
 
@@ -338,21 +451,54 @@ Dr. Antonious's asks, the four sections, constraints and the notification email 
 
 ## Site analytics (2026-09-30)
 
-Cookie-free, consent-first counts (meeting items 14 and 15). Google Analytics is deliberately
-**not** used for now (Louie: "for later use").
+Two things run after the visitor presses Accept on the banner: the cookie-free counts below
+(meeting items 14 and 15), and Google Analytics on public pages only (2026-10-13).
 
 - `CookieBanner.jsx` asks once; the answer lives in localStorage (`lib/analyticsConsent.js`). The
   footer's "Privacy choices" reopens it. Not shown on the intake or admin.
 - Nothing is counted until the visitor presses Accept. `lib/track.js` then lazy-loads
   `lib/siteEvents.js` (so decliners never download it) and writes one `siteEvents` document per page
   view or link/button click: type, path, label, day, server time. No cookies, IP or visitor ID.
-- Never counted: `/account`, `/admin`, and any click inside the intake. The intake counts only "opened".
+- Never counted: `/account`, `/admin`, `/portal` (setup and reset), and any click inside the intake. The intake counts only "opened".
   `firestore.rules` (`isWellFormedSiteEvent`) enforces the same lines. **The rules must be deployed**
   before counts land; until then writes are refused.
 - Read in the admin at `/admin/analytics` ("Analytics"; `/admin/traffic` redirects there).
+  The range switch is 7, 30, 90 days or **Custom** (a number of days, weeks or months, a month
+  = 30 days, up to 365; 2026-10-12). It loads the chosen range and keeps the longest loaded so
+  far; only a longer range reloads (2026-10-19).
+
+### Google Analytics (2026-10-13, Louie)
+
+GA4 property `G-180FKQGVY5` (switched from `G-7WBYHQZ3ER` on 2026-10-14, Louie), in `lib/googleAnalytics.js`, called once from `App` (above the admin
+and intake branches, so every route change passes through). **Never paste Google's snippet into
+`index.html`**: it would run on every page, before consent.
+
+- **Public pages only**, by an allowlist (`PUBLIC_PAGE`: home, about, contact, faq, membership,
+  privacy, terms, privacy-practices, success-stories, programs, guides). A new public route is not
+  tracked until it is added there. Google won't sign a BAA for Analytics, and HHS has warned that
+  tracking where health information is entered can break HIPAA (the FTC fined GoodRx and
+  BetterHelp for this), so the intake, portal and admin must never be on the list.
+  `googleAnalytics.check.js` (in `npm run check`) fails if one of them matches.
+- On a non-public page Google's own `ga-disable-G-180FKQGVY5` flag is set, which also stops its
+  automatic (enhanced measurement) events. The script loads only on the first public page after
+  Accept. Page views are sent by hand on each route change (`send_page_view: false`), with no
+  query string. Google signals and ad personalization are off in the config.
+- Decline after Accept sets the flag and deletes the `_ga` cookies. Production builds only
+  (`import.meta.env.PROD`); the dev server sends nothing.
+- The banner and the privacy policy describe it (cookies on public pages, never the intake or
+  portal, ad features off). **Change them if this changes.**
+- Settings for Louie in the GA console: Enhanced measurement with "Page changes based on browser
+  history events" and "Form interactions" off (the first would double-count), data retention 2
+  months, Google signals off.
+- Tested 2026-10-13 against the production build on the hosting emulator, with hits blocked so
+  nothing reached the live property: no script before Accept, page views on public pages and
+  route changes, nothing on `/intake` or `/account`, cookies gone after Decline.
 
 ## Conventions and gotchas
 
+- **Admin checkboxes** are styled once in `index.css` (rounded box, accent fill, white tick),
+  scoped to `#admin-portal-root` (dialogs portal into it) and skipping `role="switch"`. Don't
+  restyle them per component. The public intake uses its own option cards.
 - **Always use the skills and plugins the task needs, from `.claude/skills` or installed
   plugins, before doing the work. Every task, every follow-up, every small fix** (Louie,
   2026-10-02). This is not optional and not "covered" by a skill loaded earlier for a
@@ -372,12 +518,20 @@ Cookie-free, consent-first counts (meeting items 14 and 15). Google Analytics is
   | Reviewing code | `code-reviewer` / `superpowers:requesting-code-review` |
   | Before saying something is done | `superpowers:verification-before-completion` |
 
+  **Be efficient, and check for new skills every time.** Skills are added over time (plugins
+  and `.claude/skills`), so this table goes stale. At the start of every request, read the
+  current available-skills listing for anything new that fits, not just the rows above.
+  Skills seen so far that are not in the table: `ponytail` (keep the change minimal),
+  `simplify` and `code-review` (after a change), `dataviz` (any chart, such as Analytics),
+  `run` (launch the app). Load only the skills that fit the task: one UI fix needs the UI
+  skills, not every skill. Don't load a skill twice in one request. Run independent loads in
+  one batch.
   Say which skills were loaded when reporting back. If a skill can't run here (the
   `ui-ux-pro-max` search script and `webapp-testing` need Python, which isn't installed), still
   load it, follow its checklist by hand, and say so.
-- **Verify UI changes in a real browser.** Playwright is installed in the session scratchpad
-  (chromium-cli is not available on this Windows machine). Drive the dev server with a small
-  `.mjs` script. The Playwright MCP tools also work, but they can only upload files from inside
+- **Verify UI changes in a real browser.** The Playwright MCP tools work (`browser_navigate`,
+  `browser_evaluate`); a Playwright install in the session scratchpad may not survive between
+  sessions (chromium-cli is not available on this Windows machine). The MCP tools but they can only upload files from inside
   the project (copy a test file into `.playwright-mcp/` and delete it after).
 - **Testing the admin without a login:** the admin's demo mode only runs when Firebase isn't
   configured, and `.env.local` configures it. Don't touch the user's dev server. Start your own
@@ -391,7 +545,7 @@ Cookie-free, consent-first counts (meeting items 14 and 15). Google Analytics is
   "current screen" must pick the visible one. Leaving a half-filled intake raises a
   `beforeunload` prompt, which blocks tool calls until it is dismissed.
 - **Intake fields** that the database validates carry matching limits: `maxLength` equal to the
-  rules' caps, and `pattern` (`NOT_BLANK` in `intakeScreens.jsx`) so spaces alone can't pass
+  rules' caps (`isIntakeSections`: free text 2000, picked answers 100), and `pattern` (`NOT_BLANK` in `intakeScreens.jsx`) so spaces alone can't pass
   `required` and then be refused on send. `DatePicker` builds `YYYY-MM-DD` from local parts (never
   `toISOString()`), and takes `min` and `max`. Pass `ariaLabel` to every `Select` and
   `DatePicker`; their visible button has no name otherwise.

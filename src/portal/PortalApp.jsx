@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react"
 import { Helmet } from "react-helmet-async"
 import { Link, Route, Routes } from "react-router-dom"
+import IdleWarningModal from "../admin/layout/IdleWarningModal"
+import { PORTAL_ACTIVITY_KEY, useIdleTimeout } from "../admin/lib/useIdleTimeout"
 import LoginPanel from "../components/LoginPanel"
 import { ChevronRightIcon } from "../components/icons"
+import { Loading, Skeleton } from "./Skeleton"
 import { SUPPORT_PHONE } from "../lib/siteContact"
 import { getMyPortalLink, signOutPatient, watchPatientUser } from "./lib/patientAuth"
 import MessagesPage from "./messages/MessagesPage"
@@ -17,6 +20,11 @@ const primaryButton =
 const secondaryButton =
   "rounded-full border border-ink-950/15 px-6 py-3 text-sm font-semibold text-ink-950 transition-colors duration-200 ease-out-smooth hover:bg-paper-100"
 const inlineLink = "font-medium text-ink-950 underline underline-offset-2"
+// Weights, messages and updates are health information: sign out after 15
+// quiet minutes, with a minute's warning, the same as the admin.
+const IDLE_TIMEOUT_MS = 15 * 60 * 1000
+const IDLE_WARNING_MS = 60 * 1000
+const signOut = () => signOutPatient()
 
 // The patient portal (/account/*). Invite-only (Louie, 2026-10-02): a login
 // only opens the portal once patientAccounts/{uid} links it to an intake
@@ -65,6 +73,14 @@ export default function PortalApp() {
               ? "notLinked"
               : "linked"
 
+  const idleSecondsLeft = useIdleTimeout({
+    enabled: Boolean(user),
+    timeoutMs: IDLE_TIMEOUT_MS,
+    warningMs: IDLE_WARNING_MS,
+    onIdle: signOut,
+    storageKey: PORTAL_ACTIVITY_KEY,
+  })
+
   const signOutButton = (
     <button type="button" onClick={() => signOutPatient()} className={secondaryButton}>
       Sign out
@@ -77,6 +93,14 @@ export default function PortalApp() {
         <title>Patient portal | CorePhia</title>
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
+
+      {state === "checking" && (
+        <Loading label="Opening your portal…" className={cardClass}>
+          <Skeleton className="h-8 w-2/3" />
+          <Skeleton className="mt-4 h-4 w-full" />
+          <Skeleton className="mt-2 h-4 w-4/5" />
+        </Loading>
+      )}
 
       {state === "signedOut" && (
         <div className={cardClass}>
@@ -147,6 +171,7 @@ export default function PortalApp() {
       )}
 
       <LoginPanel open={loginOpen} onClose={() => setLoginOpen(false)} />
+      {idleSecondsLeft != null && <IdleWarningModal secondsLeft={idleSecondsLeft} onSignOut={signOut} />}
     </section>
   )
 }

@@ -17,7 +17,7 @@ export const programs = [
     name: "Medical care",
     title: "Medical Care | CorePhia Weight Loss Program in Tampa",
     description:
-      "Physician-guided medical care as part of CorePhia's weight loss program in Tampa: a licensed provider, a review of your full health history, and medication only if your provider prescribes it.",
+      "Physician-guided medical care in Tampa: a full review of your health history, and medication only if your provider prescribes it.",
     headline: "Medical care from a provider who knows your whole plan.",
     intro:
       "Your provider reviews your health history, follows your progress, and decides with you whether weight loss medication belongs in your plan. If it does, it becomes one part of your program, alongside your nutrition and exercise plans.",
@@ -60,7 +60,7 @@ export const programs = [
     name: "Dietitian services",
     title: "Dietitian Services | CorePhia Weight Loss Program in Tampa",
     description:
-      "Dietitian services as part of CorePhia's weight loss program in Tampa: a meal plan built around how you already eat, adjusted as you progress and coordinated with your provider.",
+      "Dietitian services in Tampa: a meal plan built around how you already eat, adjusted as you progress and shared with your provider.",
     headline: "A meal plan built around how you actually eat.",
     intro:
       "A dietitian looks at what a normal day of eating is like for you, then builds a plan around it that you can keep up for the long run.",
@@ -101,9 +101,9 @@ export const programs = [
   {
     slug: "exercise-plan",
     name: "Comprehensive Exercise Plan",
-    title: "Comprehensive Exercise Plan | CorePhia Weight Loss Program in Tampa",
+    title: "Exercise Plan | CorePhia Weight Loss Program in Tampa",
     description:
-      "A comprehensive exercise plan as part of CorePhia's weight loss program in Tampa: written for your fitness level and schedule, and adjusted as you get stronger.",
+      "A written exercise plan for weight loss in Tampa, matched to your fitness level and schedule, and adjusted as you get stronger.",
     headline: "An exercise plan written for your body, starting where you are.",
     intro:
       "You get a written exercise plan matched to your fitness level and your schedule, and it grows as you get stronger.",
@@ -146,7 +146,7 @@ export const programs = [
     name: "Follow-ups",
     title: "Follow-ups | CorePhia Weight Loss Program in Tampa",
     description:
-      "Follow-ups as part of CorePhia's weight loss program in Tampa: regular check-ins with your provider, where your nutrition, exercise, and medical care are reviewed and adjusted together.",
+      "Regular check-ins with your CorePhia provider in Tampa, where your meals, exercise, and medical care are reviewed and adjusted together.",
     headline: "Regular check-ins that keep your plan on track.",
     intro:
       "Follow-ups are where your plan gets reviewed and adjusted, so it keeps working as your body and your routine change.",

@@ -58,7 +58,7 @@ const TOPICS = [
       "Press Sign note. Signing locks the note for good, stamped with your name, role and the time. Any later change is added as a dated addendum, and the original never changes.",
       "If the note has weight, blood pressure or heart rate, those numbers also go to the patient's progress chart. Tick \"Then share an update with the patient\" to post an update right away.",
     ],
-    note: "A chart for someone who is no longer admitted is inactive. You can read it, but you can't add notes until they are admitted again.",
+    note: "A chart for someone who is no longer admitted is inactive. You can read it, but you can't add notes until they are admitted again. On the Patients page, the Status column has Make inactive and Reactivate for providers and above.",
   },
   {
     id: "prescriptions",
@@ -102,7 +102,7 @@ const TOPICS = [
       "Needs a reply is the same number as the badge beside Messages. Pending applicants are intakes waiting for an admit or decline decision.",
       "Below that, six totals and the charts show what applicants told us on the intake. Click a bar or a row to see the applicants behind it, and click a name to read their intake. Most recent intakes is at the bottom.",
     ],
-    note: "The cards count the whole practice, not just you. Dietitians see the same numbers but can't admit or decline. First consultations still waiting are on the To-do page, not in Due this week. While there are no real intakes yet, the dashboard and Applicants show sample applicants, with a yellow \"Sample data\" notice at the top.",
+    note: "The cards count the whole practice, not just you. Dietitians see the same numbers but can't admit or decline. First consultations still waiting are on the To-do page, not in Due this week.",
   },
   {
     id: "messages",
@@ -151,7 +151,7 @@ const TOPICS = [
     title: "Read site analytics",
     show: (role) => canOpen("analytics", role),
     steps: [
-      "Open Analytics and choose 7, 30 or 90 days.",
+      "Open Analytics and choose 7, 30 or 90 days, or press Custom to enter any number of days, weeks or months (up to a year).",
       "You'll see page views, \"Get started\" clicks, intakes opened and submitted, top pages and most-clicked links.",
     ],
     note: "Counts are anonymous, use no cookies and only include visitors who accepted the privacy banner, so real traffic is higher.",

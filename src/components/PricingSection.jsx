@@ -1,6 +1,6 @@
 import { PRICES_ANNOUNCED, tiers } from "../data/pricingTiers"
 import { useReveal } from "../hooks/useReveal"
-import { BadgeCheckIcon, LockIcon, PillBottleIcon, ShieldCheckIcon, TrendingUpIcon } from "./icons"
+import { BadgeCheckIcon, LockIcon, PillBottleIcon, ShieldCheckIcon } from "./icons"
 
 const trustBadges = [
   { label: "Doctor Led Care", detail: "Expert care from licensed providers.", icon: ShieldCheckIcon },
@@ -9,7 +9,6 @@ const trustBadges = [
     detail: "FDA-approved medication, prescribed.",
     icon: PillBottleIcon,
   },
-  { label: "Proven Results", detail: "Real people, tracked over time.", icon: TrendingUpIcon },
   { label: "Safe & Confidential", detail: "Your health information stays private", icon: LockIcon },
 ]
 
@@ -36,7 +35,7 @@ function PricingCard({ tier, index }) {
           <span className="flex size-11 items-center justify-center rounded-2xl bg-accent/12 text-accent-dark">
             <tier.icon className="size-5" />
           </span>
-          <h3 className="mt-5 font-serif text-2xl text-ink-950">{tier.name}</h3>
+          <h2 className="mt-5 font-serif text-2xl text-ink-950">{tier.name}</h2>
           <p className="mt-1 text-sm font-medium text-accent-dark">{tier.tagline}</p>
           <p className="mt-3 text-sm leading-relaxed text-ink-950/70">{tier.description}</p>
         </header>
@@ -104,7 +103,7 @@ export default function PricingSection({ headingAs: Heading = "h2" }) {
         <ul
           ref={badgesRef}
           data-reveal={badgesVisible ? "shown" : "hidden"}
-          className="mt-10 grid gap-6 rounded-3xl bg-paper-100 p-6 sm:mt-12 sm:grid-cols-2 sm:p-8 lg:grid-cols-4"
+          className="mt-10 grid gap-6 rounded-3xl bg-paper-100 p-6 sm:mt-12 sm:grid-cols-2 sm:p-8 lg:grid-cols-3"
         >
           {trustBadges.map(({ label, detail, icon: Icon }) => (
             <li key={label} className="flex flex-col items-center gap-2 text-center sm:items-start sm:text-left">

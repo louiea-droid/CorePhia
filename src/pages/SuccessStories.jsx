@@ -68,7 +68,7 @@ export default function SuccessStories() {
           name="description"
           content="Stories from CorePhia patients in their own words: what changed with dietitian services, an exercise plan, and physician-guided care."
         />
-        <link rel="canonical" href="https://www.corephia.com/success-stories" />
+        <link rel="canonical" href="https://corephia.com/success-stories" />
         {/* Kept out of search until real stories exist: an empty page is thin
             content. It is also left out of public/sitemap.xml for now. */}
         {!successStories.length && <meta name="robots" content="noindex, follow" />}

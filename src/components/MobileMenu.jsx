@@ -26,14 +26,14 @@ const weightLossLinks = [
 const topPrograms = [
 // The illustrations are drawn for the blue program cards (their whites vanish
 // on white), so each sits on a small brand tile, sized to read at one weight.
-  { label: "Medical care", to: "/programs/medical-care", art: <CareShieldArt className="h-11" /> },
-  { label: "Dietitian services", to: "/programs/dietitian-services", art: <MealPlateArt className="size-10" /> },
-  { label: "Comprehensive Exercise Plan", to: "/programs/exercise-plan", art: <ActivityArt className="h-6 w-15" /> },
-  { label: "Follow-ups", to: "/programs/follow-ups", art: <HealthCheckArt className="size-11" /> },
+  { label: "Medical care", to: "/programs/medical-care", art: <CareShieldArt className="h-9" /> },
+  { label: "Dietitian services", to: "/programs/dietitian-services", art: <MealPlateArt className="size-8" /> },
+  { label: "Comprehensive Exercise Plan", to: "/programs/exercise-plan", art: <ActivityArt className="h-5 w-12" /> },
+  { label: "Follow-ups", to: "/programs/follow-ups", art: <HealthCheckArt className="size-9" /> },
 ]
 
 const rowClass =
-  "flex w-full items-center justify-between rounded-xl px-2 py-4 -mx-2 text-lg font-medium text-ink-950 transition-colors duration-200 ease-out-smooth hover:bg-paper-100"
+  "flex w-full items-center justify-between rounded-xl px-2 py-2.5 -mx-2 text-lg font-medium text-ink-950 transition-colors duration-200 ease-out-smooth hover:bg-paper-100"
 
 // The "Start here" card from the client meeting, modelled on the Hims menu card.
 // TODO: /start-here.webp is a free Unsplash placeholder. The client is
@@ -149,6 +149,9 @@ export default function MobileMenu({ open, onClose, onAccountClick }) {
 
   const slideClass = view.dir === "forward" ? "animate-view-forward" : view.dir === "back" ? "animate-view-back" : ""
 
+  // The build-time prerender (scripts/prerender.mjs) has no document to portal into.
+  if (typeof document === "undefined") return null
+
   return createPortal(
     <div className={`fixed inset-0 z-50 ${open ? "" : "pointer-events-none"}`} inert={!open}>
       <div
@@ -170,7 +173,7 @@ export default function MobileMenu({ open, onClose, onAccountClick }) {
       >
         {view.name === "weightLoss" ? (
           <div key="weightLoss" className={slideClass}>
-            <div className="flex items-center justify-between px-6 pt-6 pb-4">
+            <div className="flex items-center justify-between px-6 pt-5 pb-3">
               <button
                 ref={backButtonRef}
                 type="button"
@@ -207,7 +210,7 @@ export default function MobileMenu({ open, onClose, onAccountClick }) {
           </div>
         ) : (
           <div key="main" className={slideClass}>
-            <div className="flex items-center justify-between px-6 pt-6 pb-4">
+            <div className="flex items-center justify-between px-6 pt-5 pb-3">
               <h2 className="font-serif text-2xl text-ink-950">Menu</h2>
               <div className="flex items-center gap-4 text-ink-950">
                 {accountButton}
@@ -241,20 +244,20 @@ export default function MobileMenu({ open, onClose, onAccountClick }) {
               </ul>
             </div>
 
-            <div className="mt-2 border-t border-ink-950/10 px-6 py-6">
+            <div className="mt-2 border-t border-ink-950/10 px-6 pt-4 pb-4">
               <p className="text-xs font-semibold tracking-widest text-ink-950/70 uppercase">What's included</p>
               {/* A 2x2 grid, so all four programs show at once and every tile is
                   the same height (it was a sideways scroller that clipped the
                   third tile and hid the fourth). */}
-              <ul className="mt-4 grid auto-rows-fr grid-cols-2 gap-3">
+              <ul className="mt-3 grid auto-rows-fr grid-cols-2 gap-2.5">
                 {topPrograms.map((item) => (
                   <li key={item.label}>
                     <Link
                       to={item.to}
                       onClick={onClose}
-                      className="flex h-full flex-col items-center gap-3 rounded-2xl border border-ink-950/10 bg-white px-3 pt-4 pb-3.5 text-center transition-colors duration-200 ease-out-smooth hover:border-accent-dark/40 hover:bg-paper-100"
+                      className="flex h-full flex-col items-center gap-2 rounded-2xl border border-ink-950/10 bg-white px-3 pt-3 pb-2.5 text-center transition-colors duration-200 ease-out-smooth hover:border-accent-dark/40 hover:bg-paper-100"
                     >
-                      <span className="flex size-16 items-center justify-center rounded-2xl bg-linear-to-b from-brand to-brand-dark shadow-sm" aria-hidden="true">
+                      <span className="flex size-13 items-center justify-center rounded-2xl bg-linear-to-b from-brand to-brand-dark shadow-sm" aria-hidden="true">
                         {item.art}
                       </span>
                       <span className="text-sm leading-snug font-medium text-balance text-ink-950">{item.label}</span>
