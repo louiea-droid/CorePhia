@@ -2,8 +2,9 @@
 // roles, appointments, patient portal links, portal invites, setup links, portal updates, portal progress and portal messages.
 //
 // Run: npm run test:rules
-// Needs Java 21+ for the Firestore emulator (firebase-tools starts it). All 131
-// passed on 2026-10-07. Run them before every rules deploy.
+// Needs Java 21+ for the Firestore emulator (firebase-tools starts it). All 153
+// passed on 2026-10-21. Run them before every rules deploy.
+import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import { after, before, beforeEach, describe, test } from "node:test"
 import { assertFails, assertSucceeds, initializeTestEnvironment } from "@firebase/rules-unit-testing"
@@ -977,7 +978,7 @@ describe("portal messages", () => {
     closed: null,
     ...overrides,
   })
-  const newMessage = (from, overrides = {}) => ({ body: "Hello", from, createdAt: serverTimestamp(), email: "none", ...overrides })
+  const newMessage = (from, overrides = {}) => ({ body: "Hello", from, createdAt: serverTimestamp(), email: "none", removed: false, ...overrides })
   const start = (db, side, from, { topic = {}, message = {}, chart = "chart1" } = {}) => {
     const batch = writeBatch(db)
     batch.set(topicRef(db, "t1", chart), newTopic(side, topic))
@@ -1034,6 +1035,7 @@ describe("portal messages", () => {
     await assertFails(start(as("provider"), "staff", staffFrom(), { topic: { subject: "x".repeat(121) } }))
     await assertFails(start(as("provider"), "staff", staffFrom(), { message: { body: "x".repeat(2001) } }))
     await assertFails(start(as("provider"), "staff", staffFrom(), { message: { email: "sent" } }))
+    await assertFails(start(as("provider"), "staff", staffFrom(), { message: { removed: true } }))
   })
   test("a reply moves the topic in the same save; two replies in a row both work", async () => {
     await seedTopic()
@@ -1089,7 +1091,9 @@ describe("portal messages", () => {
     await seedMessage("p1", { ...newMessage(patientFrom()), createdAt: new Date() })
     const db = asPatient("patient1", "p1@x.co")
     await assertSucceeds(getDocs(collection(db, "patients/chart1/topics")))
-    await assertSucceeds(getDocs(collection(db, "patients/chart1/topics/t1/messages")))
+    await assertSucceeds(getDocs(query(collection(db, "patients/chart1/topics/t1/messages"), where("removed", "==", false))))
+    // Unfiltered, the query could return a removed message, so it's refused.
+    await assertFails(getDocs(collection(db, "patients/chart1/topics/t1/messages")))
     await assertFails(getDocs(collection(asPatient("patient2", "p2@x.co"), "patients/chart1/topics")))
     await assertFails(getDocs(collection(env.unauthenticatedContext().firestore(), "patients/chart1/topics")))
     await assertSucceeds(getDocs(collectionGroup(as("dietitian"), "topics")))
@@ -1117,6 +1121,34 @@ describe("portal messages", () => {
     await seedTopic()
     await assertFails(reply(asPatient("patient1", "p1@x.co"), "patient", { kind: "staff", uid: "patient1", name: "patient1", role: "provider" }, "m2"))
     await assertFails(updateDoc(topicRef(asPatient("patient1", "p1@x.co"), "t1", "pending1"), { patientReadAt: serverTimestamp() }))
+  })
+  test("a staff message is removed by its author or co-admin and up, once, as themselves", async () => {
+    await seedTopic()
+    await seedMessage("s1", { ...newMessage(staffFrom()), createdAt: new Date() })
+    const removal = (name) => ({ removed: { by: { uid: name, name }, at: serverTimestamp() } })
+    await assertFails(updateDoc(msgRef(as("dietitian"), "t1", "s1"), removal("dietitian")))
+    await assertFails(updateDoc(msgRef(as("provider"), "t1", "s1"), { removed: { by: { uid: "provider", name: "Dr. Somebody" }, at: serverTimestamp() } }))
+    await assertFails(updateDoc(msgRef(as("provider"), "t1", "s1"), { ...removal("provider"), body: "Edited" }))
+    await assertSucceeds(updateDoc(msgRef(as("provider"), "t1", "s1"), removal("provider")))
+    await assertFails(updateDoc(msgRef(as("coadmin"), "t1", "s1"), removal("coadmin")))
+    await seedMessage("s2", { ...newMessage(staffFrom()), createdAt: new Date() })
+    await assertSucceeds(updateDoc(msgRef(as("coadmin"), "t1", "s2"), removal("coadmin")))
+  })
+  test("a patient's own message can't be removed, and a patient can't remove anything", async () => {
+    await seedTopic()
+    await seedMessage("p1", { ...newMessage(patientFrom()), createdAt: new Date() })
+    await seedMessage("s1", { ...newMessage(staffFrom()), createdAt: new Date() })
+    await assertFails(updateDoc(msgRef(as("super"), "t1", "p1"), { removed: { by: { uid: "super", name: "super" }, at: serverTimestamp() } }))
+    await assertFails(updateDoc(msgRef(asPatient("patient1", "p1@x.co"), "t1", "s1"), { removed: { by: { uid: "patient1", name: "" }, at: serverTimestamp() } }))
+  })
+  test("a removed message is hidden from the patient, not from staff", async () => {
+    await seedTopic()
+    await seedMessage("s1", { ...newMessage(staffFrom()), createdAt: new Date(), removed: { by: { uid: "provider", name: "provider" }, at: new Date() } })
+    const db = asPatient("patient1", "p1@x.co")
+    await assertFails(getDoc(msgRef(db, "t1", "s1")))
+    const visible = await getDocs(query(collection(db, "patients/chart1/topics/t1/messages"), where("removed", "==", false)))
+    assert.equal(visible.size, 0)
+    await assertSucceeds(getDoc(msgRef(as("dietitian"), "t1", "s1")))
   })
   test("a patient reads their own chart record, not anyone else's", async () => {
     await assertSucceeds(getDoc(doc(asPatient("patient1", "p1@x.co"), "patients", "chart1")))

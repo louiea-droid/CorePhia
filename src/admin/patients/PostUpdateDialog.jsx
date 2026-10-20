@@ -39,6 +39,7 @@ export default function PostUpdateDialog({ chartId, to, initialBody = "", fromNo
       title="Post an update"
       onClose={onClose}
       busy={busy}
+      dirty={body.trim() !== initialBody.trim()}
       footer={
         <>
           {error && (

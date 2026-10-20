@@ -13,7 +13,9 @@ const fieldClass =
 // Patient accounts are invite-only (Louie, 2026-10-02): sign-in only, no
 // sign-up or Google. Staff invite admitted patients from the admin.
 // startView "reset" opens on the forgot-password form (from /portal/reset).
-export default function LoginPanel({ open, onClose, startView = "login" }) {
+// resetBack: where the new reset email returns to (the expired link's own
+// destination on /portal/reset, so staff go back to the admin).
+export default function LoginPanel({ open, onClose, startView = "login", resetBack }) {
   const closeButtonRef = useRef(null)
   // Header and Account can each mount a panel, so the id must be unique per instance.
   const passwordId = useId()
@@ -80,7 +82,7 @@ export default function LoginPanel({ open, onClose, startView = "login" }) {
     setBusy(true)
     setError(null)
     try {
-      await resetPatientPassword(email.trim())
+      await resetPatientPassword(email.trim(), resetBack)
       setView("resetSent")
     } catch (cause) {
       console.error("Password reset failed:", cause.code ?? cause.message)

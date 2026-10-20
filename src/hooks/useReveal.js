@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react"
+import { isPrerenderedStart } from "./useIntro"
 
 const prefersReducedMotion = () =>
   typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -12,10 +13,13 @@ const prefersReducedMotion = () =>
  * threshold made people scroll into an empty gap first. Elements already
  * above the viewport (a #hash jump, or back-navigation restoring scroll)
  * reveal immediately instead of staying hidden forever.
+ *
+ * `eager` is for above-the-fold content (a page's hero): like useIntro, it
+ * starts shown in the prerendered HTML and on the first render over it.
  */
-export function useReveal() {
+export function useReveal(eager = false) {
   const ref = useRef(null)
-  const [visible, setVisible] = useState(prefersReducedMotion)
+  const [visible, setVisible] = useState(() => (eager && isPrerenderedStart()) || prefersReducedMotion())
 
   useEffect(() => {
     if (visible) return

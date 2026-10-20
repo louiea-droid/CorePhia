@@ -1,18 +1,22 @@
-import { useRef } from "react"
+import { useRef, useState } from "react"
 import { createPortal } from "react-dom"
+import ConfirmDialog from "./ConfirmDialog"
 import { CloseIcon } from "./icons"
 import { getAdminPortalRoot } from "./portalRoot"
 import { useDialog } from "./useDialog"
 
 // A small admin dialog: scrim, title, close button, Escape to close (see
-// useDialog), and focus on the close button to start.
-export default function Modal({ title, onClose, children, footer, busy = false }) {
+// useDialog), and focus on the close button to start. With `dirty` (typed
+// text that isn't sent yet), Escape, the scrim and the X ask before discarding.
+export default function Modal({ title, onClose, children, footer, busy = false, dirty = false }) {
   const closeRef = useRef(null)
-  useDialog({ onClose, focusRef: closeRef, closable: !busy })
+  const [confirmingClose, setConfirmingClose] = useState(false)
+  const requestClose = () => (dirty ? setConfirmingClose(true) : onClose())
+  useDialog({ onClose: requestClose, focusRef: closeRef, closable: !busy })
 
   return createPortal(
     <div className="fixed inset-0 z-50 overflow-y-auto [scrollbar-gutter:stable_both-edges]" role="presentation">
-      <div aria-hidden="true" onClick={() => !busy && onClose()} className="fixed inset-0 bg-scrim/50" />
+      <div aria-hidden="true" onClick={() => !busy && requestClose()} className="fixed inset-0 bg-scrim/50" />
       <div className="relative flex min-h-full items-end justify-center sm:items-center sm:p-4">
         <div role="dialog" aria-modal="true" aria-label={title} className="relative w-full max-w-md rounded-t-3xl bg-paper-50 shadow-2xl sm:rounded-3xl">
           <div className="flex items-start justify-between gap-4 border-b border-ink-950/10 px-5 py-4 sm:px-6">
@@ -20,7 +24,7 @@ export default function Modal({ title, onClose, children, footer, busy = false }
             <button
               ref={closeRef}
               type="button"
-              onClick={onClose}
+              onClick={requestClose}
               disabled={busy}
               aria-label="Close"
               className="cursor-pointer rounded-lg p-1.5 text-ink-950/50 transition-colors duration-200 hover:bg-ink-950/5 hover:text-ink-950"
@@ -36,6 +40,15 @@ export default function Modal({ title, onClose, children, footer, busy = false }
           )}
         </div>
       </div>
+      <ConfirmDialog
+        open={confirmingClose}
+        title="Discard what you wrote?"
+        description="It hasn't been sent, and closing throws it away."
+        confirmLabel="Discard"
+        cancelLabel="Keep writing"
+        onConfirm={onClose}
+        onCancel={() => setConfirmingClose(false)}
+      />
     </div>,
     getAdminPortalRoot(),
   )

@@ -794,11 +794,12 @@ service cloud.firestore {
           }
           function isNewMessage(side) {
             let data = request.resource.data;
-            return data.keys().hasOnly(['body', 'from', 'createdAt', 'email'])
-              && data.keys().hasAll(['body', 'from', 'createdAt', 'email'])
+            return data.keys().hasOnly(['body', 'from', 'createdAt', 'email', 'removed'])
+              && data.keys().hasAll(['body', 'from', 'createdAt', 'email', 'removed'])
               && data.body is string && data.body.size() > 0 && data.body.size() <= 2000
               && data.createdAt == request.time
               && data.email == 'none'
+              && data.removed == false
               && data.from.uid == request.auth.uid
               && (side == 'staff'
                   ? (data.from.keys().hasOnly(['kind', 'uid', 'name', 'role']) && data.from.kind == 'staff'
@@ -807,14 +808,31 @@ service cloud.firestore {
               && movesTopic(side)
               && chartActive();
           }
-          allow read: if isClinical() || isLinkedTo(chartId);
+          // A staff message taken out of the patient's view (sent to the wrong
+          // chart, say): its author or co-admin and up, once, on any chart. It
+          // stays for staff; the patient can no longer read it.
+          function isMessageRemoval() {
+            let removed = request.resource.data.removed;
+            return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['removed'])
+              && resource.data.from.kind == 'staff'
+              && resource.data.removed == false
+              && removed is map
+              && removed.keys().hasOnly(['by', 'at'])
+              && removed.by.keys().hasOnly(['uid', 'name'])
+              && removed.by.uid == request.auth.uid
+              && removed.by.name == myName()
+              && removed.at == request.time
+              && (resource.data.from.uid == request.auth.uid || isStaff());
+          }
+          allow read: if isClinical() || (isLinkedTo(chartId) && resource.data.removed == false);
           allow create: if (isClinical() && isNewMessage('staff')) || (isLinkedTo(chartId) && isNewMessage('patient'));
           allow update: if isClinical()
-            && resource.data.from.kind == 'staff'
-            && resource.data.from.uid == request.auth.uid
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['email'])
-            && resource.data.email == 'none'
-            && request.resource.data.email in ['sent', 'failed'];
+            && (isMessageRemoval()
+                || (resource.data.from.kind == 'staff'
+                    && resource.data.from.uid == request.auth.uid
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['email'])
+                    && resource.data.email == 'none'
+                    && request.resource.data.email in ['sent', 'failed']));
           allow delete: if false;
         }
       }

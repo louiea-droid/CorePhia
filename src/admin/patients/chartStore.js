@@ -16,6 +16,7 @@ import {
   getDocs,
   orderBy,
   query,
+  runTransaction,
   serverTimestamp,
   setDoc,
   updateDoc,
@@ -68,12 +69,13 @@ const requireDb = () => {
 
 // --- Demo store --------------------------------------------------------------
 
+// The promise is kept, not the store: two callers at page load used to build
+// two stores, so a topic listed from one wasn't found in the other.
 let demoStore = null
-export async function getDemoStore() {
-  if (!demoStore) {
-    const [{ buildDemoStore }, { seedRecords }] = await Promise.all([import("./seedCharts"), import("../lib/seedRecords")])
-    demoStore = buildDemoStore(seedRecords)
-  }
+export function getDemoStore() {
+  demoStore ??= Promise.all([import("./seedCharts"), import("../lib/seedRecords")]).then(([{ buildDemoStore }, { seedRecords }]) =>
+    buildDemoStore(seedRecords),
+  )
   return demoStore
 }
 export const demoId = () => `demo-${Math.random().toString(36).slice(2, 10)}`
@@ -115,16 +117,21 @@ export async function setApplicantStatus(record, status, actor) {
   }
   const database = requireDb()
   const chartRef = doc(database, PATIENTS_COLLECTION, record.id)
-  const existing = await getDoc(chartRef)
-  const batch = writeBatch(database)
-  batch.update(doc(database, INTAKE_COLLECTION, record.id), { status })
-  if (status === "admitted") {
-    if (!existing.exists()) batch.set(chartRef, chartFromRecord(record, actor, serverTimestamp()))
-    else if (existing.data().status !== "active") batch.update(chartRef, { status: "active", updatedAt: serverTimestamp() })
-  } else if (existing.exists() && existing.data().status === "active") {
-    batch.update(chartRef, { status: "inactive", updatedAt: serverTimestamp() })
-  }
-  await batch.commit()
+  const intakeRef = doc(database, INTAKE_COLLECTION, record.id)
+  // A transaction, not a read then a batch: if two staff press Admit and
+  // Decline at once, the second sees the first's chart and retries, instead of
+  // leaving a declined applicant with an active chart.
+  await runTransaction(database, async (transaction) => {
+    const [existing, intake] = await Promise.all([transaction.get(chartRef), transaction.get(intakeRef)])
+    // The super admin may have deleted the intake; the chart can still change.
+    if (intake.exists()) transaction.update(intakeRef, { status })
+    if (status === "admitted") {
+      if (!existing.exists()) transaction.set(chartRef, chartFromRecord(record, actor, serverTimestamp()))
+      else if (existing.data().status !== "active") transaction.update(chartRef, { status: "active", updatedAt: serverTimestamp() })
+    } else if (existing.exists() && existing.data().status === "active") {
+      transaction.update(chartRef, { status: "inactive", updatedAt: serverTimestamp() })
+    }
+  })
 }
 
 // --- Charts ------------------------------------------------------------------

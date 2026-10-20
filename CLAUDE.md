@@ -79,7 +79,9 @@ roles, calendarMath, todoMath, staffMath, inviteMath, progressMath, messageMath,
 `googleAnalytics.check.js` (only public pages are trackable), and
 `auditActions.check.js`, which fails if `AUDIT_ACTIONS` in `admin/lib/firebase.js` and the action
 list in `firestore.rules` drift apart) and `npm run test:rules` (Firestore rules against the
-emulator: Java 21 is installed now, and all 150 tests pass as of 2026-10-19).
+emulator: all 153 pass as of 2026-10-21). This Windows machine has no Java and no global
+`firebase`: a portable JDK 21 and `firebase-tools` in the session scratchpad work
+(`firebase emulators:exec --project demo-corephia --only firestore "node --test tests/*.test.js"`).
 
 ## Architecture
 
@@ -226,6 +228,12 @@ Messages, Updates) · compliance copy fixes · accessibility and visual pass.
   EmailJS as service providers, Google Fonts, server logs). **Change the system, change these.**
   Still open for the client: the legal entity name, the cancellation and refund policy (the
   Terms say it is confirmed in writing at enrollment), and more licensed states when there are any.
+
+### Audit 2026-10-21
+
+`docs/audit-2026-10-21.md` holds the whole-system audit. Its **"Fix first"** list (invite email
+abuse, offline note loss, the Membership link preview, GA timing, invite/discharge rules, intake
+delete, vitals ranges, copy vs Terms) is planned for 2026-10-22. Strike items there as they ship.
 
 ### Blockers before going live with real patients
 

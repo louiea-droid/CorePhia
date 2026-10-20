@@ -65,8 +65,8 @@ async function demo() {
         staffReadAt: null,
         closed: null,
         messages: [
-          { id: "m1", body: "Hi, I've felt a little dizzy in the mornings since last week.", from: { kind: "patient", uid: "p" }, createdAt: hoursAgo(5), email: "none" },
-          { id: "m2", body: "It's better after breakfast. Should I keep going?", from: { kind: "patient", uid: "p" }, createdAt: hoursAgo(2), email: "none" },
+          { id: "m1", body: "Hi, I've felt a little dizzy in the mornings since last week.", from: { kind: "patient", uid: "p" }, createdAt: hoursAgo(5), email: "none", removed: false },
+          { id: "m2", body: "It's better after breakfast. Should I keep going?", from: { kind: "patient", uid: "p" }, createdAt: hoursAgo(2), email: "none", removed: false },
         ],
       })
     }
@@ -85,8 +85,8 @@ async function demo() {
         staffReadAt: hoursAgo(26),
         closed: null,
         messages: [
-          { id: "m1", body: "How did the new evening snack go this week?", from: { kind: "staff", uid: "d", name: "Sam Rivera, RD", role: "dietitian" }, createdAt: hoursAgo(30), email: "sent" },
-          { id: "m2", body: "Great to hear. Let's keep it for another two weeks.", from: { kind: "staff", uid: "d", name: "Sam Rivera, RD", role: "dietitian" }, createdAt: hoursAgo(26), email: "sent" },
+          { id: "m1", body: "How did the new evening snack go this week?", from: { kind: "staff", uid: "d", name: "Sam Rivera, RD", role: "dietitian" }, createdAt: hoursAgo(30), email: "sent", removed: false },
+          { id: "m2", body: "Great to hear. Let's keep it for another two weeks.", from: { kind: "staff", uid: "d", name: "Sam Rivera, RD", role: "dietitian" }, createdAt: hoursAgo(26), email: "sent", removed: false },
         ],
       })
     }
@@ -153,12 +153,28 @@ async function recordEmail(ref, emailed) {
   if (!(await retryOnce(() => updateDoc(ref, { email: emailed })))) console.error("Could not record the message email result.")
 }
 
+// Takes a staff message out of the patient's view. It stays on the record,
+// marked with who removed it and when (like a removed portal update).
+export async function removeMessage(chartId, topicId, messageId, actor) {
+  const by = { uid: actor.uid, name: actor.name }
+  if (usingSeedData) {
+    const store = await demo()
+    const message = store.topics.find((topic) => topic.id === topicId)?.messages.find((entry) => entry.id === messageId)
+    if (message) message.removed = { by, at: new Date() }
+    notify(store)
+    return
+  }
+  await updateDoc(doc(requireDb(), PATIENTS_COLLECTION, chartId, TOPICS, topicId, MESSAGES, messageId), {
+    removed: { by, at: serverTimestamp() },
+  })
+}
+
 export async function startTopic({ chartId, subject, body, to, email }, actor) {
   const from = staffFrom(actor)
   if (usingSeedData) {
     const store = await demo()
     const now = new Date()
-    const message = { id: demoId(), body, from, createdAt: now, email: "none" }
+    const message = { id: demoId(), body, from, createdAt: now, email: "none", removed: false }
     const topic = {
       id: demoId(),
       chartId,
@@ -195,7 +211,7 @@ export async function startTopic({ chartId, subject, body, to, email }, actor) {
     staffReadAt: serverTimestamp(),
     closed: null,
   })
-  batch.set(messageRef, { body, from, createdAt: serverTimestamp(), email: "none" })
+  batch.set(messageRef, { body, from, createdAt: serverTimestamp(), email: "none", removed: false })
   await batch.commit()
   const emailed = await emailPatient(to, email)
   await recordEmail(messageRef, emailed)
@@ -208,7 +224,7 @@ export async function replyToTopic({ chartId, topicId, body, to, email }, actor)
     const store = await demo()
     const topic = store.topics.find((entry) => entry.id === topicId)
     const now = new Date()
-    const message = { id: demoId(), body, from, createdAt: now, email: "none" }
+    const message = { id: demoId(), body, from, createdAt: now, email: "none", removed: false }
     topic.messages.push(message)
     Object.assign(topic, { lastMessageAt: now, lastFrom: "staff", lastMessageId: message.id, status: "open", closed: null, staffReadAt: now })
     message.email = await emailPatient(to, email)
@@ -227,7 +243,7 @@ export async function replyToTopic({ chartId, topicId, body, to, email }, actor)
     closed: null,
     staffReadAt: serverTimestamp(),
   })
-  batch.set(messageRef, { body, from, createdAt: serverTimestamp(), email: "none" })
+  batch.set(messageRef, { body, from, createdAt: serverTimestamp(), email: "none", removed: false })
   await batch.commit()
   const emailed = await emailPatient(to, email)
   await recordEmail(messageRef, emailed)

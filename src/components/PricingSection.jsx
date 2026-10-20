@@ -70,7 +70,8 @@ function PricingCard({ tier, index }) {
 
 // Rendered as the page heading on /pricing, a section heading anywhere else.
 export default function PricingSection({ headingAs: Heading = "h2" }) {
-  const [headingRef, headingVisible] = useReveal()
+  // The heading is the hero on /membership (its only use), so it starts shown.
+  const [headingRef, headingVisible] = useReveal(true)
   const [badgesRef, badgesVisible] = useReveal()
 
   return (

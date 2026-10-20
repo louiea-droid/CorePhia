@@ -361,6 +361,10 @@ export default function Calendar({ actor }) {
     }
     return weekRange(cursor)
   }, [view, cursor])
+  // Paging in Week or Agenda doesn't move `selected`, so fall back to a day in
+  // the month on screen: the panel only has bookings for the grid's days.
+  const month = cursor.slice(0, 7)
+  const monthDay = view === "month" && !range.days.includes(selected) ? (today.startsWith(month) ? today : `${month}-01`) : selected
 
   useEffect(() => {
     loadStaff(actor.role)
@@ -466,7 +470,7 @@ export default function Calendar({ actor }) {
         </div>
         <button
           type="button"
-          onClick={() => setDialog({ prefill: { day: view === "month" && selected >= today ? selected : cursor < today ? today : cursor } })}
+          onClick={() => setDialog({ prefill: { day: view === "month" && monthDay >= today ? monthDay : cursor < today ? today : cursor } })}
           className="cursor-pointer rounded-full bg-ink-950 px-4 py-2 text-sm font-semibold text-paper-50 transition-colors duration-200 hover:bg-brand-dark"
         >
           New appointment
@@ -525,7 +529,7 @@ export default function Calendar({ actor }) {
             days={range.days}
             month={cursor.slice(0, 7)}
             today={today}
-            selected={selected}
+            selected={monthDay}
             appointments={shown}
             markers={markers}
             onOpen={open}
@@ -533,7 +537,7 @@ export default function Calendar({ actor }) {
             onSelect={setSelected}
           />
           <DayPanel
-            day={selected}
+            day={monthDay}
             today={today}
             appointments={shown}
             markers={markers}

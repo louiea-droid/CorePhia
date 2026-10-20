@@ -75,7 +75,7 @@ export default function ProgramPage() {
           className="pointer-events-none absolute top-0 right-0 size-128 translate-x-1/4 -translate-y-1/4 rounded-full bg-accent/20 blur-3xl"
         />
         <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-[1.4fr_1fr]">
-          <Reveal>
+          <Reveal eager>
             <h1 id="program-heading" className="font-serif text-5xl leading-tight text-paper-50 sm:text-6xl">
               {program.name}
             </h1>
@@ -88,7 +88,7 @@ export default function ProgramPage() {
               tighter radius than the band so the frame reads as inside it,
               and a navy fade at the foot so the photo settles into the band.
               TODO: Unsplash placeholders; swap for the client's own photos. */}
-          <Reveal index={1} className="relative mx-auto w-full max-w-md">
+          <Reveal eager index={1} className="relative mx-auto w-full max-w-md">
             {/* Glow: an accent bloom weighted to the lower right, where the
                 band's gradient already brightens, so the light reads as the
                 band's own and not a halo pasted around the photo. */}

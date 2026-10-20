@@ -56,6 +56,10 @@ for (const route of routes) {
   assert.match(page, /<title[^>]*>[^<]+<\/title>/, `${route}: no title`)
   assert.ok(page.includes(`<link data-prerender rel="canonical" href="${SITE}${route}"`), `${route}: wrong canonical`)
   assert.equal((html.match(/<h1[\s>]/g) ?? []).length, 1, `${route}: needs exactly one <h1>`)
+  // A heading inside a hidden Reveal paints only after the script runs (use <Reveal eager>).
+  // shortcut: checks the nearest data-reveal before the <h1>, not real nesting; fine while heroes come first.
+  const revealBeforeH1 = html.slice(0, html.search(/<h1[\s>]/)).match(/data-reveal="(\w+)"(?![\s\S]*data-reveal=)/)?.[1]
+  assert.notEqual(revealBeforeH1, "hidden", `${route}: the <h1> is inside a hidden Reveal`)
 
   const file = route === "/" ? "dist/index.html" : `dist${route}.html`
   mkdirSync(dirname(file), { recursive: true })

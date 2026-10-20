@@ -10,6 +10,7 @@ const prefersReducedMotion = () =>
 // turns it off after its first render, so later navigations get the intro.
 let startVisible =
   typeof document === "undefined" || Boolean(document.getElementById("root")?.hasChildNodes())
+export const isPrerenderedStart = () => startVisible
 export const endPrerenderedStart = () => {
   startVisible = false
 }

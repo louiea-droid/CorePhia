@@ -5,10 +5,10 @@ import { unreadFor } from "../../lib/messageMath"
 import { usingSeedData } from "../lib/firebase"
 import { loadIntakeRecord } from "../patients/chartStore"
 import { formatStamp, inputClass } from "../patients/noteUi"
-import { ROLE_LABELS } from "../staff/roles"
+import { canRemoveMessage, ROLE_LABELS } from "../staff/roles"
 import ConfirmDialog from "../ui/ConfirmDialog"
 import { ChevronLeftIcon } from "../ui/icons"
-import { closeTopic, listenMessages, markTopicRead, replyToTopic } from "./topicStore"
+import { closeTopic, listenMessages, markTopicRead, removeMessage, replyToTopic } from "./topicStore"
 
 const MAX = 2000
 const EMAIL_WORDS = { sent: "Email sent", failed: "Email not sent", none: "Not emailed" }
@@ -25,6 +25,8 @@ export default function TopicView({ topic, chart, actor, onBack }) {
   const [error, setError] = useState(null)
   const [closing, setClosing] = useState(false)
   const [hint, setHint] = useState(null)
+  const [removing, setRemoving] = useState(null)
+  const [removeBusy, setRemoveBusy] = useState(false)
   const replyRef = useRef(null)
   const canEmail = (messageEmailConfigured || usingSeedData) && Boolean(to)
   // Unknown (patients still loading, or the load failed) counts as open: the
@@ -120,6 +122,15 @@ export default function TopicView({ topic, chart, actor, onBack }) {
         ) : (
           messages.map((message) => {
             const staff = message.from?.kind === "staff"
+            // Removed messages stay on the record but shrink to one line, like removed updates.
+            if (message.removed)
+              return (
+                <li key={message.id} className="flex justify-end">
+                  <p className="max-w-[85%] truncate text-xs text-ink-950/45" title={message.body}>
+                    Removed by {message.removed.by?.name} on {formatStamp(message.removed.at)}: {message.body}
+                  </p>
+                </li>
+              )
             return (
               <li key={message.id} className={`flex ${staff ? "justify-end" : "justify-start"}`}>
                 <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${staff ? "bg-accent-dark/10" : "bg-paper-100"}`}>
@@ -127,7 +138,20 @@ export default function TopicView({ topic, chart, actor, onBack }) {
                     {staff ? `${message.from.name} (${ROLE_LABELS[message.from.role] ?? message.from.role})` : name}, {formatStamp(message.createdAt)}
                   </p>
                   <p className="mt-1 text-sm whitespace-pre-line wrap-anywhere text-ink-950">{message.body}</p>
-                  {staff && <p className="mt-1 text-xs text-ink-950/45">{EMAIL_WORDS[message.email] ?? EMAIL_WORDS.none}</p>}
+                  {staff && (
+                    <div className="mt-1 flex items-baseline justify-between gap-3">
+                      <p className="text-xs text-ink-950/45">{EMAIL_WORDS[message.email] ?? EMAIL_WORDS.none}</p>
+                      {canRemoveMessage(message, actor) && (
+                        <button
+                          type="button"
+                          onClick={() => setRemoving(message)}
+                          className="cursor-pointer text-xs font-semibold text-ink-950/60 transition-colors duration-200 hover:text-brand-dark"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </li>
             )
@@ -189,6 +213,21 @@ export default function TopicView({ topic, chart, actor, onBack }) {
           await closeTopic(topic.chartId, topic.id, actor).catch(() => setError("Couldn't close the topic. Try again."))
         }}
         onCancel={() => setClosing(false)}
+      />
+
+      <ConfirmDialog
+        open={Boolean(removing)}
+        title="Remove this message?"
+        description="The patient won't see it any more. It stays here as removed. Email notices never include the message itself."
+        confirmLabel={removeBusy ? "Removing…" : "Remove"}
+        confirmDisabled={removeBusy}
+        onConfirm={async () => {
+          setRemoveBusy(true)
+          await removeMessage(topic.chartId, topic.id, removing.id, actor).catch(() => setError("Couldn't remove the message. Try again."))
+          setRemoveBusy(false)
+          setRemoving(null)
+        }}
+        onCancel={() => setRemoving(null)}
       />
     </section>
   )

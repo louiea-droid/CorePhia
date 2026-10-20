@@ -2,7 +2,7 @@
 // Each write is one batch firestore.rules ties together. After a patient
 // message that makes the topic newly need a reply, info@ gets a content-free
 // staff notice; its failure is logged, never shown (the message is saved).
-import { collection, doc, onSnapshot, orderBy, query, serverTimestamp, updateDoc, writeBatch } from "firebase/firestore"
+import { collection, doc, onSnapshot, query, serverTimestamp, updateDoc, where, writeBatch } from "firebase/firestore"
 import { STAFF_TEMPLATE_ID, sendEmail, staffEmailConfigured } from "../../lib/emailjs"
 import { notifiesStaff } from "../../lib/messageMath"
 import { db } from "./patientAuth"
@@ -31,8 +31,16 @@ export function listenMyMessages(intakeId, topicId, onChange, onError) {
     return () => {}
   }
   return onSnapshot(
-    query(collection(db, "patients", intakeId, "topics", topicId, "messages"), orderBy("createdAt", "asc")),
-    (snapshot) => onChange(snapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() }))),
+    // The rules only let a patient read messages not removed, so the query must
+    // say removed == false. Sorted here so no composite index is needed; a
+    // pending send has no server time yet, so it estimates one (and goes last).
+    query(collection(db, "patients", intakeId, "topics", topicId, "messages"), where("removed", "==", false)),
+    (snapshot) =>
+      onChange(
+        snapshot.docs
+          .map((entry) => ({ id: entry.id, ...entry.data({ serverTimestamps: "estimate" }) }))
+          .sort((a, b) => (a.createdAt?.toMillis?.() ?? Infinity) - (b.createdAt?.toMillis?.() ?? Infinity)),
+      ),
     onError,
   )
 }
@@ -70,7 +78,7 @@ export async function startConversation(intakeId, uid, { subject, body }) {
     staffReadAt: null,
     closed: null,
   })
-  batch.set(messageRef, { body, from: { kind: "patient", uid }, createdAt: serverTimestamp(), email: "none" })
+  batch.set(messageRef, { body, from: { kind: "patient", uid }, createdAt: serverTimestamp(), email: "none", removed: false })
   await batch.commit()
   notifyStaff()
   return topicRef.id
@@ -88,7 +96,7 @@ export async function replyInConversation(intakeId, uid, topic, body) {
     closed: null,
     patientReadAt: serverTimestamp(),
   })
-  batch.set(messageRef, { body, from: { kind: "patient", uid }, createdAt: serverTimestamp(), email: "none" })
+  batch.set(messageRef, { body, from: { kind: "patient", uid }, createdAt: serverTimestamp(), email: "none", removed: false })
   await batch.commit()
   if (notifiesStaff(topic)) notifyStaff()
 }

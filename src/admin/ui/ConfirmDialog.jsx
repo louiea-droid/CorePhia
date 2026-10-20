@@ -26,7 +26,7 @@ export default function ConfirmDialog({
     <div className="fixed inset-0 z-50" role="presentation">
       <div
         aria-hidden="true"
-        onClick={onCancel}
+        onClick={() => !confirmDisabled && onCancel()}
         className="absolute inset-0 bg-scrim/50 transition-opacity duration-200"
       />
 

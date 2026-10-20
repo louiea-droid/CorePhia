@@ -57,6 +57,10 @@ export const canEditInviteTemplate = (role) => STAFF_ROLES.includes(role)
 // co-admin and up, and only once. Mirrors isRemoval in firestore.rules.
 export const canRemoveUpdate = (update, actor) =>
   !update.removed && (update.author?.uid === actor.uid || STAFF_ROLES.includes(actor.role))
+// The same for a staff message (a patient's own messages can't be removed).
+// Mirrors isMessageRemoval in firestore.rules.
+export const canRemoveMessage = (message, actor) =>
+  message.from?.kind === "staff" && !message.removed && (message.from.uid === actor.uid || STAFF_ROLES.includes(actor.role))
 
 // A dietitian adds addenda only to dietitian notes, so they can't add text
 // to a medical record. Everyone else clinical: any signed note.

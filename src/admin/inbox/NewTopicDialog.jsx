@@ -52,6 +52,7 @@ export default function NewTopicDialog({ actor, initialChartId = "", onClose, on
       title="New message"
       onClose={onClose}
       busy={busy}
+      dirty={Boolean(subject.trim() || body.trim())}
       footer={
         <>
           {error && (

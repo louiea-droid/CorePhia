@@ -112,7 +112,9 @@ export default function PortalReset() {
         </div>
       )}
 
-      {loginOpen && <LoginPanel open onClose={() => setLoginOpen(false)} startView="reset" />}
+      {loginOpen && (
+        <LoginPanel open onClose={() => setLoginOpen(false)} startView="reset" resetBack={continuePath(params.get("continueUrl"))} />
+      )}
     </section>
   )
 }
