@@ -1,4 +1,5 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
+import { flushSync } from "react-dom"
 import Select from "../../components/Select"
 import PageHeader from "../layout/PageHeader"
 import { SearchIcon } from "../ui/icons"
@@ -58,7 +59,7 @@ const TOPICS = [
       "Press Sign note. Signing locks the note for good, stamped with your name, role and the time. Any later change is added as a dated addendum, and the original never changes.",
       "If the note has weight, blood pressure or heart rate, those numbers also go to the patient's progress chart. Tick \"Then share an update with the patient\" to post an update right away.",
     ],
-    note: "A chart for someone who is no longer admitted is inactive. You can read it, but you can't add notes until they are admitted again. On the Patients page, the Status column has Make inactive and Reactivate for providers and above.",
+    note: "A chart for someone who is no longer admitted is inactive. You can read it, but you can't add notes until they are admitted again, and a draft left on it can only be discarded. On the Patients page, the Status column has Make inactive and Reactivate for providers and above. Someone made inactive shows as Discharged on Applicants.",
   },
   {
     id: "prescriptions",
@@ -78,7 +79,8 @@ const TOPICS = [
     steps: [
       "Open the patient's chart. On the Patient portal card, press Send portal invite.",
       "The email goes to the address on their intake. You can edit the wording, and the link works for 7 days.",
-      "The card shows the status: not invited, sent, expired, or \"Portal active since\" a date once they have joined.",
+      "The card shows the status: not invited, sent, expired, or \"Portal active since\" a date once they have joined. Once they join, the invite link stops working.",
+      "A returning patient who already has a portal login can use the new chart's invite. Their login moves to the new chart.",
     ],
     note: "Keep the invite wording plain and free of clinical details, because email travels outside the secured system.",
   },
@@ -113,6 +115,7 @@ const TOPICS = [
       "Filter by Needs a reply, Open, Closed or All, or search by patient.",
       "Open a conversation, write in \"Write a reply\" and press Send. The email box tells the patient there is a new message, without the message itself.",
       "Press Close topic to file a conversation away. A new message from either side reopens it. Press New message to start one with any active patient.",
+      "Sent something to the wrong patient? Press Remove under your message. The patient stops seeing it, and it stays in the conversation as a greyed line saying who removed it and when. Co-admins and up can remove any staff message.",
     ],
     note: "Messages are patient messages. Queries are the website contact form.",
   },
@@ -178,7 +181,7 @@ const TOPICS = [
       "Messages: they can start a message, reply and close a conversation.",
       "Updates: a dated list of what the care team has posted, each from Provider, Dietitian or Care team.",
     ],
-    note: "Patients can't see notes, prescriptions, appointments, to-dos or team notes. If a chart is inactive, messaging closes and the portal says so.",
+    note: "Patients can't see notes, prescriptions, appointments, to-dos or team notes. If a chart is inactive, messaging and weigh-ins close and the portal says so. Patients are signed out after 15 minutes with no activity.",
   },
   {
     id: "emails",
@@ -192,29 +195,117 @@ const TOPICS = [
     ],
     note: "No email goes out for new intake submissions, appointments, admit or decline, or to-dos.",
   },
+  // One page of short answers. A question's `show` defaults to everyone, and
+  // `see` names the how-to topic its answer links to.
+  {
+    id: "questions",
+    title: "Common questions",
+    show: everyone,
+    questions: [
+      {
+        q: "Why can't I change a signed note?",
+        a: "Signing locks a note so the record always shows what was written at the time. To correct or add something, open the note and press Add addendum. The addendum is dated and carries your name, and the original stays as it was.",
+        see: "notes",
+      },
+      {
+        q: "What happens if I close a note without signing it?",
+        a: "Nothing is lost. It stays as a draft that only you can see, under Your drafts at the top of the chart's Notes card. Open it to carry on, or press Discard draft.",
+        see: "notes",
+      },
+      {
+        q: "Why can't I add a note to this chart?",
+        a: "The chart is inactive: the patient was made inactive, or declined after being admitted. A provider, co-admin or admin can press Reactivate in the Status column on Patients, or Admit on Applicants. Then notes can be added again.",
+        see: "chart",
+      },
+      {
+        q: "Why won't an item leave the to-do list?",
+        a: "Items under Needs doing clear when you sign the note that handles them, such as a note that renews the prescription or sets the next follow-up. A draft doesn't count until it's signed.",
+        see: "todo",
+      },
+      {
+        q: "Does the patient get an email when I admit them?",
+        a: "No. Admitting only creates their chart. To give them portal access, open the chart and press Send portal invite on the Patient portal card.",
+        see: "invite",
+        show: (role) => canAdmit(role),
+      },
+      {
+        q: "A patient says their invite link doesn't work",
+        a: "Invite links stop working after 7 days, and once the patient has joined. Check the Patient portal card on their chart. If the invite has expired, press Resend invite. If their portal is already active, point them to Patient portal in the site header, where they can reset a forgotten password.",
+        see: "invite",
+        show: (role) => canAdmit(role),
+      },
+      {
+        q: "Can patients read my notes?",
+        a: "No. Patients never see notes, prescriptions, appointments or to-dos. They see the updates you post, their own progress and their messages.",
+        see: "portal",
+      },
+      {
+        q: "Does the calendar send appointment reminders?",
+        a: "No. Booking, changing or cancelling an appointment doesn't email anyone. Tell the patient yourself, for example with a portal message.",
+        see: "calendar",
+      },
+      {
+        q: "Why was I signed out?",
+        a: "After 15 minutes with no activity in any of your admin tabs, you're signed out to protect patient information. Sign in again to carry on.",
+        see: "signing-in",
+      },
+      {
+        q: "How do I change my password or turn on two-step sign-in?",
+        a: "Open your account menu, top right, and choose Profile. Changing your password asks for your current one first.",
+        see: "signing-in",
+      },
+      {
+        q: "Why don't I see a page someone else has?",
+        a: "The sidebar only shows the pages your role can open. Queries, Analytics and Staff are for co-admins and up, and Activity is for the super admin. Ask the admin if you need a different role.",
+      },
+      {
+        q: "Why does a signed note show an email instead of a name?",
+        a: "That person was added by a co-admin, so their staff record had no name yet. The admin can give them one with Edit name on Staff. Notes they signed before that keep the email.",
+        see: "staff",
+      },
+    ],
+  },
 ]
 
 
 // How the list is grouped on the left, in order. A topic's group is looked up
 // by id so the topic data above stays plain.
 const GROUPS = [
-  ["Getting started", ["signing-in"]],
+  ["Getting started", ["signing-in", "questions"]],
   ["Patients and charts", ["applicants", "chart", "notes", "prescriptions", "invite", "updates"]],
   ["Day to day", ["dashboard", "messages", "calendar", "todo"]],
   ["Practice", ["queries", "analytics", "staff"]],
   ["The patient portal", ["portal", "emails"]],
 ]
 
-const matches = (topic, query) =>
-  [topic.title, topic.lead, ...topic.steps, topic.note].filter(Boolean).join(" ").toLowerCase().includes(query)
+const includes = (texts, query) => texts.filter(Boolean).join(" ").toLowerCase().includes(query)
+const questionsFor = (topic, role) => (topic.questions ?? []).filter((item) => (item.show ?? everyone)(role))
+const matches = (topic, query, role) =>
+  includes([topic.title, topic.lead, ...(topic.steps ?? []), topic.note], query) ||
+  questionsFor(topic, role).some((item) => includes([item.q, item.a], query))
 
 export default function Help({ role }) {
   const [query, setQuery] = useState("")
   const [selectedId, setSelectedId] = useState(TOPICS[0].id)
+  const titleRef = useRef(null)
   const needle = query.trim().toLowerCase()
-  const visible = TOPICS.filter((topic) => topic.show(role) && (!needle || matches(topic, needle)))
+  const visible = TOPICS.filter((topic) => topic.show(role) && (!needle || matches(topic, needle, role)))
   const groups = GROUPS.map(([label, ids]) => [label, visible.filter((topic) => ids.includes(topic.id))]).filter(([, topics]) => topics.length)
   const active = visible.find((topic) => topic.id === selectedId) ?? visible[0]
+  // While searching, list only the questions that match (all of them if the search matched the page title).
+  const allQuestions = active ? questionsFor(active, role) : []
+  const matching = allQuestions.filter((item) => includes([item.q, item.a], needle))
+  const questions = needle && matching.length ? matching : allQuestions
+
+  const openTopic = (id) => {
+    // Clear the search too, or a topic that doesn't match it would be filtered out.
+    flushSync(() => {
+      setQuery("")
+      setSelectedId(id)
+    })
+    // The link that was clicked is gone now, so move focus to the new topic's title.
+    titleRef.current?.focus()
+  }
 
   return (
     // On desktop the page itself doesn't scroll: the topic list scrolls on its
@@ -274,9 +365,11 @@ export default function Help({ role }) {
 
         {active ? (
           <article className="scrollbar-thin min-w-0 rounded-2xl border border-ink-950/10 bg-white p-5 sm:p-8 lg:overflow-y-auto">
-            <h2 className="font-serif text-2xl leading-snug text-ink-950">{active.title}</h2>
+            <h2 ref={titleRef} tabIndex={-1} className="font-serif text-2xl leading-snug text-ink-950 outline-none">
+              {active.title}
+            </h2>
             {active.lead && <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-950/70">{active.lead}</p>}
-            <ol className="mt-6 max-w-2xl space-y-4">
+            {active.steps && <ol className="mt-6 max-w-2xl space-y-4">
               {active.steps.map((step, index) => (
                 <li key={step} className="flex gap-3.5 text-sm leading-relaxed text-ink-950/85">
                   <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-accent-dark/15 text-xs font-semibold text-accent-text tabular-nums">
@@ -285,7 +378,31 @@ export default function Help({ role }) {
                   <span>{step}</span>
                 </li>
               ))}
-            </ol>
+            </ol>}
+            {questions.length > 0 && (
+              <dl className="mt-4 max-w-2xl divide-y divide-ink-950/10">
+                {questions.map((item) => {
+                  const see = item.see && TOPICS.find((topic) => topic.id === item.see && topic.show(role))
+                  return (
+                    <div key={item.q} className="py-5">
+                      <dt className="text-[0.95rem] leading-snug font-semibold text-ink-950">{item.q}</dt>
+                      <dd className="mt-2 text-sm leading-relaxed text-ink-950/85">
+                        {item.a}
+                        {see && (
+                          <button
+                            type="button"
+                            onClick={() => openTopic(see.id)}
+                            className="mt-2 block cursor-pointer rounded text-sm font-semibold text-accent-text underline-offset-4 transition-colors duration-200 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-accent/50"
+                          >
+                            {see.title}
+                          </button>
+                        )}
+                      </dd>
+                    </div>
+                  )
+                })}
+              </dl>
+            )}
             {active.note && <p className="mt-7 max-w-2xl rounded-xl bg-paper-100 px-4 py-3 text-sm leading-relaxed text-ink-950/70">{active.note}</p>}
           </article>
         ) : (
