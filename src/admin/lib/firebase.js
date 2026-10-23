@@ -27,6 +27,7 @@ import {
   query,
   serverTimestamp,
   updateDoc,
+  waitForPendingWrites,
   where,
 } from "firebase/firestore"
 import { isClinicalRole } from "../staff/roles"
@@ -138,6 +139,13 @@ export async function signInAdmin(email, password) {
 // Logged before signing out, while the account can still write to the trail.
 export async function signOutAdmin({ idle = false } = {}) {
   if (!auth) return
+  // Offline, a draft save or a signing waits in this tab's memory queue (no
+  // on-device cache: patient data stays off staff computers, Louie 2026-10-23).
+  // Firestore holds each login's queue apart, so signing out first would leave
+  // it unsent once the tab closes. Sign-out waits
+  // until the queue has gone out. ponytail: an offline computer stays signed in
+  // until it reconnects; a screen lock over the admin would cover that.
+  if (db) await waitForPendingWrites(db)
   if (auth.currentUser) {
     await recordAuditEvent({
       action: idle ? AUDIT_ACTIONS.idleSignOut : AUDIT_ACTIONS.signOut,

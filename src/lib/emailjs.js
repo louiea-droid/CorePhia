@@ -5,9 +5,10 @@
 // See docs/client-portal.md for the templates it expects.
 const SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID
 const TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID
-// Notice templates: every word and link is typed into the template in
-// EmailJS, and the site sends only the recipient's address (nothing at all for
-// the staff notice, whose recipient is fixed there too). The public key ships
+// Every template has its words and link typed in, in EmailJS. The site sends
+// only the recipient's address (plus the chart and invite ids for the invite,
+// whose button is built on https://corephia.com/portal/setup in the template,
+// and nothing at all for the staff notice, whose recipient is fixed there too). The public key ships
 // to browsers, so a template that took text or a link as a parameter would let
 // anyone send CorePhia-branded email saying anything.
 export const UPDATE_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_UPDATE_TEMPLATE_ID

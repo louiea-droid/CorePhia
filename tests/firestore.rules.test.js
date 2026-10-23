@@ -67,7 +67,7 @@ beforeEach(async () => {
     await setDoc(doc(db, "patients/chart1/notes/draft1"), draft("provider", "provider"))
     await setDoc(doc(db, "patients/chart1/notes/diet1"), { ...draft("admin", "admin", { type: "dietitian" }), status: "signed" })
     await setDoc(doc(db, "contactMessages", "m1"), { name: "x" })
-    const invite = { to: "pat@x.co", firstName: "Pat", subject: "s", message: "m", createdBy: { uid: "provider", name: "provider" }, createdAt: new Date() }
+    const invite = { to: "pat@x.co", firstName: "Pat", createdBy: { uid: "provider", name: "provider" }, createdAt: new Date() }
     await setDoc(doc(db, "patients/chart1/invites/sent1"), { ...invite, status: "sent", sentAt: new Date() })
     await setDoc(doc(db, "patients/chart1/invites/ready1"), { ...invite, status: "ready" })
     await setDoc(doc(db, "patients/chart1/invites/old1"), { ...invite, status: "sent", sentAt: new Date(Date.now() - 8 * 86400000) })
@@ -679,8 +679,6 @@ describe("portal invites", () => {
   const newInvite = (uid = "provider", overrides = {}) => ({
     to: "pat@x.co",
     firstName: "Pat",
-    subject: "Set up your portal",
-    message: "Hi Pat",
     status: "ready",
     createdBy: { uid, name: uid },
     createdAt: serverTimestamp(),
@@ -700,6 +698,9 @@ describe("portal invites", () => {
     await assertFails(setDoc(inviteRef(db, "x3"), newInvite("provider", { createdBy: { uid: "admin", name: "admin" } })))
     await assertFails(setDoc(inviteRef(db, "x4"), newInvite("provider", { extra: 1 })))
     await assertFails(setDoc(inviteRef(db, "x5", "inactive1"), newInvite()))
+    // The email is fixed in EmailJS, so an invite carries no wording of its own.
+    await assertFails(setDoc(inviteRef(db, "x6"), newInvite("provider", { subject: "s" })))
+    await assertFails(setDoc(inviteRef(db, "x7"), newInvite("provider", { message: "m" })))
   })
   test("a dietitian can't send invites", async () => {
     await assertFails(setDoc(inviteRef(as("dietitian"), "d1"), newInvite("dietitian")))
@@ -711,7 +712,7 @@ describe("portal invites", () => {
     await assertSucceeds(updateDoc(inviteRef(db, "ready2"), { status: "failed", error: "Bad template" }))
     await assertFails(updateDoc(inviteRef(db, "sent1"), { status: "failed", error: "x" }))
     await seedReady("ready3")
-    await assertFails(updateDoc(inviteRef(db, "ready3"), { message: "changed" }))
+    await assertFails(updateDoc(inviteRef(db, "ready3"), { firstName: "changed" }))
     await assertFails(updateDoc(inviteRef(db, "ready3"), { status: "sent", sentAt: new Date("2020-01-01") }))
     await assertFails(deleteDoc(inviteRef(db, "ready3")))
   })
@@ -722,33 +723,57 @@ describe("portal invites", () => {
     await assertFails(getDocs(collection(anon, "patients/chart1/invites")))
     await assertSucceeds(getDocs(collection(as("provider"), "patients/chart1/invites")))
   })
-  test("co-admins and up save the invite template; clinicians read it", async () => {
-    const template = (uid) => ({ subject: "s", message: "m", updatedBy: { uid, name: uid }, updatedAt: serverTimestamp() })
-    await assertSucceeds(setDoc(doc(as("coadmin"), "settings", "portalInvite"), template("coadmin")))
-    await assertFails(setDoc(doc(as("provider"), "settings", "portalInvite"), template("provider")))
-    await assertFails(setDoc(doc(as("coadmin"), "settings", "portalInvite"), template("admin")))
-    await assertSucceeds(getDoc(doc(as("provider"), "settings", "portalInvite")))
+  test("there is no saved invite wording to change", async () => {
+    const template = { subject: "s", message: "m", updatedBy: { uid: "super", name: "super" }, updatedAt: serverTimestamp() }
+    await assertFails(setDoc(doc(as("super"), "settings", "portalInvite"), template))
+  })
+})
+
+describe("deleting an intake", () => {
+  test("the super admin deletes an intake only while it has no chart", async () => {
+    await assertFails(deleteDoc(doc(as("super"), "intakeRecords", "chart1")))
+    await assertFails(deleteDoc(doc(as("super"), "intakeRecords", "inactive1")))
+    await assertSucceeds(deleteDoc(doc(as("super"), "intakeRecords", "pending1")))
+    await assertFails(deleteDoc(doc(as("admin"), "intakeRecords", "pending1")))
   })
 })
 
 describe("portal setup links", () => {
   const asPatient = (uid, email = "pat@x.co") => env.authenticatedContext(uid, { email }).firestore()
   const link = (overrides = {}) => ({ email: "pat@x.co", intakeId: "chart1", firstName: "Pat", inviteId: "sent1", linkedAt: serverTimestamp(), ...overrides })
+  // What patientAuth.linkInvite sends: the link, and its invite marked used.
+  const linkWith = (db, uid, overrides = {}) => {
+    const data = link(overrides)
+    const batch = writeBatch(db)
+    batch.set(doc(db, "patientAccounts", uid), data)
+    batch.update(doc(db, `patients/${data.intakeId}/invites/${data.inviteId}`), { status: "used", usedAt: serverTimestamp() })
+    return batch.commit()
+  }
+  const seedInvite = (chart, id, overrides = {}) =>
+    env.withSecurityRulesDisabled((c) =>
+      setDoc(doc(c.firestore(), `patients/${chart}/invites/${id}`), {
+        to: "pat@x.co", firstName: "Pat", createdBy: { uid: "provider", name: "provider" }, createdAt: new Date(),
+        status: "sent", sentAt: new Date(), ...overrides,
+      }),
+    )
 
   test("a patient links their own login to a sent invite", async () => {
-    await assertSucceeds(setDoc(doc(asPatient("p1"), "patientAccounts", "p1"), link()))
+    await assertSucceeds(linkWith(asPatient("p1"), "p1"))
   })
   test("the link must match the invite: email, freshness, status and name", async () => {
-    await assertFails(setDoc(doc(asPatient("p1", "other@x.co"), "patientAccounts", "p1"), link({ email: "other@x.co" })))
-    await assertFails(setDoc(doc(asPatient("p1"), "patientAccounts", "p1"), link({ inviteId: "old1" })))
-    await assertFails(setDoc(doc(asPatient("p1"), "patientAccounts", "p1"), link({ inviteId: "ready1" })))
-    await assertFails(setDoc(doc(asPatient("p1"), "patientAccounts", "p1"), link({ firstName: "Sam" })))
+    await assertFails(linkWith(asPatient("p1", "other@x.co"), "p1", { email: "other@x.co" }))
+    await assertFails(linkWith(asPatient("p1"), "p1", { inviteId: "old1" }))
+    await assertFails(linkWith(asPatient("p1"), "p1", { inviteId: "ready1" }))
+    await assertFails(linkWith(asPatient("p1"), "p1", { firstName: "Sam" }))
     const { inviteId: _omit, ...withoutInvite } = link()
     await assertFails(setDoc(doc(asPatient("p1"), "patientAccounts", "p1"), withoutInvite))
   })
+  test("a link has to use up its invite in the same save", async () => {
+    await assertFails(setDoc(doc(asPatient("p1"), "patientAccounts", "p1"), link()))
+  })
   test("a patient can't link someone else's uid or link twice", async () => {
-    await assertFails(setDoc(doc(asPatient("p1"), "patientAccounts", "someoneElse"), link()))
-    await assertFails(setDoc(doc(asPatient("p2"), "patientAccounts", "p2"), link()))
+    await assertFails(linkWith(asPatient("p1"), "someoneElse"))
+    await assertFails(linkWith(asPatient("p2"), "p2"))
   })
   test("a returning patient's link moves to a new chart only with that chart's invite", async () => {
     await env.withSecurityRulesDisabled(async (c) => {
@@ -756,9 +781,33 @@ describe("portal setup links", () => {
       await setDoc(doc(db, "patientAccounts", "p9"), { email: "pat@x.co", intakeId: "inactive1", firstName: "Pat", inviteId: "x", linkedAt: new Date() })
       await setDoc(doc(db, "patientAccounts", "p10"), { email: "pat@x.co", createdAt: new Date() })
     })
-    await assertSucceeds(setDoc(doc(asPatient("p9"), "patientAccounts", "p9"), link()))
-    await assertSucceeds(setDoc(doc(asPatient("p10"), "patientAccounts", "p10"), link()))
+    await seedInvite("chart1", "sent2")
+    await assertSucceeds(linkWith(asPatient("p9"), "p9"))
+    await assertSucceeds(linkWith(asPatient("p10"), "p10", { inviteId: "sent2" }))
     await assertFails(updateDoc(doc(asPatient("p9"), "patientAccounts", "p9"), { intakeId: "pending1" }))
+  })
+  test("a discharged chart's invite can't be read by its link or used", async () => {
+    await seedInvite("inactive1", "fresh1")
+    await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), "patients/inactive1/invites/fresh1")))
+    await assertFails(linkWith(asPatient("p1"), "p1", { intakeId: "inactive1", inviteId: "fresh1" }))
+    await assertSucceeds(getDoc(doc(as("provider"), "patients/inactive1/invites/fresh1")))
+  })
+  test("a patient already linked to the chart uses up a later invite to them, nothing else", async () => {
+    await seedInvite("chart1", "later1")
+    await seedInvite("chart1", "otherEmail1", { to: "sam@x.co" })
+    const db = asPatient("p2")
+    await assertSucceeds(updateDoc(doc(db, "patients/chart1/invites/later1"), { status: "used", usedAt: serverTimestamp() }))
+    await assertFails(updateDoc(doc(db, "patients/chart1/invites/otherEmail1"), { status: "used", usedAt: serverTimestamp() }))
+    await assertFails(updateDoc(doc(asPatient("p1"), "patients/chart1/invites/sent1"), { status: "used", usedAt: serverTimestamp() }))
+  })
+  test("a new invite retires the earlier sent ones: admitters mark them superseded, nothing else", async () => {
+    const supersede = { status: "superseded", supersededAt: serverTimestamp() }
+    await assertFails(updateDoc(doc(as("dietitian"), "patients/chart1/invites/sent1"), supersede))
+    await assertFails(updateDoc(doc(as("provider"), "patients/chart1/invites/ready1"), supersede))
+    await assertFails(updateDoc(doc(as("provider"), "patients/chart1/invites/sent1"), { ...supersede, to: "x@x.co" }))
+    await assertSucceeds(updateDoc(doc(as("provider"), "patients/chart1/invites/sent1"), supersede))
+    await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), "patients/chart1/invites/sent1")))
+    await assertFails(linkWith(asPatient("p1"), "p1"))
   })
   test("linking marks the invite used in the same batch, and a used invite can't be read by link", async () => {
     const db = asPatient("p1")
@@ -885,6 +934,33 @@ describe("portal progress", () => {
     await assertFails(setDoc(ref(as("provider"), "visit-draft1"), visit()))
     await assertFails(setDoc(ref(as("provider"), "visit-other"), visit()))
     await assertFails(setDoc(ref(asPatient("patient1", "p1@x.co"), "visit-draft1"), visit()))
+  })
+  test("signing refuses vitals no person could have; a draft may hold them meanwhile", async () => {
+    const bad = (overrides) => signBatch(as("provider"), visit(overrides), { ...vitals, ...overrides })
+    await assertFails(bad({ weightLb: 1800 }))
+    await assertFails(bad({ weightLb: 49 }))
+    await assertFails(bad({ systolic: 12 }))
+    await assertFails(bad({ diastolic: 300 }))
+    await assertFails(bad({ heartRate: 900 }))
+    await assertFails(bad({ heartRate: "80" }))
+    await assertSucceeds(updateDoc(doc(as("provider"), "patients/chart1/notes/draft1"), { vitals: { ...vitals, weightLb: 1800 }, updatedAt: serverTimestamp() }))
+  })
+  test("the signer or co-admin and up take a visit entry out of the patient's view, once", async () => {
+    await env.withSecurityRulesDisabled((c) =>
+      setDoc(doc(c.firestore(), "patients/chart1/notes/signedV"), { status: "signed", signedBy: { uid: "provider", name: "provider", role: "provider" } }),
+    )
+    for (const id of ["v2", "v3", "v4"]) await seed(id, { ...visit({ noteId: "signedV" }), createdAt: new Date() })
+    await seed("h9", { ...home(), createdAt: new Date() })
+    const removal = (uid) => ({ removed: { by: { uid, name: uid }, at: serverTimestamp() } })
+    await assertFails(updateDoc(ref(as("provider2"), "v3"), removal("provider2")))
+    await assertFails(updateDoc(ref(as("coadmin"), "v4"), removal("provider")))
+    await assertFails(updateDoc(ref(as("coadmin"), "v4"), { ...removal("coadmin"), weightLb: 1 }))
+    await assertFails(updateDoc(ref(as("coadmin"), "h9"), removal("coadmin")))
+    await assertSucceeds(updateDoc(ref(as("provider"), "v2"), removal("provider")))
+    await assertSucceeds(updateDoc(ref(as("coadmin"), "v3"), removal("coadmin")))
+    await assertFails(updateDoc(ref(as("coadmin"), "v2"), removal("coadmin")))
+    await assertFails(getDoc(ref(asPatient("patient1", "p1@x.co"), "v2")))
+    await assertSucceeds(getDoc(ref(asPatient("patient1", "p1@x.co"), "v4")))
   })
   test("the linked patient logs a home weigh-in", async () => {
     await assertSucceeds(setDoc(ref(asPatient("patient1", "p1@x.co"), "h1"), home()))

@@ -1,60 +1,37 @@
-import { useEffect, useState } from "react"
-import { fillTemplate, toTemplate } from "../../lib/inviteMath"
+import { useState } from "react"
 import { SUPPORT_PHONE } from "../../lib/siteContact"
 import { emailjsConfigured } from "../../lib/emailjs"
 import { AUDIT_ACTIONS, recordAuditEvent, usingSeedData } from "../lib/firebase"
-import { canEditInviteTemplate } from "../staff/roles"
 import Modal from "../ui/Modal"
-import { inputClass, labelClass } from "./noteUi"
+import { labelClass } from "./noteUi"
 import { PATIENTS_COLLECTION } from "./chartStore"
-import { loadInviteTemplate, saveInviteTemplate, sendInvite } from "./portalStore"
+import { sendInvite } from "./portalStore"
 
-// Compose and send a portal invite (spec: 2026-10-05-portal-invites-emailjs).
-// The setup link is added by portalStore, never part of the editable text.
+// The invite as the EmailJS template has it typed in (docs/client-portal.md,
+// "EmailJS setup"). The browser sends only the address and the invite's ids,
+// so nobody holding the public key can send CorePhia email with their own text
+// or link. Change the wording there and here together.
+const INVITE_EMAIL = {
+  subject: "Set up your CorePhia patient portal",
+  lines: [
+    "Hello,",
+    "Your CorePhia patient portal is ready. Use the button below to choose a password and sign in. This is where you'll find updates and messages from your care team.",
+  ],
+  footer: `The link works for 7 days. Questions? Call us at ${SUPPORT_PHONE} or email info@corephia.com.`,
+}
+
+// Send a portal invite (spec: 2026-10-05-portal-invites-emailjs).
 export default function InviteDialog({ chartId, patientName, firstName, to, actor, onClose, onSent }) {
-  const [form, setForm] = useState(null) // null = loading the template
-  const [saveTemplate, setSaveTemplate] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
-  const values = { firstName, phone: SUPPORT_PHONE }
   const canSend = emailjsConfigured || usingSeedData
-  const canSaveTemplate = canEditInviteTemplate(actor.role)
-
-  useEffect(() => {
-    let active = true
-    loadInviteTemplate()
-      .catch(() => null)
-      .then((template) => {
-        if (!active) return
-        const { subject, message } = template ?? { subject: "", message: "" }
-        setForm({ subject: fillTemplate(subject, values), message: fillTemplate(message, values) })
-      })
-    return () => {
-      active = false
-    }
-    // values only change with the patient, and the dialog is per patient.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   const submit = async (event) => {
     event.preventDefault()
-    const subject = form.subject.trim()
-    const message = form.message.trim()
-    if (!subject || !message) {
-      setError("Add a subject and a message.")
-      return
-    }
     setBusy(true)
     setError(null)
     try {
-      if (saveTemplate) await saveInviteTemplate({ subject: toTemplate(subject, values), message: toTemplate(message, values) }, actor)
-    } catch {
-      setError("Couldn't save the template. Nothing was sent.")
-      setBusy(false)
-      return
-    }
-    try {
-      const invite = await sendInvite({ chartId, to, firstName, subject, message }, actor)
+      const invite = await sendInvite({ chartId, to, firstName }, actor)
       if (invite.status === "sent") {
         recordAuditEvent({ action: AUDIT_ACTIONS.sendPortalInvite, targetCollection: PATIENTS_COLLECTION, targetId: chartId, targetLabel: patientName })
         onSent()
@@ -86,7 +63,7 @@ export default function InviteDialog({ chartId, patientName, firstName, to, acto
           <button
             type="submit"
             form="portal-invite"
-            disabled={busy || !form || !canSend}
+            disabled={busy || !canSend}
             className="cursor-pointer rounded-full bg-ink-950 px-5 py-2 text-sm font-semibold text-paper-50 transition-colors duration-200 hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
           >
             {busy ? "Sending…" : "Send invite"}
@@ -94,50 +71,30 @@ export default function InviteDialog({ chartId, patientName, firstName, to, acto
         </>
       }
     >
-      {!form ? (
-        <p className="text-sm text-ink-950/55">Loading the message…</p>
-      ) : (
-        <form id="portal-invite" onSubmit={submit} className="space-y-4">
-          {!canSend && (
-            <p className="rounded-lg bg-paper-100 px-3 py-2 text-sm text-ink-950/75">
-              Email sending isn't set up yet. Add the EmailJS keys to the site's settings, then try again.
-            </p>
-          )}
-          <div>
-            <span className={labelClass}>To</span>
-            <p className="text-sm break-all text-ink-950">{to}</p>
-          </div>
-          <label className="block">
-            <span className={labelClass}>Subject</span>
-            <input
-              value={form.subject}
-              maxLength={200}
-              onChange={(event) => setForm({ ...form, subject: event.target.value })}
-              className={inputClass}
-            />
-          </label>
-          <label className="block">
-            <span className={labelClass}>Message</span>
-            <textarea
-              value={form.message}
-              maxLength={5000}
-              rows={9}
-              onChange={(event) => setForm({ ...form, message: event.target.value })}
-              className={`${inputClass} resize-y leading-relaxed`}
-            />
-          </label>
-          <p className="text-xs text-ink-950/55">
-            A secure <span className="font-semibold text-ink-950/75">Set up your portal</span> button is added below your
-            message. The link works for 7 days.
+      <form id="portal-invite" onSubmit={submit} className="space-y-4">
+        {!canSend && (
+          <p className="rounded-lg bg-paper-100 px-3 py-2 text-sm text-ink-950/75">
+            Email sending isn't set up yet. Add the EmailJS keys to the site's settings, then try again.
           </p>
-          {canSaveTemplate && (
-            <label className="flex cursor-pointer items-center gap-2 text-sm text-ink-950/80">
-              <input type="checkbox" checked={saveTemplate} onChange={(event) => setSaveTemplate(event.target.checked)} className="size-4 accent-accent-dark" />
-              Save as the default template
-            </label>
-          )}
-        </form>
-      )}
+        )}
+        <div>
+          <span className={labelClass}>To</span>
+          <p className="text-sm break-all text-ink-950">{to}</p>
+        </div>
+        <div>
+          <span className={labelClass}>The email they get</span>
+          <div className="space-y-3 rounded-lg border border-ink-950/10 bg-paper-50 px-4 py-3 text-sm leading-relaxed text-ink-950/80">
+            <p className="font-semibold text-ink-950">{INVITE_EMAIL.subject}</p>
+            {INVITE_EMAIL.lines.map((line) => (
+              <p key={line}>{line}</p>
+            ))}
+            <p>
+              <span className="inline-block rounded-full bg-ink-950 px-4 py-1.5 text-xs font-semibold text-paper-50">Set up your portal</span>
+            </p>
+            <p className="text-ink-950/60">{INVITE_EMAIL.footer}</p>
+          </div>
+        </div>
+      </form>
     </Modal>
   )
 }

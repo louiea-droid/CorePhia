@@ -51,12 +51,14 @@ const NOTE_WRITERS = {
 
 export const canWriteNote = (type, role) => NOTE_WRITERS[type]?.includes(role) ?? false
 export const canAdmit = (role) => PRESCRIBERS.includes(role)
-// The default portal-invite wording. Mirrors settings/portalInvite (isStaff) in firestore.rules.
-export const canEditInviteTemplate = (role) => STAFF_ROLES.includes(role)
 // Who takes a portal update out of the patient's view: its author, or
 // co-admin and up, and only once. Mirrors isRemoval in firestore.rules.
 export const canRemoveUpdate = (update, actor) =>
   !update.removed && (update.author?.uid === actor.uid || STAFF_ROLES.includes(actor.role))
+// A signed note's vitals in the portal (a visit entry): the note's signer, or
+// co-admin and up, once. Mirrors isStaffRemoval in firestore.rules.
+export const canRemoveVisitEntry = (entry, note, actor) =>
+  entry.source === "visit" && !entry.removed && (note?.signedBy?.uid === actor.uid || STAFF_ROLES.includes(actor.role))
 // The same for a staff message (a patient's own messages can't be removed).
 // Mirrors isMessageRemoval in firestore.rules.
 export const canRemoveMessage = (message, actor) =>

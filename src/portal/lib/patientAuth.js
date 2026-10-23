@@ -128,7 +128,14 @@ export async function getInvite(chartId, inviteId) {
 // Re-links a login already pointing at another chart (a returning patient's
 // new intake); the rules allow that only against a new invite.
 async function linkInvite(user, { chartId, inviteId, invite }) {
-  if ((await getMyPortalLink(user.uid))?.intakeId === chartId) return user
+  // Already linked to this chart (a resent invite): use this one up too, so
+  // its link stops working. The portal opens either way.
+  if ((await getMyPortalLink(user.uid))?.intakeId === chartId) {
+    await updateDoc(doc(db, "patients", chartId, "invites", inviteId), { status: "used", usedAt: serverTimestamp() }).catch((cause) =>
+      console.error("Couldn't mark the invite used:", cause.code ?? cause.message),
+    )
+    return user
+  }
   // The invite is marked used in the same commit, so it can't be read by
   // its link any more (firestore.rules isUsedByLink).
   const batch = writeBatch(db)

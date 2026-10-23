@@ -63,9 +63,10 @@ Patient side built 2026-10-05 (plan `docs/superpowers/plans/2026-10-05-client-po
 - **Admin invites, built 2026-10-05** (plan `docs/superpowers/plans/2026-10-05-portal-invites-admin.md`,
   spec `docs/superpowers/specs/2026-10-05-portal-invites-emailjs-design.md`): a **Patient
   portal** card on each chart shows the intake email and the invite status, with **Send
-  portal invite** / **Resend invite** for roles that can admit. The dialog's subject and
-  message are editable; co-admin and up can save them as the default template
-  (`settings/portalInvite`). Invites are stored in `patients/{chartId}/invites` and sent
+  portal invite** / **Resend invite** for roles that can admit. The dialog shows the email
+  read-only: its wording is fixed in EmailJS (2026-10-23, audit item 1; it used to be
+  editable, which let anyone holding the public key send CorePhia email with their own text
+  and link). Invites are stored in `patients/{chartId}/invites` and sent
   through EmailJS (`src/admin/lib/emailjs.js`). Activity log: "Sent a portal invite".
 - **Portal setup and forgot password, built 2026-10-05** (plan
   `docs/superpowers/plans/2026-10-05-portal-setup-and-reset.md`):
@@ -98,11 +99,17 @@ domain is missing, reset emails still send, just without the "continue" step.
 
 1. Email Services → Add New Service → connect the `info@corephia.com` mailbox → copy the
    **Service ID**.
-2. Email Templates → Create New Template: To Email `{{to_email}}`, From Name `CorePhia`,
-   Reply To `info@corephia.com`, Subject `{{subject}}`, and in the HTML content
-   `{{{message_html}}}` (triple braces: the site sends it already escaped, with `<br>` line
-   breaks), then a button linking `{{setup_link}}` ("Set up your portal"), then
-   "CorePhia Health · Tampa, Florida". Copy the **Template ID**.
+2. Email Templates → Create New Template, the **invite**: To Email `{{to_email}}`, From Name
+   `CorePhia`, Reply To `info@corephia.com`, Subject "Set up your CorePhia patient portal",
+   body "Hello," / "Your CorePhia patient portal is ready. Use the button below to choose a
+   password and sign in. This is where you'll find updates and messages from your care
+   team.", a button **Set up your portal** →
+   `https://corephia.com/portal/setup?c={{chart_id}}&i={{invite_id}}` (type the address in;
+   double braces only, never `{{{…}}}`), then "The link works for 7 days. Questions? Call us
+   at +1 (850) 454-6700 or email info@corephia.com." and "CorePhia Health · Tampa, Florida".
+   The site sends only `to_email`, `chart_id` and `invite_id`. Keep the wording in step with
+   `INVITE_EMAIL` in `src/admin/patients/InviteDialog.jsx` (the preview staff see), and
+   change both if the phone number changes. Copy the **Template ID**.
    Three **notice** templates. Type every word and link into the template itself: the
    site sends only the patient's address (`{{to_email}}`), and nothing at all for the
    staff notice. The public key is in every visitor's browser, so a template that took

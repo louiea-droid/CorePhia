@@ -80,6 +80,25 @@ export function vitalsText({ weightLb = null, systolic = null, diastolic = null,
   return [weightLb != null && `${weightLb} lbs`, bp, heartRate != null && `HR ${heartRate}`].filter(Boolean).join(", ")
 }
 
+// Vitals a person could have: [low, high, label, unit]. firestore.rules
+// (isPlausibleVitals) refuses to sign outside these, because signing copies
+// them to the patient's portal. Weight matches home weigh-ins.
+export const VITAL_RANGES = {
+  weightLb: [50, 800, "Weight", " lbs"],
+  systolic: [50, 300, "Systolic", ""],
+  diastolic: [20, 200, "Diastolic", ""],
+  heartRate: [20, 250, "Heart rate", " bpm"],
+}
+
+// Why these vitals can't be signed, or null. Blanks are fine.
+export function vitalsProblem(vitals) {
+  for (const [key, [low, high, label, unit]] of Object.entries(VITAL_RANGES)) {
+    const value = vitals?.[key]
+    if (value != null && !(value >= low && value <= high)) return `${label} must be between ${low} and ${high}${unit}.`
+  }
+  return null
+}
+
 // The sign confirmation's line, naming only what this note recorded; "" when
 // it recorded none, so nothing goes to the portal.
 export function signLine(vitals) {

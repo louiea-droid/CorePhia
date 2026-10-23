@@ -6,7 +6,7 @@ import { bmi } from "./chartMath"
 import { addDays as addCalendarDays, todayInTampa } from "../calendar/calendarMath"
 import { discardDraftNote, saveDraftNote, signNote } from "./chartStore"
 import ConfirmDialog from "../ui/ConfirmDialog"
-import { signLine } from "../../lib/progressMath"
+import { VITAL_RANGES, signLine, vitalsProblem } from "../../lib/progressMath"
 import { AUDIT_ACTIONS, recordAuditEvent } from "../lib/firebase"
 import { CloseIcon } from "../ui/icons"
 import { INTENSITIES, NOTE_TYPES, NOTE_TYPE_LABELS, SECTION_FIELDS, inputClass, labelClass, prescriptionLine } from "./noteUi"
@@ -17,6 +17,8 @@ import { canWriteNote } from "../staff/roles"
 const AUTOSAVE_MS = 1500
 // How long Close waits for a save before treating the connection as offline.
 const SAVE_WAIT_MS = 8000
+// A failed autosave tries again after this, unless the rules refused it.
+const RETRY_MS = 10000
 const RENEWAL_PICKS = [30, 60, 90]
 
 // Tampa's day, like the calendar and To-do, whatever the viewer's clock says.
@@ -51,7 +53,7 @@ function TextArea({ label, value, onChange, rows = 3 }) {
   )
 }
 
-function NumberField({ label, value, onChange, suffix }) {
+function NumberField({ label, value, onChange, suffix, range }) {
   return (
     <label className="block">
       <span className={labelClass}>{label}</span>
@@ -59,6 +61,8 @@ function NumberField({ label, value, onChange, suffix }) {
         <input
           type="number"
           inputMode="decimal"
+          min={range?.[0]}
+          max={range?.[1]}
           value={value ?? ""}
           onChange={(event) => onChange(numberOrNull(event.target.value))}
           className={`${inputClass} ${suffix ? "pr-10" : ""}`}
@@ -225,6 +229,8 @@ function ExercisePlanFields({ plan, onChange }) {
 // Why a note can't be signed yet, or null when it can.
 function signProblem(fields) {
   if (!fields.visitDate) return "Add the visit date."
+  const vitals = vitalsProblem(fields.vitals)
+  if (vitals) return vitals
   for (const entry of fields.prescriptions) {
     if (entry.action === "start" && !entry.medication.trim()) return "Each new prescription needs a medication."
     if (entry.action !== "stop" && !entry.renewalDue) return `Set a renewal date for ${entry.medication || "each prescription"}.`
@@ -258,6 +264,9 @@ export default function NoteEditor({
   }))
   const config = NOTE_TYPES[note.type]
   const roleCanEdit = canWriteNote(note.type, actor.role)
+  // The rules only let a draft on an inactive chart be deleted, so it opens
+  // read-only with Discard, like a note type the role no longer writes.
+  const canEdit = roleCanEdit && chart.status === "active"
   // After a save the rules refused, a second Close leaves without saving:
   // that text can never be saved, so it must not trap the editor open.
   const closeAnyway = useRef(false)
@@ -266,6 +275,7 @@ export default function NoteEditor({
   const [error, setError] = useState(null)
   const [confirm, setConfirm] = useState(null) // "sign" | "discard" | null
   const [share, setShare] = useState(false)
+  const [signSlow, setSignSlow] = useState(false)
   const latest = useRef(fields)
   const timer = useRef(null)
   const closeRef = useRef(null)
@@ -293,7 +303,18 @@ export default function NoteEditor({
     }
   }, [chart.id, note.id])
 
+  // Text that only failed to send would otherwise sit unsaved until idle
+  // sign-out. A refusal won't change on a retry, so that one waits for Close.
+  // Typing again moves saveState off "error", which cancels this.
+  useEffect(() => {
+    const code = lastSaveError.current?.code
+    if (saveState !== "error" || code === "permission-denied" || code === "not-found") return
+    const retry = setTimeout(save, RETRY_MS)
+    return () => clearTimeout(retry)
+  }, [saveState, save])
+
   const update = (patch) => {
+    if (!canEdit) return
     setFields((previous) => {
       const next = { ...previous, ...patch }
       latest.current = next
@@ -315,14 +336,14 @@ export default function NoteEditor({
   // queued and lands once the connection is back, so a second Close may leave.
   const close = useCallback(async () => {
     if (busy) return
-    if (roleCanEdit && !closeAnyway.current && version.current !== savedVersion.current) {
+    if (canEdit && !closeAnyway.current && version.current !== savedVersion.current) {
       const outcome = await Promise.race([save(), new Promise((resolve) => setTimeout(() => resolve("slow"), SAVE_WAIT_MS))])
       if (outcome !== true) {
         const refused = outcome === false && lastSaveError.current?.code === "permission-denied"
         closeAnyway.current = refused || outcome === "slow"
         setError(
           outcome === "slow"
-            ? "Your connection looks offline, so the draft hasn't finished saving. It will save once you're back online. Close again to leave."
+            ? "Your connection looks offline, so the draft hasn't finished saving. It saves once you're back online, as long as this tab stays open. Close again to leave."
             : refused
               ? `${errorText(lastSaveError.current, "", roleCanEdit)} Closing again leaves without saving.`
               : "Couldn't save your draft, so it's still open. Check your connection and try again.",
@@ -331,7 +352,7 @@ export default function NoteEditor({
       }
     }
     onClose()
-  }, [busy, save, onClose, roleCanEdit])
+  }, [busy, save, onClose, roleCanEdit, canEdit])
 
   // Escape closes the same way Close does. A sign or discard confirm sits on
   // top while it's open, so it gets Escape instead (useDialog).
@@ -344,27 +365,33 @@ export default function NoteEditor({
   useEffect(
     () => () => {
       clearTimeout(timer.current)
-      if (!finished.current && roleCanEdit && version.current !== savedVersion.current) {
+      if (!finished.current && canEdit && version.current !== savedVersion.current) {
         saveDraftNote(chart.id, note.id, latest.current).catch((cause) =>
           console.error("Draft save on leaving failed:", cause.code ?? cause.message),
         )
       }
     },
-    [chart.id, note.id, roleCanEdit],
+    [chart.id, note.id, canEdit],
   )
 
-  // Closing or reloading the tab with unsaved text asks the browser to warn.
+  // Closing or reloading the tab with unsaved text, or while a sign or discard
+  // is still waiting to send, asks the browser to warn: offline, those writes
+  // live only in this tab.
   useEffect(() => {
-    if (saveState === "saved") return
+    if (saveState === "saved" && !busy) return
     const warn = (event) => event.preventDefault()
     window.addEventListener("beforeunload", warn)
     return () => window.removeEventListener("beforeunload", warn)
-  }, [saveState])
+  }, [saveState, busy])
 
   const sign = async () => {
     setBusy(true)
     setError(null)
     clearTimeout(timer.current)
+    // Offline, the signing write waits in Firestore's queue and goes through
+    // once the connection is back (while this tab stays open). It can't be
+    // taken back, so the dialog says so instead of timing out.
+    const slow = setTimeout(() => setSignSlow(true), SAVE_WAIT_MS)
     try {
       await signNote(chart.id, note.id, note.type, latest.current, actor)
       recordAuditEvent({
@@ -379,6 +406,8 @@ export default function NoteEditor({
       setConfirm(null)
       setError(errorText(cause, "Couldn't sign this note. Nothing was changed. Try again.", roleCanEdit))
     } finally {
+      clearTimeout(slow)
+      setSignSlow(false)
       setBusy(false)
     }
   }
@@ -451,157 +480,165 @@ export default function NoteEditor({
             </button>
           </div>
 
-          <div className="scrollbar-thin flex-1 space-y-7 overflow-y-auto px-5 py-6 sm:px-7">
-            {!roleCanEdit && (
-              <p role="alert" className="rounded-lg bg-paper-100 px-3 py-2 text-sm text-ink-950/75">
-                {ROLE_CHANGED} Changes here can't be saved.
-              </p>
-            )}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <DateField label="Visit date" value={fields.visitDate} onChange={(visitDate) => update({ visitDate })} />
-            </div>
-
-            <section className="space-y-4">
-              {SECTION_FIELDS[note.type].map(([key, label]) => (
-                <TextArea
-                  key={key}
-                  label={label}
-                  value={fields.sections[key]}
-                  onChange={(value) => setSection(key, value)}
-                  rows={key === "hpi" || key === "plan" ? 4 : 3}
-                />
-              ))}
-            </section>
-
-            {fields.exercisePlan && (
-              <ExercisePlanFields plan={fields.exercisePlan} onChange={(exercisePlan) => update({ exercisePlan })} />
-            )}
-
-            <section>
-              {/* Weight-only notes skip the heading: the field's own label says it. */}
-              {config.fullVitals && <h3 className="mb-3 text-sm font-semibold text-ink-950">Vitals</h3>}
-              <div className={`grid gap-3 ${config.fullVitals ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2"}`}>
-                <NumberField label="Weight" suffix="lbs" value={fields.vitals.weightLb} onChange={(v) => setVital("weightLb", v)} />
-                {config.fullVitals && (
-                  <>
-                    <NumberField label="Systolic" value={fields.vitals.systolic} onChange={(v) => setVital("systolic", v)} />
-                    <NumberField label="Diastolic" value={fields.vitals.diastolic} onChange={(v) => setVital("diastolic", v)} />
-                    <NumberField label="Heart rate" suffix="bpm" value={fields.vitals.heartRate} onChange={(v) => setVital("heartRate", v)} />
-                  </>
-                )}
+          <div className="scrollbar-thin flex-1 overflow-y-auto px-5 py-6 sm:px-7">
+            {/* disabled greys out every input, picker and button inside at once */}
+            <fieldset
+              disabled={!canEdit}
+              className="contents space-y-7 [&:disabled_:is(input,textarea,button)]:cursor-not-allowed [&:disabled_:is(input,textarea,button)]:opacity-60"
+            >
+              {!canEdit && (
+                <p role="alert" className="rounded-lg bg-paper-100 px-3 py-2 text-sm text-ink-950/75">
+                  {roleCanEdit
+                    ? "This chart is inactive, so its drafts can't be changed or signed. You can still discard this one."
+                    : `${ROLE_CHANGED} Changes here can't be saved.`}
+                </p>
+              )}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <DateField label="Visit date" value={fields.visitDate} onChange={(visitDate) => update({ visitDate })} />
               </div>
-              <p className="mt-2 min-h-5 text-xs text-ink-950/60" aria-live="polite">
-                {[
-                  bmiNow && `BMI ${bmiNow}`,
-                  weightChange !== null &&
-                    `${weightChange > 0 ? "+" : weightChange < 0 ? "−" : "±"}${Math.abs(weightChange)} lbs since ${lastWeightSource === "intake" ? "intake" : "last note"}`,
-                ]
-                  .filter(Boolean)
-                  .join(". ")}
-              </p>
-            </section>
 
-            {config.prescriptions && (
-              <section>
-                <h3 className="text-sm font-semibold text-ink-950">Prescriptions</h3>
-                {current.length > 0 && (
-                  <ul className="mt-3 divide-y divide-ink-950/10 rounded-xl border border-ink-950/10 bg-white">
-                    {current.map((rx) => (
-                      <li key={rx.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
-                        <span className="min-w-0 text-sm text-ink-950">
-                          {prescriptionLine({ ...rx, action: "start" }).replace(/^Start /, "")}
-                        </span>
-                        {actedOn.has(rx.id) ? (
-                          <span className="text-xs text-ink-950/50">Updated below</span>
-                        ) : (
-                          <span className="flex gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                addEntry({
-                                  id: newId(),
-                                  action: "renew",
-                                  renewsId: rx.id,
-                                  medication: rx.medication,
-                                  instructions: "",
-                                  startDate: "",
-                                  renewalDue: "",
-                                  stopReason: "",
-                                })
-                              }
-                              className="cursor-pointer rounded-lg bg-paper-100 px-2.5 py-1 text-xs font-medium text-ink-950 transition-colors duration-200 hover:bg-ink-950/10"
-                            >
-                              Renew
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                addEntry({
-                                  id: newId(),
-                                  action: "stop",
-                                  renewsId: rx.id,
-                                  medication: rx.medication,
-                                  instructions: "",
-                                  startDate: "",
-                                  renewalDue: "",
-                                  stopReason: "",
-                                })
-                              }
-                              className="cursor-pointer rounded-lg bg-paper-100 px-2.5 py-1 text-xs font-medium text-ink-950 transition-colors duration-200 hover:bg-ink-950/10"
-                            >
-                              Stop
-                            </button>
-                          </span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <div className="mt-3 space-y-3">
-                  {fields.prescriptions.map((entry) => (
-                    <PrescriptionRow
-                      key={entry.id}
-                      entry={entry}
-                      visitDate={fields.visitDate}
-                      onChange={(next) => setPrescriptions(latest.current.prescriptions.map((e) => (e.id === entry.id ? next : e)))}
-                      onRemove={() => setPrescriptions(latest.current.prescriptions.filter((e) => e.id !== entry.id))}
-                    />
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    addEntry({
-                      id: newId(),
-                      action: "start",
-                      renewsId: "",
-                      medication: "",
-                      instructions: "",
-                      startDate: fields.visitDate || today(),
-                      renewalDue: "",
-                      stopReason: "",
-                    })
-                  }
-                  disabled={atCap}
-                  className="mt-3 cursor-pointer rounded-lg border border-dashed border-ink-950/25 px-3 py-2 text-sm font-medium text-ink-950/70 transition-colors duration-200 hover:border-ink-950/50 hover:text-ink-950 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Add prescription
-                </button>
-                {atCap && (
-                  <p className="mt-2 text-xs text-ink-950/55">
-                    A note holds up to {MAX_PRESCRIPTIONS} prescription entries. Start another note for more.
-                  </p>
-                )}
+              <section className="space-y-4">
+                {SECTION_FIELDS[note.type].map(([key, label]) => (
+                  <TextArea
+                    key={key}
+                    label={label}
+                    value={fields.sections[key]}
+                    onChange={(value) => setSection(key, value)}
+                    rows={key === "hpi" || key === "plan" ? 4 : 3}
+                  />
+                ))}
               </section>
-            )}
 
-            <section className="grid gap-4 sm:grid-cols-2">
-              <DateField
-                label="Next follow-up"
-                value={fields.nextFollowUp}
-                onChange={(nextFollowUp) => update({ nextFollowUp })}
-              />
-            </section>
+              {fields.exercisePlan && (
+                <ExercisePlanFields plan={fields.exercisePlan} onChange={(exercisePlan) => update({ exercisePlan })} />
+              )}
+
+              <section>
+                {/* Weight-only notes skip the heading: the field's own label says it. */}
+                {config.fullVitals && <h3 className="mb-3 text-sm font-semibold text-ink-950">Vitals</h3>}
+                <div className={`grid gap-3 ${config.fullVitals ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2"}`}>
+                  <NumberField label="Weight" suffix="lbs" range={VITAL_RANGES.weightLb} value={fields.vitals.weightLb} onChange={(v) => setVital("weightLb", v)} />
+                  {config.fullVitals && (
+                    <>
+                      <NumberField label="Systolic" range={VITAL_RANGES.systolic} value={fields.vitals.systolic} onChange={(v) => setVital("systolic", v)} />
+                      <NumberField label="Diastolic" range={VITAL_RANGES.diastolic} value={fields.vitals.diastolic} onChange={(v) => setVital("diastolic", v)} />
+                      <NumberField label="Heart rate" suffix="bpm" range={VITAL_RANGES.heartRate} value={fields.vitals.heartRate} onChange={(v) => setVital("heartRate", v)} />
+                    </>
+                  )}
+                </div>
+                <p className="mt-2 min-h-5 text-xs text-ink-950/60" aria-live="polite">
+                  {[
+                    bmiNow && `BMI ${bmiNow}`,
+                    weightChange !== null &&
+                      `${weightChange > 0 ? "+" : weightChange < 0 ? "−" : "±"}${Math.abs(weightChange)} lbs since ${lastWeightSource === "intake" ? "intake" : "last note"}`,
+                  ]
+                    .filter(Boolean)
+                    .join(". ")}
+                </p>
+              </section>
+
+              {config.prescriptions && (
+                <section>
+                  <h3 className="text-sm font-semibold text-ink-950">Prescriptions</h3>
+                  {current.length > 0 && (
+                    <ul className="mt-3 divide-y divide-ink-950/10 rounded-xl border border-ink-950/10 bg-white">
+                      {current.map((rx) => (
+                        <li key={rx.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+                          <span className="min-w-0 text-sm text-ink-950">
+                            {prescriptionLine({ ...rx, action: "start" }).replace(/^Start /, "")}
+                          </span>
+                          {actedOn.has(rx.id) ? (
+                            <span className="text-xs text-ink-950/50">Updated below</span>
+                          ) : (
+                            <span className="flex gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  addEntry({
+                                    id: newId(),
+                                    action: "renew",
+                                    renewsId: rx.id,
+                                    medication: rx.medication,
+                                    instructions: "",
+                                    startDate: "",
+                                    renewalDue: "",
+                                    stopReason: "",
+                                  })
+                                }
+                                className="cursor-pointer rounded-lg bg-paper-100 px-2.5 py-1 text-xs font-medium text-ink-950 transition-colors duration-200 hover:bg-ink-950/10"
+                              >
+                                Renew
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  addEntry({
+                                    id: newId(),
+                                    action: "stop",
+                                    renewsId: rx.id,
+                                    medication: rx.medication,
+                                    instructions: "",
+                                    startDate: "",
+                                    renewalDue: "",
+                                    stopReason: "",
+                                  })
+                                }
+                                className="cursor-pointer rounded-lg bg-paper-100 px-2.5 py-1 text-xs font-medium text-ink-950 transition-colors duration-200 hover:bg-ink-950/10"
+                              >
+                                Stop
+                              </button>
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="mt-3 space-y-3">
+                    {fields.prescriptions.map((entry) => (
+                      <PrescriptionRow
+                        key={entry.id}
+                        entry={entry}
+                        visitDate={fields.visitDate}
+                        onChange={(next) => setPrescriptions(latest.current.prescriptions.map((e) => (e.id === entry.id ? next : e)))}
+                        onRemove={() => setPrescriptions(latest.current.prescriptions.filter((e) => e.id !== entry.id))}
+                      />
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      addEntry({
+                        id: newId(),
+                        action: "start",
+                        renewsId: "",
+                        medication: "",
+                        instructions: "",
+                        startDate: fields.visitDate || today(),
+                        renewalDue: "",
+                        stopReason: "",
+                      })
+                    }
+                    disabled={atCap}
+                    className="mt-3 cursor-pointer rounded-lg border border-dashed border-ink-950/25 px-3 py-2 text-sm font-medium text-ink-950/70 transition-colors duration-200 hover:border-ink-950/50 hover:text-ink-950 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Add prescription
+                  </button>
+                  {atCap && (
+                    <p className="mt-2 text-xs text-ink-950/55">
+                      A note holds up to {MAX_PRESCRIPTIONS} prescription entries. Start another note for more.
+                    </p>
+                  )}
+                </section>
+              )}
+
+              <section className="grid gap-4 sm:grid-cols-2">
+                <DateField
+                  label="Next follow-up"
+                  value={fields.nextFollowUp}
+                  onChange={(nextFollowUp) => update({ nextFollowUp })}
+                />
+              </section>
+            </fieldset>
           </div>
 
           <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-ink-950/10 px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-7">
@@ -622,7 +659,7 @@ export default function NoteEditor({
               <button
                 type="button"
                 onClick={() => setConfirm("sign")}
-                disabled={busy || Boolean(problem) || !roleCanEdit}
+                disabled={busy || Boolean(problem) || !canEdit}
                 className="cursor-pointer rounded-full bg-ink-950 px-6 py-2.5 text-sm font-semibold text-paper-50 shadow-lg shadow-ink-950/15 transition-colors duration-200 hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Sign note
@@ -642,6 +679,11 @@ export default function NoteEditor({
         onCancel={() => setConfirm(null)}
       >
         {signLine(fields.vitals) && <p className="mt-3 text-sm text-ink-950/60">{signLine(fields.vitals)}</p>}
+        {signSlow && (
+          <p role="status" className="mt-3 text-sm text-brand-dark">
+            Your connection looks offline. The note signs as soon as you're back online. Keep this tab open until then.
+          </p>
+        )}
         {chart.status === "active" && (
           <label className="mt-4 flex cursor-pointer items-center gap-2 text-sm text-ink-950/80">
             <input type="checkbox" checked={share} onChange={(event) => setShare(event.target.checked)} className="size-4 accent-accent-dark" />

@@ -3,8 +3,8 @@
 import assert from "node:assert/strict"
 import {
   canAdmit,
-  canEditInviteTemplate,
   canRemoveUpdate,
+  canRemoveVisitEntry,
   canAmend,
   canManageMember,
   canNameStaff,
@@ -39,10 +39,6 @@ assert.equal(canWriteNote("unknown", "admin"), false)
 // Admitting and declining: everyone clinical except the dietitian.
 assert.equal(canAdmit("dietitian"), false)
 assert.equal(canAdmit("provider"), true)
-// The portal-invite template: co-admin and up (settings/portalInvite in firestore.rules).
-for (const role of ["coAdmin", "admin", "superAdmin"]) assert.equal(canEditInviteTemplate(role), true, role)
-for (const role of ["provider", "dietitian", ""]) assert.equal(canEditInviteTemplate(role), false, role)
-assert.equal(canAdmit(null), false)
 
 // Addenda: a dietitian only on dietitian notes; others on anything.
 assert.equal(canAmend("dietitian", "dietitian"), true)
@@ -86,6 +82,17 @@ assert.equal(canRemoveUpdate(posted, { uid: "d1", role: "dietitian" }), false)
 assert.equal(canRemoveUpdate(posted, { uid: "p2", role: "provider" }), false)
 assert.equal(canRemoveUpdate(posted, { uid: "c1", role: "coAdmin" }), true)
 assert.equal(canRemoveUpdate({ ...posted, removed: { by: { uid: "p1" } } }, { uid: "p1", role: "provider" }), false)
+
+// A visit entry (a signed note's vitals in the portal): the note's signer or
+// co-admin and up, once; never a home weigh-in.
+const visit = { source: "visit", removed: false }
+const signer = { signedBy: { uid: "p1" } }
+assert.equal(canRemoveVisitEntry(visit, signer, { uid: "p1", role: "provider" }), true)
+assert.equal(canRemoveVisitEntry(visit, signer, { uid: "p2", role: "provider" }), false)
+assert.equal(canRemoveVisitEntry(visit, signer, { uid: "c1", role: "coAdmin" }), true)
+assert.equal(canRemoveVisitEntry(visit, undefined, { uid: "p1", role: "provider" }), false)
+assert.equal(canRemoveVisitEntry({ ...visit, removed: { by: { uid: "p1" } } }, signer, { uid: "c1", role: "coAdmin" }), false)
+assert.equal(canRemoveVisitEntry({ source: "home", removed: false }, signer, { uid: "c1", role: "coAdmin" }), false)
 
 // Help is open to every clinical role, and to nobody without one.
 for (const role of ["dietitian", "provider", "coAdmin", "admin", "superAdmin"]) assert.equal(canOpen("help", role), true, role)

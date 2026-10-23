@@ -16,7 +16,7 @@ const privacy = [
       [
         "We collect what you give us so that a licensed provider can review your health and care for you.",
         "We do not sell your information, and we do not use it for advertising.",
-        "Visit counts and Google Analytics run only on our public pages, only if you accept them, and you can change your mind at any time. They never run on the intake or the patient portal.",
+        "Visit counts and Google Analytics run only if you accept them, and you can change your mind at any time. Google Analytics runs only on our public pages. On the intake we count only that it was opened, never anything you type or choose there. Neither runs in the patient portal.",
         "Only people who need your records to do their job can open them.",
         "You can ask us for a copy of your information or ask us to correct it.",
       ],
@@ -42,7 +42,7 @@ const privacy = [
       "Information our care team creates about you once you are a patient: appointment records, visit notes, plans, prescriptions and vitals, and the updates and messages they send you through the portal.",
       "Information collected automatically:",
       [
-        "Visit counts, only if you press Accept on the privacy banner. We record which page was viewed or which link or button was clicked, and the day. We do not use cookies for this, and we do not record your IP address or give you a visitor ID, so these counts cannot be tied to you. We do not count anything you do inside the intake, the patient portal, or the staff area.",
+        "Visit counts, only if you press Accept on the privacy banner. We record which page was viewed or which link or button was clicked, and the day. We do not use cookies for this, and we do not record your IP address or give you a visitor ID, so these counts cannot be tied to you. On the intake we count only that it was opened, never anything you type or choose there. We do not count anything in the patient portal or the staff area.",
         "Server logs. Our hosting provider keeps routine logs of requests to the site (such as IP address, browser type, and the pages requested) for security and to keep the site running.",
         "Google Analytics, only if you press Accept, and only on our public pages (such as the home, program, guide, FAQ, and membership pages). It uses cookies to tell Google which pages were visited, how long, the kind of device and browser, the approximate location (city level), and how you arrived at the site. It never runs on the intake, the patient portal, or the staff area, so it never receives anything you tell us about your health. We have turned off Google's advertising features. Google handles this data under its own privacy policy. If you later press Decline, it stops and its cookies are removed.",
       ],

@@ -2,15 +2,11 @@
 // chartMath.check.js.
 import assert from "node:assert/strict"
 import {
-  DEFAULT_INVITE,
-  escapeMessage,
-  fillTemplate,
   inviteExpiresAt,
   inviteStatus,
   isInviteUsable,
   newInviteId,
   retryOnce,
-  toTemplate,
 } from "./inviteMath.js"
 
 const DAY = 86400000
@@ -36,19 +32,6 @@ assert.equal(isInviteUsable({ status: "sent", sentAt: null }, now), false)
 assert.equal(inviteExpiresAt({ status: "sent", sentAt: new Date(0) }).getTime(), 7 * DAY)
 // Firestore Timestamps come back with toDate().
 assert.equal(isInviteUsable({ status: "sent", sentAt: { toDate: () => new Date(now - DAY) } }, now), true)
-
-// Templates: placeholders filled, and put back when saved as the default.
-const filled = fillTemplate("Hi {firstName}, call {phone}. {firstName}!", { firstName: "Maria", phone: "(000) 123-4567" })
-assert.equal(filled, "Hi Maria, call (000) 123-4567. Maria!")
-assert.equal(fillTemplate("Hi {firstName},", { firstName: "", phone: "" }), "Hi there,")
-assert.equal(toTemplate(filled, { firstName: "Maria", phone: "(000) 123-4567" }), "Hi {firstName}, call {phone}. {firstName}!")
-const values = { firstName: "Maria", phone: "(000) 123-4567" }
-assert.equal(toTemplate(fillTemplate(DEFAULT_INVITE.message, values), values), DEFAULT_INVITE.message)
-assert.equal(toTemplate("Hi there", { firstName: "", phone: "" }), "Hi there")
-
-// Staff text never becomes markup in the email.
-assert.equal(escapeMessage("<b>&\nx"), "&lt;b&gt;&amp;<br>x")
-assert.equal(escapeMessage(`a"b'c\r\nd`), "a&quot;b&#39;c<br>d")
 
 // Invite ids: 128 random bits as hex.
 const id = newInviteId()

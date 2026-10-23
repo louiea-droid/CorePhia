@@ -78,11 +78,11 @@ const TOPICS = [
     show: (role) => canAdmit(role),
     steps: [
       "Open the patient's chart. On the Patient portal card, press Send portal invite.",
-      "The email goes to the address on their intake. You can edit the wording, and the link works for 7 days.",
+      "The email goes to the address on their intake. Its wording is fixed, and the link works for 7 days.",
       "The card shows the status: not invited, sent, expired, or \"Portal active since\" a date once they have joined. Once they join, the invite link stops working.",
       "A returning patient who already has a portal login can use the new chart's invite. Their login moves to the new chart.",
     ],
-    note: "Keep the invite wording plain and free of clinical details, because email travels outside the secured system.",
+    note: "The wording can't be changed here, so nobody can use the invite to send their own text or link. To change it, ask whoever set up the email service.",
   },
   {
     id: "updates",
@@ -177,7 +177,7 @@ const TOPICS = [
     lead: "Patients join by invite only. They choose their own password from the invite link, then use Patient portal in the site header.",
     steps: [
       "Overview: a short progress summary, their latest messages and the latest update.",
-      "Progress: their weight chart and numbers from each visit. They can log their own weight and delete their own entries. You still see that an entry was deleted.",
+      "Progress: their weight chart and numbers from each visit. They can log their own weight and delete their own entries. You still see that an entry was deleted. If a signed note had a mistyped number, the note's signer or a co-admin presses Remove from portal on that entry in the chart's Progress card (Show all entries), then adds an addendum with the right numbers.",
       "Messages: they can start a message, reply and close a conversation.",
       "Updates: a dated list of what the care team has posted, each from Provider, Dietitian or Care team.",
     ],
@@ -188,7 +188,7 @@ const TOPICS = [
     title: "What emails go out",
     show: everyone,
     steps: [
-      "Portal invite: when you press Send portal invite. It has the wording you wrote and a Set up your portal button.",
+      "Portal invite: when you press Send portal invite. It has fixed wording and a Set up your portal button.",
       "New update or new message: only when the email box is ticked. It says something is waiting and never includes the content.",
       "Team notice to info@corephia.com: when a patient message means a conversation needs a reply. One email per waiting conversation.",
       "Password reset and new staff set-up: a secure link to choose a password.",
@@ -230,7 +230,7 @@ const TOPICS = [
       },
       {
         q: "A patient says their invite link doesn't work",
-        a: "Invite links stop working after 7 days, and once the patient has joined. Check the Patient portal card on their chart. If the invite has expired, press Resend invite. If their portal is already active, point them to Patient portal in the site header, where they can reset a forgotten password.",
+        a: "Invite links stop working after 7 days, once the patient has joined, when a newer invite is sent, and when their chart is made inactive. Check the Patient portal card on their chart. If the invite has expired, press Resend invite. If their portal is already active, point them to Patient portal in the site header, where they can reset a forgotten password.",
         see: "invite",
         show: (role) => canAdmit(role),
       },

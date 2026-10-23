@@ -1,11 +1,9 @@
-// Patient portal invites and the invite template: every read and write for
-// them goes through here. firestore.rules is the real boundary (the invites
-// and settings/portalInvite blocks). Demo mode keeps invites in memory and,
+// Patient portal invites: every read and write for them goes through here.
+// firestore.rules is the real boundary (the invites block). Demo mode keeps invites in memory and,
 // without EmailJS keys, pretends the email went out.
 import {
   collection,
   doc,
-  getDoc,
   getDocs,
   limit,
   orderBy,
@@ -14,14 +12,14 @@ import {
   setDoc,
   updateDoc,
   where,
+  writeBatch,
 } from "firebase/firestore"
-import { DEFAULT_INVITE, escapeMessage, newInviteId, retryOnce } from "../../lib/inviteMath"
+import { newInviteId, retryOnce } from "../../lib/inviteMath"
 import { db, usingSeedData } from "../lib/firebase"
 import { emailjsConfigured, sendEmail } from "../../lib/emailjs"
 import { PATIENTS_COLLECTION, getDemoStore } from "./chartStore"
 
 const INVITES = "invites"
-const TEMPLATE_REF = ["settings", "portalInvite"]
 
 const requireDb = () => {
   if (!db) throw new Error("Firebase is not configured.")
@@ -54,15 +52,12 @@ export async function loadPortalAccess(chartId) {
 // Saves the invite, emails it, and records how that went. Resolves with the
 // final invite (sent, failed, or unrecorded: emailed but its status didn't save);
 // throws only if the first save fails.
-export async function sendInvite({ chartId, to, firstName, subject, message }, actor) {
+export async function sendInvite({ chartId, to, firstName }, actor) {
   const id = newInviteId()
-  const invite = { to: to.trim().toLowerCase(), firstName, subject, message, status: "ready", createdBy: { uid: actor.uid, name: actor.name } }
-  const params = {
-    to_email: invite.to,
-    subject,
-    message_html: escapeMessage(message),
-    setup_link: `${window.location.origin}/portal/setup?c=${encodeURIComponent(chartId)}&i=${id}`,
-  }
+  const invite = { to: to.trim().toLowerCase(), firstName, status: "ready", createdBy: { uid: actor.uid, name: actor.name } }
+  // Only the address and the ids: the template types every word and builds the
+  // button on https://corephia.com/portal/setup itself (see InviteDialog).
+  const params = { to_email: invite.to, chart_id: chartId, invite_id: id }
 
   if (usingSeedData) {
     const list = await demoInvites(chartId)
@@ -70,6 +65,7 @@ export async function sendInvite({ chartId, to, firstName, subject, message }, a
     list.unshift(entry)
     try {
       if (emailjsConfigured) await sendEmail(params)
+      for (const earlier of list) if (earlier !== entry && earlier.status === "sent") Object.assign(earlier, { status: "superseded", supersededAt: new Date() })
       Object.assign(entry, { status: "sent", sentAt: new Date() })
     } catch (cause) {
       Object.assign(entry, { status: "failed", error: String(cause.message).slice(0, 300) })
@@ -92,25 +88,13 @@ export async function sendInvite({ chartId, to, firstName, subject, message }, a
   if (!(await retryOnce(() => updateDoc(ref, { status: "sent", sentAt: serverTimestamp() })))) {
     return { id, ...invite, status: "unrecorded", createdAt: new Date() }
   }
-  return { id, ...invite, status: "sent", sentAt: new Date(), createdAt: new Date() }
-}
-
-export async function loadInviteTemplate() {
-  if (usingSeedData) return (await getDemoStore()).inviteTemplate ?? DEFAULT_INVITE
-  const snapshot = await getDoc(doc(requireDb(), ...TEMPLATE_REF))
-  const data = snapshot.data()
-  return data?.subject && data?.message ? { subject: data.subject, message: data.message } : DEFAULT_INVITE
-}
-
-export async function saveInviteTemplate({ subject, message }, actor) {
-  if (usingSeedData) {
-    ;(await getDemoStore()).inviteTemplate = { subject, message }
-    return
-  }
-  await setDoc(doc(requireDb(), ...TEMPLATE_REF), {
-    subject,
-    message,
-    updatedBy: { uid: actor.uid, name: actor.name },
-    updatedAt: serverTimestamp(),
+  // Only the newest link works: earlier sent invites are retired. If that
+  // fails they still expire within 7 days, so the send still counts.
+  await retryOnce(async () => {
+    const earlier = await getDocs(query(collection(requireDb(), PATIENTS_COLLECTION, chartId, INVITES), where("status", "==", "sent")))
+    const batch = writeBatch(requireDb())
+    for (const entry of earlier.docs) if (entry.id !== id) batch.update(entry.ref, { status: "superseded", supersededAt: serverTimestamp() })
+    await batch.commit()
   })
+  return { id, ...invite, status: "sent", sentAt: new Date(), createdAt: new Date() }
 }

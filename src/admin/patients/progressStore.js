@@ -1,7 +1,7 @@
 // Track progress on the staff side: every read and write for
-// patients/{chartId}/progress except the visit entries, which signNote adds
-// to the signing batch. firestore.rules checks every shape.
-import { collection, doc, getDoc, getDocs, setDoc } from "firebase/firestore"
+// patients/{chartId}/progress except creating the visit entries, which
+// signNote adds to the signing batch. firestore.rules checks every shape.
+import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc, updateDoc } from "firebase/firestore"
 import { visitEntryFor } from "../../lib/progressMath"
 import { db, usingSeedData } from "../lib/firebase"
 import { PATIENTS_COLLECTION, getDemoStore } from "./chartStore"
@@ -38,6 +38,17 @@ export async function loadProgress(chartId) {
   if (usingSeedData) return split((await demoProgress(chartId)).map((entry) => ({ ...entry })))
   const snapshot = await getDocs(collection(requireDb(), PATIENTS_COLLECTION, chartId, PROGRESS))
   return split(snapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() })))
+}
+
+// A signed note's vitals taken out of the patient's portal (a mistyped
+// number). Staff still see the entry, marked removed.
+export async function removeVisitEntry(chartId, entryId, actor) {
+  const removed = { by: { uid: actor.uid, name: actor.name }, at: new Date() }
+  if (usingSeedData) {
+    Object.assign((await demoProgress(chartId)).find((entry) => entry.id === entryId), { removed })
+    return
+  }
+  await updateDoc(doc(requireDb(), PATIENTS_COLLECTION, chartId, PROGRESS, entryId), { removed: { ...removed, at: serverTimestamp() } })
 }
 
 // The intake's height and weights, copied as they are, once per chart.

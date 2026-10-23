@@ -359,8 +359,10 @@ service cloud.firestore {
       allow update: if isAdmitter() && isStatusUpdate();
       // Deletion is the one destructive action here, so it stays on the
       // superAdmin tier rather than every admin - matching the split already
-      // described above.
-      allow delete: if role() == 'superAdmin';
+      // described above. Never once a chart exists: the intake is then part of
+      // the medical record, and the chart's invites and appointments check it.
+      allow delete: if role() == 'superAdmin'
+        && !exists(/databases/$(database)/documents/patients/$(recordId));
     }
 
     // One doc per patient login, linking it to their intake record:
@@ -377,9 +379,13 @@ service cloud.firestore {
       // only to another chart, by the same check against a new invite: a
       // returning patient with a new intake (and chart), or an old sign-up
       // doc with no intakeId. Never deleted.
+      // The chart must still be active (no portal for a discharged patient),
+      // and the invite must be marked used in the same save, so a link can
+      // never leave its invite open for someone else (2026-10-21 audit).
       function isOwnInviteLink() {
         let data = request.resource.data;
-        let invite = get(/databases/$(database)/documents/patients/$(data.intakeId)/invites/$(data.inviteId)).data;
+        let invitePath = /databases/$(database)/documents/patients/$(data.intakeId)/invites/$(data.inviteId);
+        let invite = get(invitePath).data;
         return request.auth != null
           && request.auth.uid == uid
           && data.keys().hasAll(['email', 'intakeId', 'firstName', 'inviteId', 'linkedAt'])
@@ -390,7 +396,9 @@ service cloud.firestore {
           && invite.status == 'sent'
           && invite.to == request.auth.token.email
           && request.time < invite.sentAt + duration.value(7, 'd')
-          && data.firstName == invite.firstName;
+          && data.firstName == invite.firstName
+          && get(/databases/$(database)/documents/patients/$(data.intakeId)).data.status == 'active'
+          && getAfter(invitePath).data.status == 'used';
       }
       allow read: if (request.auth != null && request.auth.uid == uid) || isClinical();
       allow create: if isOwnInviteLink();
@@ -436,6 +444,20 @@ service cloud.firestore {
         && plan.get('intensity', '') in ['', 'light', 'moderate', 'vigorous']
         && plan.get('kind', '') is string && plan.get('kind', '').size() <= 500
         && plan.get('notes', '') is string && plan.get('notes', '').size() <= 2000;
+    }
+
+    // Vitals a person could have, checked when a note is signed (a draft may
+    // hold a half-typed number). Signing copies them to the patient's
+    // progress, so a typo like 1800 lbs would otherwise sit in the portal.
+    // Weight matches home weigh-ins; VITAL_RANGES in lib/progressMath.js mirrors these.
+    function inRange(v, key, low, high) {
+      return v.get(key, null) == null || (v[key] is number && v[key] >= low && v[key] <= high);
+    }
+    function isPlausibleVitals(v) {
+      return inRange(v, 'weightLb', 50, 800)
+        && inRange(v, 'systolic', 50, 300)
+        && inRange(v, 'diastolic', 20, 200)
+        && inRange(v, 'heartRate', 20, 250);
     }
 
     function isNoteShape(data) {
@@ -517,6 +539,7 @@ service cloud.firestore {
               && request.resource.data.signedAt == null
               && request.resource.data.signedBy == null)
             || (request.resource.data.status == 'signed'
+              && isPlausibleVitals(request.resource.data.vitals)
               && request.resource.data.signedAt == request.time
               && request.resource.data.signedBy.keys().hasOnly(['uid', 'name', 'role'])
               && request.resource.data.signedBy.uid == request.auth.uid
@@ -557,13 +580,11 @@ service cloud.firestore {
           let data = request.resource.data;
           let chart = get(/databases/$(database)/documents/patients/$(chartId)).data;
           let intake = get(/databases/$(database)/documents/intakeRecords/$(chartId)).data;
-          return data.keys().hasOnly(['to', 'firstName', 'subject', 'message', 'status', 'createdBy', 'createdAt'])
+          return data.keys().hasOnly(['to', 'firstName', 'status', 'createdBy', 'createdAt'])
             && chart.status == 'active'
             && data.status == 'ready'
             && data.to == intake.demographics.email.lower().trim()
             && data.firstName is string && data.firstName.size() <= 100
-            && data.subject is string && data.subject.size() > 0 && data.subject.size() <= 200
-            && data.message is string && data.message.size() > 0 && data.message.size() <= 5000
             && data.createdBy.keys().hasOnly(['uid', 'name'])
             && data.createdBy.uid == request.auth.uid
             && data.createdBy.name == myName()
@@ -577,23 +598,36 @@ service cloud.firestore {
              || (changed.hasOnly(['status', 'error']) && request.resource.data.status == 'failed'
                  && request.resource.data.error is string && request.resource.data.error.size() <= 300));
         }
+        // Sending a new invite retires the earlier sent ones, so only the
+        // newest link works (portalStore.sendInvite).
+        function isSuperseded() {
+          return resource.data.status == 'sent'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'supersededAt'])
+            && request.resource.data.status == 'superseded'
+            && request.resource.data.supersededAt == request.time;
+        }
+        // Signed out, a sent invite opens by its link for 7 days, and only
+        // while the chart is active: discharging a patient closes it.
         allow get: if isClinical()
-          || (resource.data.status == 'sent' && request.time < resource.data.sentAt + duration.value(7, 'd'));
+          || (resource.data.status == 'sent' && request.time < resource.data.sentAt + duration.value(7, 'd')
+              && get(/databases/$(database)/documents/patients/$(chartId)).data.status == 'active');
         allow list: if isClinical();
         allow create: if isAdmitter() && isNewInvite();
-        // The patient who just linked with this invite marks it used, in the
-        // same batch as the link (patientAuth.linkInvite).
+        // A patient whose login is (or, in this same batch, becomes) linked to
+        // this chart marks an invite to their email used: the one they linked
+        // with, or a later one opened while already linked
+        // (patientAuth.linkInvite).
         function isUsedByLink() {
           let link = getAfter(/databases/$(database)/documents/patientAccounts/$(request.auth.uid)).data;
           return request.auth != null
             && resource.data.status == 'sent'
+            && resource.data.to == request.auth.token.email
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'usedAt'])
             && request.resource.data.status == 'used'
             && request.resource.data.usedAt == request.time
-            && link.intakeId == chartId
-            && link.inviteId == inviteId;
+            && link.intakeId == chartId;
         }
-        allow update: if (isAdmitter() && isSendResult()) || isUsedByLink();
+        allow update: if (isAdmitter() && (isSendResult() || isSuperseded())) || isUsedByLink();
         allow delete: if false;
       }
 
@@ -721,9 +755,25 @@ service cloud.firestore {
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['removed'])
             && request.resource.data.removed == request.time;
         }
+        // A visit entry with a mistyped number: the note's signer, or co-admin
+        // and up, takes it out of the patient's view (the signed note itself
+        // is corrected with an addendum). Staff still see it, marked removed.
+        function isStaffRemoval() {
+          let removed = request.resource.data.removed;
+          let note = get(/databases/$(database)/documents/patients/$(chartId)/notes/$(resource.data.noteId)).data;
+          return resource.data.source == 'visit'
+            && resource.data.removed == false
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['removed'])
+            && removed.keys().hasOnly(['by', 'at'])
+            && removed.by.keys().hasOnly(['uid', 'name'])
+            && removed.by.uid == request.auth.uid
+            && removed.by.name == myName()
+            && removed.at == request.time
+            && (note.signedBy.uid == request.auth.uid || isStaff());
+        }
         allow read: if isClinical() || (resource.data.removed == false && isLinkedPatient());
         allow create: if (isClinical() && (isVisitEntry() || isBaseline())) || (isLinkedPatient() && isHomeEntry());
-        allow update: if isLinkedPatient() && isRemoval();
+        allow update: if (isLinkedPatient() && isRemoval()) || (isClinical() && isStaffRemoval());
         allow delete: if false;
       }
 
@@ -836,18 +886,6 @@ service cloud.firestore {
           allow delete: if false;
         }
       }
-    }
-
-    // The default portal-invite wording. Co-admin and up change it.
-    match /settings/portalInvite {
-      allow read: if isClinical();
-      allow write: if isStaff()
-        && request.resource.data.keys().hasOnly(['subject', 'message', 'updatedBy', 'updatedAt'])
-        && request.resource.data.subject is string && request.resource.data.subject.size() > 0 && request.resource.data.subject.size() <= 200
-        && request.resource.data.message is string && request.resource.data.message.size() > 0 && request.resource.data.message.size() <= 5000
-        && request.resource.data.updatedBy.keys().hasOnly(['uid', 'name'])
-        && request.resource.data.updatedBy.uid == request.auth.uid
-        && request.resource.data.updatedAt == request.time;
     }
 
     // --- Appointments --------------------------------------------------------

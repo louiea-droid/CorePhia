@@ -1,18 +1,25 @@
 import { useEffect, useState } from "react"
 import WeightChart from "../../components/WeightChart"
 import { series, summary, vitalsText } from "../../lib/progressMath"
+import { canRemoveVisitEntry } from "../staff/roles"
+import ConfirmDialog from "../ui/ConfirmDialog"
 import { NOTE_TYPE_LABELS, formatDay } from "./noteUi"
-import { ensureBaseline, loadProgress } from "./progressStore"
+import { ensureBaseline, loadProgress, removeVisitEntry } from "./progressStore"
 
 const lbs = (n) => `${n} lbs`
 
 // The chart's Track progress card: what the patient sees in their portal,
-// plus deleted home entries, greyed. Reloads when `version` changes (a note
-// was signed). Writes the baseline from the intake the first time.
-export default function ProgressCard({ chartId, intake, notes, version }) {
+// plus deleted and removed entries, greyed. Reloads when `version` changes (a
+// note was signed). Writes the baseline from the intake the first time. A
+// visit entry with a mistyped number can be taken out of the portal.
+export default function ProgressCard({ chartId, intake, notes, version, actor }) {
   const [data, setData] = useState(null)
   const [failed, setFailed] = useState(false)
   const [showAll, setShowAll] = useState(false)
+  const [removing, setRemoving] = useState(null) // the visit entry being removed
+  const [busy, setBusy] = useState(false)
+  const [removeError, setRemoveError] = useState(null)
+  const [reloads, setReloads] = useState(0)
 
   useEffect(() => {
     let live = true
@@ -33,7 +40,23 @@ export default function ProgressCard({ chartId, intake, notes, version }) {
     return () => {
       live = false
     }
-  }, [chartId, intake, version])
+  }, [chartId, intake, version, reloads])
+
+  const confirmRemove = async () => {
+    setBusy(true)
+    setRemoveError(null)
+    try {
+      await removeVisitEntry(chartId, removing.id, actor)
+      setRemoving(null)
+      setReloads((count) => count + 1)
+    } catch (cause) {
+      setRemoveError(
+        cause?.code === "permission-denied" ? "Your role can't remove this entry." : "Couldn't remove it. Check your connection and try again.",
+      )
+    } finally {
+      setBusy(false)
+    }
+  }
 
   const points = data ? series(data.entries) : []
   const numbers = data ? summary(data.entries, data.baseline) : null
@@ -99,7 +122,20 @@ export default function ProgressCard({ chartId, intake, notes, version }) {
                           : note
                             ? `From the ${formatDay(note.visitDate)} ${NOTE_TYPE_LABELS[note.type]?.toLowerCase() ?? "note"}`
                             : "From a visit"}
+                        {entry.source === "visit" && entry.removed && `. Removed from the portal by ${entry.removed.by?.name} on ${formatDay(entry.removed.at)}`}
                       </p>
+                      {canRemoveVisitEntry(entry, noteOf(entry.noteId), actor) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRemoveError(null)
+                            setRemoving(entry)
+                          }}
+                          className="mt-1 cursor-pointer text-xs font-semibold text-accent-text hover:underline"
+                        >
+                          Remove from portal
+                        </button>
+                      )}
                     </li>
                   )
                 })}
@@ -108,6 +144,18 @@ export default function ProgressCard({ chartId, intake, notes, version }) {
           </>
         )}
       </div>
+      <ConfirmDialog
+        open={Boolean(removing)}
+        title="Remove from the patient's portal?"
+        description={
+          removeError ??
+          `The patient stops seeing ${removing ? vitalsText(removing) : "this entry"} in their progress. You still see it here, marked removed. The signed note doesn't change: add an addendum with the right numbers.`
+        }
+        confirmLabel={busy ? "Removing…" : "Remove"}
+        confirmDisabled={busy}
+        onConfirm={confirmRemove}
+        onCancel={() => setRemoving(null)}
+      />
     </section>
   )
 }

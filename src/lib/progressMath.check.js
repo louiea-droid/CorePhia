@@ -1,6 +1,6 @@
 // Self-check for progressMath.js: `npm run check`. Plain node:assert.
 import assert from "node:assert/strict"
-import { series, signLine, summary, toNumbers, visitEntryFor, vitalsText, withinDays } from "./progressMath.js"
+import { VITAL_RANGES, series, signLine, summary, toNumbers, visitEntryFor, vitalsProblem, vitalsText, withinDays } from "./progressMath.js"
 
 const at = (iso) => ({ toMillis: () => new Date(iso).getTime() })
 const home = (id, date, weightLb, extra = {}) => ({ id, source: "home", date, weightLb, createdAt: at(`${date}T12:00:00Z`), removed: false, ...extra })
@@ -76,5 +76,16 @@ assert.equal(
 )
 assert.equal(signLine({ weightLb: null }), "")
 assert.equal(signLine(undefined), "")
+
+// Vitals a person could have (firestore.rules isPlausibleVitals): blanks pass, typos don't.
+assert.equal(vitalsProblem({ weightLb: 190, systolic: 120, diastolic: 80, heartRate: 70 }), null)
+assert.equal(vitalsProblem({ weightLb: null }), null)
+assert.equal(vitalsProblem(undefined), null)
+assert.equal(vitalsProblem({ weightLb: 50 }), null)
+assert.equal(vitalsProblem({ weightLb: 800 }), null)
+assert.equal(vitalsProblem({ weightLb: 1800 }), "Weight must be between 50 and 800 lbs.")
+assert.equal(vitalsProblem({ systolic: 12 }), "Systolic must be between 50 and 300.")
+assert.equal(vitalsProblem({ heartRate: 900 }), "Heart rate must be between 20 and 250 bpm.")
+assert.deepEqual(VITAL_RANGES.diastolic.slice(0, 2), [20, 200])
 
 console.log("progressMath: all checks passed")

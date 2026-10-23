@@ -6,7 +6,7 @@ import { loadPortalAccess } from "./portalStore"
 
 const day = (value) => asDate(value)?.toLocaleDateString("en-US", { month: "short", day: "numeric" }) ?? ""
 
-const STATUS_WORDS = { ready: "not sent", failed: "not sent", sent: "sent" }
+const STATUS_WORDS = { ready: "not sent", failed: "not sent", sent: "sent", superseded: "replaced by a newer invite", used: "used" }
 
 function statusLine({ kind, invite }, linkedAt) {
   switch (kind) {

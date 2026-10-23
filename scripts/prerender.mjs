@@ -37,25 +37,36 @@ for (const route of routes) {
   const title = /<title[^>]*>([^<]*)<\/title>/.exec(hoisted)?.[1]
   const description = /name="description" content="([^"]*)"/.exec(hoisted)?.[1]
 
+  // Function replacers only: in a replacement string "$1", "$&" and "$'" are
+  // patterns, so page text like "$199" broke the Membership preview (2026-10-21 audit).
   let page = template
     .replace(/<title>[\s\S]*?<\/title>/, "")
-    .replace("</head>", `    ${head}\n  </head>`)
-    .replace('<div id="root"></div>', `<div id="root">${html}</div>`)
+    .replace("</head>", () => `    ${head}\n  </head>`)
+    .replace('<div id="root"></div>', () => `<div id="root">${html}</div>`)
   // Link-preview scrapers read these instead of the page's own tags.
-  page = page
-    .replace(/(property="og:url" content=")[^"]*/, `$1${SITE}${route}`)
-    .replace(/(property="og:title" content=")[^"]*/, `$1${title}`)
-    .replace(/(name="twitter:title" content=")[^"]*/, `$1${title}`)
+  const setContent = (pattern, value) => {
+    page = page.replace(pattern, (_, start) => `${start}${value}`)
+  }
+  setContent(/(property="og:url" content=")[^"]*/, `${SITE}${route}`)
+  setContent(/(property="og:title" content=")[^"]*/, title)
+  setContent(/(name="twitter:title" content=")[^"]*/, title)
   if (description) {
-    page = page
-      .replace(/(property="og:description"\s+content=")[^"]*/, `$1${description}`)
-      .replace(/(name="twitter:description"\s+content=")[^"]*/, `$1${description}`)
+    setContent(/(property="og:description"\s+content=")[^"]*/, description)
+    setContent(/(name="twitter:description"\s+content=")[^"]*/, description)
   }
 
   // The check: every page needs its own title, canonical, and one <h1> in the body.
   assert.match(page, /<title[^>]*>[^<]+<\/title>/, `${route}: no title`)
   assert.ok(page.includes(`<link data-prerender rel="canonical" href="${SITE}${route}"`), `${route}: wrong canonical`)
   assert.equal((html.match(/<h1[\s>]/g) ?? []).length, 1, `${route}: needs exactly one <h1>`)
+  // Link previews say what the page says.
+  const tag = (pattern) => pattern.exec(page)?.[1]
+  assert.equal(tag(/property="og:title" content="([^"]*)"/), title, `${route}: og:title differs from the title`)
+  assert.equal(tag(/name="twitter:title" content="([^"]*)"/), title, `${route}: twitter:title differs from the title`)
+  if (description) {
+    assert.equal(tag(/property="og:description"\s+content="([^"]*)"/), description, `${route}: og:description differs from the description`)
+    assert.equal(tag(/name="twitter:description"\s+content="([^"]*)"/), description, `${route}: twitter:description differs from the description`)
+  }
   // A heading inside a hidden Reveal paints only after the script runs (use <Reveal eager>).
   // shortcut: checks the nearest data-reveal before the <h1>, not real nesting; fine while heroes come first.
   const revealBeforeH1 = html.slice(0, html.search(/<h1[\s>]/)).match(/data-reveal="(\w+)"(?![\s\S]*data-reveal=)/)?.[1]

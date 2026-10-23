@@ -17,9 +17,33 @@ export const isTrackablePage = (path) => PUBLIC_PAGE.test(path)
 
 let loaded = false
 
+// Google's "page changes based on browser history events" setting reacts the
+// moment the address changes, before React's effect below runs. If it were on,
+// a click on Get started would record /intake. So the off switch is set for
+// the destination first, whatever the console says (2026-10-21 audit). Back
+// and Forward change the address before any listener, so the popstate one
+// (added before Google's script loads, so it runs first) sets it from there.
+// Declining later must keep it off on public pages too, hence `accepted`.
+export function guardHistory(win, accepted = () => readConsent() === "accepted") {
+  if (win.history.corephiaGuarded) return
+  win.history.corephiaGuarded = true
+  const setFlag = (path) => {
+    win[DISABLE_FLAG] = !accepted() || !isTrackablePage(path)
+  }
+  for (const method of ["pushState", "replaceState"]) {
+    const original = win.history[method]
+    win.history[method] = function (state, title, url) {
+      if (url != null) setFlag(new URL(url, win.location.href).pathname)
+      return original.call(this, state, title, url)
+    }
+  }
+  win.addEventListener("popstate", () => setFlag(win.location.pathname))
+}
+
 function load() {
   if (loaded) return
   loaded = true
+  guardHistory(window)
   window.dataLayer = window.dataLayer || []
   window.gtag = function gtag() {
     window.dataLayer.push(arguments)

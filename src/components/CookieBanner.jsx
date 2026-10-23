@@ -32,8 +32,8 @@ export default function CookieBanner() {
       <p className="font-serif text-lg text-paper-50">Your privacy</p>
       <p className="mt-2 text-sm leading-relaxed text-paper-100/80">
         We use essential storage to run the site. With your OK, we also count visits and use Google Analytics
-        cookies on our public pages to improve them. Never on the intake, the patient portal, or anything with your
-        health information.{" "}
+        cookies on our public pages to improve them. On the intake we only count that it was opened, never your
+        answers, and nothing in the patient portal is counted.{" "}
         <Link
           to="/privacy#browser-storage"
           className="rounded-sm underline underline-offset-2 transition-colors duration-200 ease-out-smooth hover:text-paper-50 focus-visible:ring-2 focus-visible:ring-paper-50 focus-visible:outline-none"

@@ -511,7 +511,7 @@ export default function PatientChart({ actor }) {
               </p>
             )}
           </section>
-          <ProgressCard key={`progress-${chart.id}`} chartId={chart.id} intake={intake} notes={notes} version={signedNotes.length} />
+          <ProgressCard key={`progress-${chart.id}`} chartId={chart.id} intake={intake} notes={notes} version={signedNotes.length} actor={actor} />
           <Card title="Current exercise plan">
             {exercisePlanLine(exercisePlan) ? (
               <p className="text-sm text-ink-950">{exercisePlanLine(exercisePlan)}</p>

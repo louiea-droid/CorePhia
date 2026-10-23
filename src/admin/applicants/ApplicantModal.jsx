@@ -235,7 +235,8 @@ export default function ApplicantModal({
                 )}
               </div>
               <div className="flex shrink-0 items-center gap-1">
-                {canDelete && (
+                {/* Admitted and discharged applicants have a chart, so the rules keep their intake. */}
+                {canDelete && record.status !== "admitted" && record.status !== "discharged" && (
                   <button
                     type="button"
                     onClick={() => onRequestDelete(record)}

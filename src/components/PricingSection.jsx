@@ -90,7 +90,7 @@ export default function PricingSection({ headingAs: Heading = "h2" }) {
           </Heading>
           <p className="mx-auto mt-4 max-w-xl text-ink-950/70">
             {PRICES_ANNOUNCED
-              ? "Every plan pairs you with a licensed provider. Pricing reflects a monthly membership. Cancel anytime."
+              ? "Every plan pairs you with a licensed provider. Pricing reflects a monthly membership."
               : "Every plan pairs you with a licensed provider."}
           </p>
         </div>
