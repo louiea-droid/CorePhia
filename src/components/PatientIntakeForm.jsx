@@ -563,6 +563,14 @@ export default function PatientIntakeForm() {
         if (id) window.history.back()
         return
       }
+      // Back with the review's Edit dialog open closes it, like Cancel, and
+      // stays on the review. Stepping back a question instead left the dialog
+      // open over another screen.
+      if (editing) {
+        window.history.pushState({ ...window.history.state, intakeScreen: currentId }, "")
+        closeEdit()
+        return
+      }
       // No tag: the patient went back past the first question and is leaving.
       if (!id) return
       const list = visibleScreens(readAnswers(formRef.current))

@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { ChevronDownIcon } from "./icons"
 import { usePopupPlacement } from "./usePopupPlacement"
+import { announceChange } from "./announceChange"
 
 // Padding/text-size lives outside this base string (as the triggerClassName
 // default below) rather than baked in, so a caller overriding it isn't
@@ -58,6 +59,7 @@ export default function Select({
     if (chosen) list.scrollTop = chosen.offsetTop - list.clientHeight / 2 + chosen.offsetHeight / 2
   }, [open])
   const selectRef = useRef(null)
+  const triggerRef = useRef(null)
 
   // Lets a form set this value from outside (the intake's edit dialog copies
   // answers in and out), which a plain .value write can't: React state owns it.
@@ -114,6 +116,7 @@ export default function Select({
       </select>
 
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((previous) => !previous)}
         aria-haspopup="listbox"
@@ -145,9 +148,12 @@ export default function Select({
               <button
                 type="button"
                 onClick={() => {
+                  announceChange(selectRef.current, optionValue(option))
                   if (!isControlled) setInternalValue(optionValue(option))
                   onChange?.(optionValue(option))
                   setOpen(false)
+                  // The option is about to be hidden; without this, focus drops to <body>.
+                  triggerRef.current.focus()
                 }}
                 className={`block w-full rounded-xl px-3.5 py-2.5 text-left text-sm transition-colors duration-150 ease-out-smooth ${
                   // oncolor, not paper-50: this text sits on a solid accent-dark

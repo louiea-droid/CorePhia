@@ -180,7 +180,7 @@ const joined = (values) => (values?.length ? values.join(", ") : "")
 const detail = (gate, text) => (gate === "no" ? "None" : text)
 
 function GoalReadout({ answers }) {
-  const toGo = Number(answers.currentWeight) - Number(answers.goalWeight)
+  const toGo = Math.round((Number(answers.currentWeight) - Number(answers.goalWeight)) * 10) / 10
   return (
     <p aria-live="polite" className="min-h-6 text-ink-950/70">
       {answers.goalWeight && toGo > 0 ? `That's ${toGo} lbs to your goal.` : ""}
@@ -309,7 +309,7 @@ export const SCREENS = [
         <ChoiceCards name="weightLossGoal" options={WEIGHT_LOSS_GOAL} />
         {answers.weightLossGoal === EXACT && (
           <Field label="Goal weight (lbs)" required>
-            <input name="goalWeight" type="number" inputMode="numeric" min="50" max="1000" required autoFocus className={inputClass} />
+            <input name="goalWeight" type="number" inputMode="decimal" step="any" min="50" max="1000" required autoFocus className={inputClass} />
           </Field>
         )}
         {answers.weightLossGoal && (
@@ -318,7 +318,8 @@ export const SCREENS = [
               <input
                 name="currentWeight"
                 type="number"
-                inputMode="numeric"
+                inputMode="decimal"
+                step="any"
                 min="50"
                 max="1000"
                 required
@@ -354,7 +355,7 @@ export const SCREENS = [
     question: "What's the most you've weighed as an adult?",
     render: () => (
       <Field label="Highest adult weight (lbs)" required>
-        <input name="highestWeight" type="number" inputMode="numeric" min="50" max="1000" required autoFocus className={inputClass} />
+        <input name="highestWeight" type="number" inputMode="decimal" step="any" min="50" max="1000" required autoFocus className={inputClass} />
       </Field>
     ),
   },

@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { CalendarIcon, ChevronDownIcon } from "./icons"
 import { SET_VALUE_EVENT } from "./Select"
+import { announceChange } from "./announceChange"
 import { usePopupPlacement } from "./usePopupPlacement"
 
 // Padding lives in the triggerClassName prop (default below), same as
@@ -91,6 +92,7 @@ export default function DatePicker({
   const [internalValue, setInternalValue] = useState(defaultValue)
   const value = isControlled ? controlledValue : internalValue
   const setValue = (next) => {
+    announceChange(inputRef.current, next)
     if (!isControlled) setInternalValue(next)
     onChange?.(next)
   }
@@ -100,6 +102,7 @@ export default function DatePicker({
   const [yearBlockStart, setYearBlockStart] = useState(() => yearBlockStartFor(viewDate.getFullYear()))
   const rootRef = useRef(null)
   const inputRef = useRef(null)
+  const triggerRef = useRef(null)
   const minDate = min ? fromIso(min) : null
   const maxDate = max ? fromIso(max) : null
   const today = new Date()
@@ -160,6 +163,8 @@ export default function DatePicker({
     setValue(toIso(date))
     setMode("days")
     setOpen(false)
+    // The popup is about to be hidden; without this, focus drops to <body>.
+    triggerRef.current.focus()
   }
 
   const selected = fromIso(value)
@@ -184,6 +189,7 @@ export default function DatePicker({
       />
 
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => {
           setViewDate(selected ?? new Date())
