@@ -7,7 +7,7 @@ const field =
 export function UrgentLine() {
   return (
     <p className="text-sm text-ink-950/65">
-      Messages are read during working hours. In an emergency, call 911.
+      We read messages during working hours. If something can't wait, go to an urgent care clinic. In an emergency, call 911.
     </p>
   )
 }
