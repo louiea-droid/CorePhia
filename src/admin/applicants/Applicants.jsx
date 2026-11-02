@@ -16,7 +16,7 @@ import { canAdmit } from "../staff/roles"
 import { useIntakeRecords } from "./useIntakeRecords"
 
 const PAGE_SIZE_KEY = "corephia-admin-patients-page-size"
-const PLAN_OPTIONS = ["Core", "Core+", "Core Complete"]
+const PLAN_OPTIONS = ["Core", "Core Complete"]
 const STATUS_FILTER_OPTIONS = [
   { value: "pending", label: "Pending" },
   { value: "admitted", label: "Admitted" },

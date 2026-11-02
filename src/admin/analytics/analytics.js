@@ -27,7 +27,7 @@ function tallyInOrder(values, order) {
     .filter((item) => item.value > 0)
 }
 
-const PLAN_ORDER = ["Core", "Core+", "Core Complete"]
+const PLAN_ORDER = ["Core", "Core Complete"]
 
 // The intake's own answer order (components/intakeScreens.jsx). Patients who
 // typed an exact goal weight are bucketed into the same ranges from current

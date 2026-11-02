@@ -27,7 +27,7 @@ function PricingCard({ tier, index }) {
       className="grid lg:row-span-3 lg:grid-rows-subgrid"
     >
       <article
-        // All three plans look the same (Louie, 2026-09-30): no "Most popular"
+        // Both plans look the same (Louie, 2026-09-30): no "Most popular"
         // badge or highlighted card while the plans themselves are unconfirmed.
         className="grid gap-6 rounded-3xl border border-ink-950/10 bg-white/70 p-6 shadow-md sm:p-8 lg:row-span-3 lg:grid-rows-subgrid"
       >
@@ -95,7 +95,7 @@ export default function PricingSection({ headingAs: Heading = "h2" }) {
           </p>
         </div>
 
-        <ul className="mt-12 grid gap-6 text-left lg:grid-cols-3">
+        <ul className="mx-auto mt-12 grid max-w-4xl gap-6 text-left lg:grid-cols-2">
           {tiers.map((tier, index) => (
             <PricingCard key={tier.name} tier={tier} index={index} />
           ))}

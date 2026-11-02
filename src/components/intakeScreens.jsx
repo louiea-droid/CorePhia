@@ -24,7 +24,7 @@ function adultBirthdayCutoff(today) {
   return `${Number(year) - 18}-${month}-${month === "02" && day === "29" ? "28" : day}`
 }
 
-export const PLANS = ["Core", "Core+", "Core Complete"]
+export const PLANS = ["Core", "Core Complete"]
 
 // The four programs, in Dr. Antonious's words (CLAUDE.md, 2026-09-30).
 const FOCUS_OPTIONS = ["Medical care", "Dietitian services", "Comprehensive Exercise Plan", "Follow-ups", "Not sure yet"]

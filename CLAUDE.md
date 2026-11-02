@@ -314,8 +314,9 @@ delete, vitals ranges, copy vs Terms) is planned for 2026-10-22. Strike items th
 
 ## Membership (2026-09-30)
 
-`/membership` shows the three plans (Core, Core+, Core Complete) with their prices ($199 / $249 /
-$349 a month; `PRICES_ANNOUNCED` back on per Louie, 2026-09-30), no per-card buttons and no "Most
+`/membership` shows two plans, Core ($299) and Core Complete ($349) a month. Core+ was merged
+into Core on 2026-11-02 (Louie): Core took its features, and it is gone from the intake and admin
+lists (`PRICES_ANNOUNCED` back on per Louie, 2026-09-30), no per-card buttons and no "Most
 popular" highlight; `/pricing` redirects there. Nav, footer and the Hero quick link say "Membership". Two
 switches in `data/pricingTiers.js`: `PLANS_SHOWN` (plans on the page, the intake plan question,
 `?plan=` preselect) and `PRICES_ANNOUNCED` (false = "Coming soon" on cards and in the FAQ). The

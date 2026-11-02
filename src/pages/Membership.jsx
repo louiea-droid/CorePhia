@@ -2,7 +2,7 @@ import { Helmet } from "react-helmet-async"
 import PricingSection from "../components/PricingSection"
 import { PRICES_ANNOUNCED, tiers } from "../data/pricingTiers"
 
-// The three plans. Switches (plans shown, prices announced) live in
+// The two plans. Switches (plans shown, prices announced) live in
 // data/pricingTiers.js, and the description follows them.
 export default function Membership() {
   const from = PRICES_ANNOUNCED ? ` From $${tiers[0].price} a month.` : ""
