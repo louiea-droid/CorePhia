@@ -1,5 +1,4 @@
 import { useState } from "react"
-import { SUPPORT_PHONE } from "../../lib/siteContact"
 import { startConversation } from "../lib/messageStore"
 
 const field =
@@ -8,7 +7,7 @@ const field =
 export function UrgentLine() {
   return (
     <p className="text-sm text-ink-950/65">
-      For anything urgent, call us at {SUPPORT_PHONE}. In an emergency, call 911.
+      Messages are read during working hours. In an emergency, call 911.
     </p>
   )
 }

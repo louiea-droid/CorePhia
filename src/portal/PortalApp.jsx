@@ -6,7 +6,6 @@ import { PORTAL_ACTIVITY_KEY, useIdleTimeout } from "../admin/lib/useIdleTimeout
 import LoginPanel from "../components/LoginPanel"
 import { ChevronRightIcon } from "../components/icons"
 import { Loading, Skeleton } from "./Skeleton"
-import { SUPPORT_PHONE } from "../lib/siteContact"
 import { getMyPortalLink, signOutPatient, watchPatientUser } from "./lib/patientAuth"
 import MessagesPage from "./messages/MessagesPage"
 import PortalHome from "./PortalHome"
@@ -143,11 +142,7 @@ export default function PortalApp() {
         <div className={cardClass}>
           <h1 className="font-serif text-3xl text-ink-950">Your portal isn't set up yet</h1>
           <p className="mt-3 max-w-prose text-ink-950/70">
-            If you're a CorePhia patient, contact us and we'll send you an invite. Call{" "}
-            <a href={`tel:${SUPPORT_PHONE.replace(/\D/g, "")}`} className={inlineLink}>
-              {SUPPORT_PHONE}
-            </a>{" "}
-            or email{" "}
+            If you're a CorePhia patient, contact us and we'll send you an invite. Email{" "}
             <a href="mailto:info@corephia.com" className={inlineLink}>
               info@corephia.com
             </a>

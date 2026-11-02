@@ -1,8 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react"
 import { NavLink, Outlet, useLocation } from "react-router-dom"
-import { BadgeCheckIcon, MailIcon, PhoneIcon } from "../components/icons"
+import { BadgeCheckIcon, MailIcon } from "../components/icons"
 import { unreadFor } from "../lib/messageMath"
-import { SUPPORT_PHONE } from "../lib/siteContact"
 import { signOutPatient } from "./lib/patientAuth"
 import { useMyTopics } from "./messages/useMyTopics"
 
@@ -114,17 +113,8 @@ export default function PortalLayout({ user, link }) {
             <h2 id="care-team-heading" className="font-serif text-xl text-ink-950">
               Your care team
             </h2>
-            <p className="mt-1 text-sm text-ink-950/70">Questions about your care? Call or email us.</p>
+            <p className="mt-1 text-sm text-ink-950/70">Questions about your care? Email us.</p>
             <ul className="mt-4 space-y-1 text-sm">
-              <li>
-                <a
-                  href={`tel:${SUPPORT_PHONE.replace(/\D/g, "")}`}
-                  className="-mx-2 flex items-center gap-3 rounded-xl px-2 py-2 font-medium text-ink-950 transition-colors duration-200 hover:bg-paper-100"
-                >
-                  <PhoneIcon className="size-4 shrink-0 text-accent-dark" aria-hidden="true" />
-                  {SUPPORT_PHONE}
-                </a>
-              </li>
               <li>
                 <a
                   href="mailto:info@corephia.com"

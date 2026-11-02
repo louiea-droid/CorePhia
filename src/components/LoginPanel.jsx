@@ -2,7 +2,6 @@ import { useEffect, useId, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { Link, useNavigate } from "react-router-dom"
 import { resetPatientPassword, signInPatient } from "../portal/lib/patientAuth"
-import { SUPPORT_PHONE } from "../lib/siteContact"
 import { ChevronRightIcon, CloseIcon, EyeIcon, EyeOffIcon } from "./icons"
 
 const labelClass = "mb-1.5 block text-sm font-medium text-ink-950/80"
@@ -246,14 +245,7 @@ export default function LoginPanel({ open, onClose, startView = "login", resetBa
           )}
 
           <p className="mt-5 text-center text-sm leading-relaxed text-ink-950/70">
-            Trouble logging in? Call{" "}
-            <a
-              href={`tel:${SUPPORT_PHONE.replace(/\D/g, "")}`}
-              className="font-medium text-ink-950 underline underline-offset-2"
-            >
-              {SUPPORT_PHONE}
-            </a>{" "}
-            or email{" "}
+            Trouble logging in? Email{" "}
             <a href="mailto:info@corephia.com" className="font-medium text-ink-950 underline underline-offset-2">
               info@corephia.com
             </a>

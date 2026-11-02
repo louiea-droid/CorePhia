@@ -237,6 +237,10 @@ This half of the meeting went back and forth. Final position:
       to weight loss testimonials.)
 - [ ] When will the video and how-to arrive?
 - [ ] Elation: when is it confirmed, and does its API support creating patients from intake?
+- [ ] Membership (2026-11-02, after Core+ was merged into Core): are the monthly provider review
+      and the quarterly dietitian discussion included at $299? How many extra provider visits
+      come with Core Complete, and how often are its trainer check-ins? Put the numbers on the
+      cards in `data/pricingTiers.js` once known.
 
 ## 8. Suggested order
 

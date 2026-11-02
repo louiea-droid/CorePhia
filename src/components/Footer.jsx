@@ -6,14 +6,12 @@ import {
   LinkedInIcon,
   MailIcon,
   MapPinIcon,
-  PhoneIcon,
   XIcon,
 } from "./icons"
-import { LOCATION, LOCATION_MAP_URL, SUPPORT_PHONE } from "../lib/siteContact"
+import { LOCATION, LOCATION_MAP_URL } from "../lib/siteContact"
 
 const contactDetails = [
   { icon: MailIcon, text: "info@corephia.com", href: "mailto:info@corephia.com" },
-  { icon: PhoneIcon, text: SUPPORT_PHONE, href: `tel:${SUPPORT_PHONE.replace(/\D/g, "")}` },
   { icon: MapPinIcon, text: LOCATION, href: LOCATION_MAP_URL },
 ]
 

@@ -1,5 +1,4 @@
 import { useState } from "react"
-import { SUPPORT_PHONE } from "../../lib/siteContact"
 import { emailjsConfigured } from "../../lib/emailjs"
 import { AUDIT_ACTIONS, recordAuditEvent, usingSeedData } from "../lib/firebase"
 import Modal from "../ui/Modal"
@@ -17,7 +16,7 @@ const INVITE_EMAIL = {
     "Hello,",
     "Your CorePhia patient portal is ready. Use the button below to choose a password and sign in. This is where you'll find updates and messages from your care team.",
   ],
-  footer: `The link works for 7 days. Questions? Call us at ${SUPPORT_PHONE} or email info@corephia.com.`,
+  footer: `The link works for 7 days. Questions? Email us at info@corephia.com.`,
 }
 
 // Send a portal invite (spec: 2026-10-05-portal-invites-emailjs).

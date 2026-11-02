@@ -1,6 +1,5 @@
-// The public contact phone, in one place for the Contact page, the footer,
-// the portal, and the intake's help line.
-export const SUPPORT_PHONE = "+1 (850) 454-6700"
+// No public phone number for now (Louie, 2026-11-02): visitors are pointed to
+// info@corephia.com or the portal instead.
 
 // Tampa, Florida is the final address (no street address), so the map shows the city.
 export const LOCATION = "Tampa, Florida"

@@ -34,4 +34,4 @@
 - [Membership](https://corephia.com/membership): Plans and monthly prices.
 - [About CorePhia](https://corephia.com/about)
 - [FAQ](https://corephia.com/faq)
-- [Contact](https://corephia.com/contact): +1 (850) 454-6700, info@corephia.com
+- [Contact](https://corephia.com/contact): info@corephia.com
