@@ -12,6 +12,8 @@ import { LOCATION, LOCATION_MAP_URL } from "../lib/siteContact"
 
 const contactDetails = [
   { icon: MailIcon, text: "info@corephia.com", href: "mailto:info@corephia.com" },
+  // Professional contact only: patients' health questions belong in the portal, not email.
+  { icon: MailIcon, text: "providermd@corephia.com", href: "mailto:providermd@corephia.com", note: "Professional inquiries" },
   { icon: MapPinIcon, text: LOCATION, href: LOCATION_MAP_URL },
 ]
 
@@ -66,22 +68,25 @@ export default function Footer() {
             </Link>
 
             <ul className="mt-4 space-y-2 text-sm text-paper-100/60">
-              {contactDetails.map(({ icon: Icon, text, href }) => (
-                <li key={text} className="flex items-center gap-2">
-                  <Icon className="size-4 shrink-0 text-accent" />
-                  {href ? (
-                    <a
-                      href={href}
-                      target={href.startsWith("http") ? "_blank" : undefined}
-                      rel={href.startsWith("http") ? "noopener noreferrer" : undefined}
-                      aria-label={href.startsWith("http") ? `${text}, opens in Google Maps` : undefined}
-                      className="transition-colors duration-200 ease-out-smooth hover:text-paper-100"
-                    >
-                      {text}
-                    </a>
-                  ) : (
-                    text
-                  )}
+              {contactDetails.map(({ icon: Icon, text, href, note }) => (
+                <li key={text} className="flex items-start gap-2">
+                  <Icon className="mt-0.5 size-4 shrink-0 text-accent" />
+                  <span>
+                    {href ? (
+                      <a
+                        href={href}
+                        target={href.startsWith("http") ? "_blank" : undefined}
+                        rel={href.startsWith("http") ? "noopener noreferrer" : undefined}
+                        aria-label={href.startsWith("http") ? `${text}, opens in Google Maps` : undefined}
+                        className="transition-colors duration-200 ease-out-smooth hover:text-paper-100"
+                      >
+                        {text}
+                      </a>
+                    ) : (
+                      text
+                    )}
+                    {note && <span className="block text-xs">{note}</span>}
+                  </span>
                 </li>
               ))}
             </ul>

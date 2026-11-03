@@ -22,6 +22,8 @@ const labelClass = "mb-1.5 block text-sm font-medium text-ink-950/80"
 
 const contactDetails = [
   { icon: MailIcon, label: "Email", value: "info@corephia.com", href: "mailto:info@corephia.com" },
+  // Professional contact only: patients' health questions belong in the portal, not email.
+  { icon: MailIcon, label: "Professional inquiries", value: "providermd@corephia.com", href: "mailto:providermd@corephia.com" },
   { icon: MapPinIcon, label: "Location", value: LOCATION, href: LOCATION_MAP_URL },
 ]
 
