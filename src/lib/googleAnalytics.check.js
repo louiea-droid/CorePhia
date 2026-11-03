@@ -10,7 +10,7 @@ for (const path of ["/intake", "/intake/", "/account", "/account/messages", "/ad
 }
 // Google's own page-change tracking reacts to the address changing, so the
 // off switch must already be set for the destination when it changes.
-const FLAG = "ga-disable-G-180FKQGVY5"
+const FLAG = "ga-disable-G-7WBYHQZ3ER"
 const fakeWindow = () => {
   const win = { listeners: [], seen: [] }
   win.location = { href: "https://corephia.com/membership", pathname: "/membership" }

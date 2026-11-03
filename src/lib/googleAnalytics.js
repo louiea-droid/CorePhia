@@ -6,7 +6,7 @@ import { CONSENT_CHANGE, readConsent } from "./analyticsConsent.js"
 // agreement for Analytics, so it must never run where health information is
 // entered or shown: the intake, the patient portal, the admin. HHS has warned
 // that tracking on those pages can be a HIPAA violation.
-const GA_ID = "G-180FKQGVY5"
+const GA_ID = "G-7WBYHQZ3ER"
 const DISABLE_FLAG = `ga-disable-${GA_ID}`
 
 // An allowlist, not a blocklist: a new route stays untracked until added here.
