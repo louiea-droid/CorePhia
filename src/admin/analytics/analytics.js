@@ -155,7 +155,8 @@ export function deriveMetrics(records) {
     currentWeightBands: bands(currentWeights, 25, "lb"),
     weekly: weeklyCounts(records, 10),
     plans: tallyInOrder(
-      records.map((record) => record.visit?.membershipPlan),
+      // Core+ was merged into Core (2026-11-02); older intakes still say Core+.
+      records.map((record) => (record.visit?.membershipPlan === "Core+" ? "Core" : record.visit?.membershipPlan)),
       PLAN_ORDER,
     ),
     reasons: tally(records.map((record) => record.visit?.reason)),

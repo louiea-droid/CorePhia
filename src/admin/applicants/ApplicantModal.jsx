@@ -418,7 +418,7 @@ export default function ApplicantModal({
             </Section>
 
             <Section title="Visit">
-              {visit?.membershipPlan && <Field label="Membership plan" value={visit.membershipPlan} />}
+              {visit?.membershipPlan && <Field label="Membership plan" value={visit.membershipPlan === "Core+" ? "Core+ (now Core)" : visit.membershipPlan} />}
               <Field label="Reason" value={visit?.reason} />
               <Field label="Preferred date" value={formatDate(visit?.preferredDate)} />
               <Field label="Preferred time" value={visit?.preferredTime} />

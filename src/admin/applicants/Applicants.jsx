@@ -128,7 +128,9 @@ export default function Applicants({ role, actor }) {
     if (!records) return null
     const query = search.trim().toLowerCase()
     return records.filter((record) => {
-      if (planFilter && record.visit?.membershipPlan !== planFilter) return false
+      // Core+ was merged into Core (2026-11-02); older intakes still say Core+.
+      const plan = record.visit?.membershipPlan === "Core+" ? "Core" : record.visit?.membershipPlan
+      if (planFilter && plan !== planFilter) return false
       if (statusFilter && (record.status ?? "pending") !== statusFilter) return false
       if (!query) return true
       const name = `${record.demographics?.firstName ?? ""} ${record.demographics?.lastName ?? ""}`.toLowerCase()
