@@ -1,5 +1,6 @@
 import { Helmet } from "react-helmet-async"
 import { Link } from "react-router-dom"
+import { SUPPORT_PHONE } from "../lib/siteContact"
 
 const UPDATED = "October 13, 2026"
 const EMAIL = "info@corephia.com"
@@ -67,7 +68,7 @@ const privacy = [
     body: [
       [
         "Your care team. The licensed providers, dietitian, and staff involved in your care, and only as much as each needs.",
-        "Service providers that help us run the program. They handle information for us and not for their own purposes. Today these are Google Firebase (our database, sign-in, and site hosting), EmailJS (which delivers our notification emails), and, if you accept, Google Analytics on our public pages. The notification emails go to your address and say only that something is waiting for you. They never contain health details.",
+        "Service providers that help us run the program. They handle information for us and not for their own purposes. Today these are Google Firebase (our database, sign-in, and site hosting), Google Workspace (which delivers our notification emails), and, if you accept, Google Analytics on our public pages. The notification emails go to your address and say only that something is waiting for you. They never contain health details.",
         "Pharmacies and other health professionals, when a provider sends a prescription or refers you, as your care requires.",
         "People you ask us to share with, and anyone you give written permission to. For example, we publish a patient's story only with their written permission.",
         "Authorities or others when the law requires it, to respond to a valid legal process, or to protect someone from serious harm.",
@@ -101,7 +102,7 @@ const privacy = [
     h: "How we protect it",
     body: [
       "Patient records can be opened only by signed-in staff, and each person sees only what their role allows. Staff sign-ins time out when they go idle, and we keep an activity log of what staff do in the system. Information you send to us travels over an encrypted connection.",
-      "No website or storage system is completely secure. If a breach affects your information, we will tell you and the authorities as the law requires, and without unreasonable delay. Please do not send health details by regular email. Use the patient portal.",
+      "No website or storage system is completely secure. If a breach affects your information, we will tell you and the authorities as the law requires, and without unreasonable delay. Please do not send health details by regular email. Use the patient portal or call us.",
     ],
   },
   {
@@ -114,7 +115,7 @@ const privacy = [
         "Change your answer about visit counts at any time with \"Privacy choices\" in the footer.",
         "Ask about, or complain about, how we handled your information. We will not retaliate against you for doing so.",
       ],
-      `To use any of these, write to ${EMAIL}. We may need to confirm who you are first, because we will not give a person's records to someone else. We aim to answer within 30 days. If a request takes longer, we will tell you why and when to expect an answer.`,
+      `To use any of these, write to ${EMAIL} or call ${SUPPORT_PHONE}. We may need to confirm who you are first, because we will not give a person's records to someone else. We aim to answer within 30 days. If a request takes longer, we will tell you why and when to expect an answer.`,
     ],
   },
   {
@@ -323,13 +324,13 @@ const privacyPractices = [
         "Get a paper copy of this notice at any time, even if you agreed to receive it electronically.",
         "Choose someone to act for you, such as a legal guardian or someone with medical power of attorney. We will check that the person has this authority before we act.",
       ],
-      `To use any of these rights, write to ${EMAIL}.`,
+      `To use any of these rights, write to ${EMAIL} or call ${SUPPORT_PHONE}.`,
     ],
   },
   {
     h: "Complaints",
     body: [
-      `If you believe your privacy rights have been violated, you can complain to us at ${EMAIL}. You can also file a complaint with the U.S. Department of Health and Human Services Office for Civil Rights at hhs.gov/ocr/complaints or by calling 1-877-696-6775. We will not retaliate against you for filing a complaint.`,
+      `If you believe your privacy rights have been violated, you can complain to us at ${EMAIL} or ${SUPPORT_PHONE}. You can also file a complaint with the U.S. Department of Health and Human Services Office for Civil Rights at hhs.gov/ocr/complaints or by calling 1-877-696-6775. We will not retaliate against you for filing a complaint.`,
     ],
   },
   {
@@ -380,8 +381,8 @@ function LegalPage({ title, description, path, sections, others }) {
             CorePhia, Tampa, Florida. Email{" "}
             <a href={`mailto:${EMAIL}`} className="font-medium text-accent-dark underline underline-offset-4">
               {EMAIL}
-            </a>
-            . You can also read our{" "}
+            </a>{" "}
+            or call {SUPPORT_PHONE}. You can also read our{" "}
             {others.map(({ to, label }, index) => (
               <span key={to}>
                 {index > 0 && " and "}

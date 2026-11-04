@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { updateEmailConfigured } from "../../lib/emailjs"
+import { updateEmailConfigured } from "../../lib/mail"
 import { usingSeedData } from "../lib/firebase"
 import Modal from "../ui/Modal"
 import { inputClass, labelClass } from "./noteUi"

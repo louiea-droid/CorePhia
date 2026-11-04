@@ -76,12 +76,11 @@ Firestore rules were deployed with it is not recorded; ask Louie.
 React 19 · Vite 8 · Tailwind CSS v4 · react-router-dom v7 · react-helmet-async · oxlint.
 Firebase (Auth + Firestore). No TypeScript. Tests: `npm run check` (the self-checks: chartMath,
 roles, calendarMath, todoMath, staffMath, inviteMath, progressMath, messageMath,
-`googleAnalytics.check.js` (only public pages are trackable), and
+`googleAnalytics.check.js` (only public pages are trackable), `functions/emails.check.js` (every email builds, with the right links and recipients), and
 `auditActions.check.js`, which fails if `AUDIT_ACTIONS` in `admin/lib/firebase.js` and the action
 list in `firestore.rules` drift apart) and `npm run test:rules` (Firestore rules against the
-emulator: all 153 pass as of 2026-10-21). This Windows machine has no Java and no global
-`firebase`: a portable JDK 21 and `firebase-tools` in the session scratchpad work
-(`firebase emulators:exec --project demo-corephia --only firestore "node --test tests/*.test.js"`).
+emulator: all 165 pass as of 2026-11-04). Java 21 and a global `firebase` CLI are installed on
+this machine now (2026-11-04), so `npm run test:rules` runs as is.
 
 ## Architecture
 
@@ -220,12 +219,13 @@ Messages, Updates) · compliance copy fixes · accessibility and visual pass.
   a referrer policy and a permissions policy. Not testable on the emulator.
 - **Google Business Profile:** to be set up by Louie (needs the business's Google account):
   CorePhia, category "Weight loss service", service-area business with the address hidden,
-  Florida, +1 (850) 454-6700, corephia.com.
+  Florida, +1 (866) 849-2673, corephia.com. If the profile already exists with the old
+  number (+1 (850) 454-6700), change it there.
 - **Legal pages (2026-10-13), drafts awaiting a Florida health-care attorney:** `/privacy`,
   `/terms` and `/privacy-practices` (the HIPAA Notice of Privacy Practices the intake checkbox
   links to, opening in a new tab) in `pages/Legal.jsx`, linked from the footer. They describe
   what the system really does (intake fields, portal, opt-in visit counts, Google Firebase and
-  EmailJS as service providers, Google Fonts, server logs). **Change the system, change these.**
+  Google Workspace (notification emails) as service providers, Google Fonts, server logs). **Change the system, change these.**
   Still open for the client: the legal entity name, the cancellation and refund policy (the
   Terms say it is confirmed in writing at enrollment), and more licensed states when there are any.
 
@@ -245,8 +245,8 @@ delete, vitals ranges, copy vs Terms) is planned for 2026-10-22. Strike items th
    See `docs/meeting-analysis.md`. `buildIntakeRecord()` deliberately groups fields to mirror
    standard EMR intake sections (demographics / vitals / medicalHistory /
    familyHistory / socialHistory / nutrition / visit / consent) so a vendor mapping is direct.
-2. **Firestore rules: deploy.** `npm run test:rules` runs now (Java 21 installed) and all 150
-   tests pass (2026-10-19). The rules are not deployed: `firebase deploy --only firestore:rules`,
+2. **Firestore rules: deploy.** `npm run test:rules` runs now (Java 21 installed) and all 165
+   tests pass (2026-11-04). The rules are not deployed: `firebase deploy --only firestore:rules`,
    **together with the site**, since the 2026-10-19 rules expect the new client (a chart's
    `lastNote` names its `noteId`, linking a portal login marks the invite used in the same batch,
    the intake sections are checked key by key). Keep `firestore.rules` free of a byte-order mark
@@ -256,8 +256,12 @@ delete, vitals ranges, copy vs Terms) is planned for 2026-10-22. Strike items th
    **Not done yet: App Check** (reCAPTCHA) in the Firebase console, so scripts can't flood
    `intakeRecords`; the rules limit what each write holds, not how many arrive. It would need a
    privacy policy line and the attorney's view, since reCAPTCHA would run on the intake.
-3. **Phone number is real** (`+1 (850) 454-6700`, 2026-10-13), set once in `lib/siteContact.js`
-   (Contact, footer, intake help line, portal). Footer social links are still `#` (the Social
+3. **Phone number: +1 (866) 849-2673** (toll-free, Louie 2026-11-04; it replaced
+   +1 (850) 454-6700, which was removed 2026-11-02). Set once as `SUPPORT_PHONE` in
+   `lib/siteContact.js` (Contact, footer, intake help line, portal, legal pages, invite preview),
+   plus `telephone` in the `index.html` JSON-LD, `public/llms.txt` and `PHONE` in
+   `functions/emails.js`. Change all four together. Urgent problems still point to urgent care
+   and 911 (FAQ, portal message form), not the phone. Footer social links are still `#` (the Social
    block is hidden until they are real). Tampa, Florida is the final address.
 
 ### Waiting on assets from the client
@@ -325,6 +329,25 @@ client. The Core tier's "Prescription medication" feature and the "Medication Av
 approved (2026-10-14). Core's "24/7 patient support" became "Patient support through
 your portal" (2026-10-13), to match the Terms (messages are read in working hours).
 
+### Billing: Stripe (started 2026-11-04, nothing built yet)
+
+Stripe chosen over Hint Health. Account "CorePhia", in the **sandbox** (test mode) so far, set up
+for online payments + subscriptions (no Stripe banking, not a platform). Planned flow: form →
+staff admit → portal invite → patient picks a plan and pays in the portal (Stripe Checkout) →
+a Cloud Function takes Stripe's webhook and marks the chart's membership; card changes, receipts
+and cancelling through Stripe's hosted customer portal. Nobody pays before a clinician has
+accepted them, and every charge is a membership, never medication. Stripe gets name, email and
+plan only, nothing medical (payment processing is outside the BAA requirement only that way).
+The secret key goes in Secret Manager, never in the repo or chat.
+
+Test-mode price IDs (live mode will have new ones):
+- Core $299/month: `price_1UYAmdGfYKc3UVG5MLvaqCfg`
+- Core Complete $349/month: `price_1UYAmIGfYKc3UVG5L161NXEW`
+
+Waiting on the client before building: a first-visit or enrollment fee or monthly only; the
+cancellation and refund policy (also open in the Terms and Stripe's customer-portal settings);
+final plans; the legal entity name for statements; HSA/FSA.
+
 ## Admin: applicants, patient charts, staff (2026-10-01)
 
 Spec: `docs/superpowers/specs/2026-10-01-patient-charts-notes-staff-design.md`.
@@ -356,9 +379,7 @@ Spec: `docs/superpowers/specs/2026-10-01-patient-charts-notes-staff-design.md`.
 
 ## Admin additions (2026-10-01)
 
-The new-intake email was built and then removed for now (Louie, 2026-10-01); the draft and
-how to build it are in `docs/client-portal.md`. Recipient when it returns: `info@corephia.com`,
-later Dr. Antonious too.
+The new-intake email is back as a Cloud Function (2026-11-04): see "Email" below.
 
 **To-do** (`/admin/todo`, all clinical roles): renewals and follow-ups due within 7 days or
 overdue, plus admitted patients with no signed note, from `chartMath.dueTasks()` (checked by
@@ -457,6 +478,48 @@ Dr. Antonious's asks, the four sections, constraints and the notification email 
 - Idea to check before relying on it: Firebase email-link sign-in sent from the admin, with
   rules matching the signed-in email to an admitted intake record, would avoid needing a
   server (Blaze plan + functions) for the invite.
+
+## Email (2026-11-04): Cloud Functions + Google Workspace, replacing EmailJS
+
+All email goes out from `CorePhia <info@corephia.com>`, replies to info@ (Google Workspace, MX
+`smtp.google.com`). A `noreply@` sender was tried and dropped (Louie, 2026-11-04); if the
+`noreply` alias, its "Send mail as" or its Gmail filter were set up, they are unused. Emails are sent
+through Cloud Functions in `functions/` (Node 22, `us-central1`, the Firestore location), with
+`nodemailer` over `smtp.gmail.com:465`. The info@ **app password** is the `SMTP_PASSWORD`
+secret in Google Secret Manager, never in a file. Firebase Extensions (Trigger Email) were
+rejected: Google shuts Extensions down on 2027-03-31.
+
+- **`sendMail`** sends each new `mail/{id}` document and writes back `state: sent|error`. The
+  browser queues with `queueMail()` (`src/lib/mail.js`, was `lib/emailjs.js`) and names only
+  `kind`, `to`, `chartId` (and `inviteId`). The `mail` block in `firestore.rules` checks that
+  the recipient is that chart's intake email, invites only by admitters for an invite that
+  exists, a linked patient may only queue the `staff` notice, and nobody reads mail from the
+  browser. This closed the audit's "invite email abuse" item. "Sent" in the admin now means
+  queued, not delivered: a delivery failure shows only on the `mail` doc and in the function logs.
+- **`notifyNewIntake`** fires on each new `intakeRecords` doc: an alert to `INTAKE_ALERT_TO`
+  (`providermd@corephia.com`, which the website no longer shows: taken off Contact and the
+  footer 2026-11-04; add `dr.dan@corephia.com` once that mailbox exists) and a receipt
+  to the patient's intake email ("Thank you for completing your CorePhia form. A member of our
+  staff will contact you shortly."). Neither carries anything from the answers.
+- **Wording** of all six emails (invite, update, message, staff notice, new-form alert,
+  receipt) is in `functions/emails.js`. Visitor-facing text says "form", not "intake" (Louie).
+  No sign-off line of our own: Google Workspace's "Append footer" (Gmail admin, Compliance)
+  adds the CorePhia logo, phone and site to everything info@ sends; update its number there
+  when the phone changes. The phone stays in the emails' "Questions?" line anyway. Each email
+  is a white card (border `#dde3ee`, 16px radius) on `paper-50`, with a 5px `brand` (#3b5bdb)
+  band on top and a Georgia headline (Fraunces doesn't load in Gmail), no "Hello," opener,
+  built from tables so Outlook lays it out too. No images or gradients (blocked or dropped). The invite
+  puts its button before the 7-day line. Keep the invite in step with `INVITE_EMAIL` in
+  `InviteDialog.jsx`. Preview: render `buildEmail()` to HTML; real test:
+  `cd functions; $env:SMTP_PASSWORD="..."; node send-test.js you@corephia.com` (sends all six to
+  one address, `[TEST]` subjects; not deployed).
+- **Setup state (2026-11-04):** Blaze plan and the Workspace BAA, app password, DKIM/SPF/DMARC
+  records at Namecheap (DNS is Namecheap BasicDNS; DKIM host `google._domainkey`) were in
+  progress with Louie. The first function deploy failed on the Cloud Build permission: grant
+  `437796283271-compute@developer.gserviceaccount.com` the "Cloud Build Service Account" role.
+  Deploy: `firebase deploy --only functions,firestore:rules` **together with hosting** (the
+  rules expect the new client). Keep EmailJS live until then; remove its `VITE_EMAILJS_*` keys,
+  the always-true `*Configured` flags in `lib/mail.js` and the account afterwards.
 
 ## Site analytics (2026-09-30)
 

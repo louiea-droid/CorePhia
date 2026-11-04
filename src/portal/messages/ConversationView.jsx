@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { Link } from "react-router-dom"
 import { ChevronRightIcon } from "../../components/icons"
 import { patientRoleLabel, unreadFor } from "../../lib/messageMath"
+import { SUPPORT_PHONE } from "../../lib/siteContact"
 import { closeConversation, listenMyMessages, markConversationRead, replyInConversation } from "../lib/messageStore"
 import { UrgentLine } from "./NewConversationForm"
 import { Skeleton } from "../Skeleton"
@@ -146,7 +147,7 @@ export default function ConversationView({ intakeId, uid, topic, canWrite }) {
         </form>
       ) : canWrite === false ? (
         <p className="mt-6 rounded-2xl bg-paper-100 p-4 text-sm text-ink-950/70">
-          Messaging is closed. Email us at info@corephia.com.
+          Messaging is closed. Call us at {SUPPORT_PHONE} or email info@corephia.com.
         </p>
       ) : null}
 

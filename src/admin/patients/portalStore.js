@@ -1,6 +1,6 @@
 // Patient portal invites: every read and write for them goes through here.
-// firestore.rules is the real boundary (the invites block). Demo mode keeps invites in memory and,
-// without EmailJS keys, pretends the email went out.
+// firestore.rules is the real boundary (the invites block). Demo mode keeps invites in memory and
+// pretends the email went out.
 import {
   collection,
   doc,
@@ -16,7 +16,7 @@ import {
 } from "firebase/firestore"
 import { newInviteId, retryOnce } from "../../lib/inviteMath"
 import { db, usingSeedData } from "../lib/firebase"
-import { emailjsConfigured, sendEmail } from "../../lib/emailjs"
+import { queueMail } from "../../lib/mail"
 import { PATIENTS_COLLECTION, getDemoStore } from "./chartStore"
 
 const INVITES = "invites"
@@ -55,16 +55,12 @@ export async function loadPortalAccess(chartId) {
 export async function sendInvite({ chartId, to, firstName }, actor) {
   const id = newInviteId()
   const invite = { to: to.trim().toLowerCase(), firstName, status: "ready", createdBy: { uid: actor.uid, name: actor.name } }
-  // Only the address and the ids: the template types every word and builds the
-  // button on https://corephia.com/portal/setup itself (see InviteDialog).
-  const params = { to_email: invite.to, chart_id: chartId, invite_id: id }
 
   if (usingSeedData) {
     const list = await demoInvites(chartId)
     const entry = { id, ...invite, createdAt: new Date() }
     list.unshift(entry)
     try {
-      if (emailjsConfigured) await sendEmail(params)
       for (const earlier of list) if (earlier !== entry && earlier.status === "sent") Object.assign(earlier, { status: "superseded", supersededAt: new Date() })
       Object.assign(entry, { status: "sent", sentAt: new Date() })
     } catch (cause) {
@@ -76,7 +72,9 @@ export async function sendInvite({ chartId, to, firstName }, actor) {
   const ref = doc(requireDb(), PATIENTS_COLLECTION, chartId, INVITES, id)
   await setDoc(ref, { ...invite, createdAt: serverTimestamp() })
   try {
-    await sendEmail(params)
+    // Only the address and the ids: functions/emails.js writes every word and
+    // builds the button on https://corephia.com/portal/setup (see InviteDialog).
+    await queueMail(requireDb(), { kind: "invite", to: invite.to, chartId, inviteId: id })
   } catch (cause) {
     const error = String(cause.message).slice(0, 300)
     await updateDoc(ref, { status: "failed", error }).catch(() => {})

@@ -1,12 +1,12 @@
 // Portal updates (spec: 2026-10-05-portal-updates-design): every read and
 // write for patients/{chartId}/updates goes through here. firestore.rules is
 // the real boundary. The "new update" email never carries the message, only
-// a link to the portal. Demo mode keeps updates in memory and, without the
-// EmailJS keys, pretends the email went out.
+// a link to the portal. Demo mode keeps updates in memory and pretends the
+// email went out.
 import { collection, doc, getDocs, orderBy, query, serverTimestamp, setDoc, updateDoc } from "firebase/firestore"
 import { retryOnce } from "../../lib/inviteMath"
 import { db, usingSeedData } from "../lib/firebase"
-import { UPDATE_TEMPLATE_ID, sendEmail, updateEmailConfigured } from "../../lib/emailjs"
+import { queueMail } from "../../lib/mail"
 import { PATIENTS_COLLECTION, demoId, getDemoStore } from "./chartStore"
 
 const UPDATES = "updates"
@@ -22,9 +22,6 @@ const demoUpdates = async (chartId) => {
   if (!store.updates.has(chartId)) store.updates.set(chartId, [])
   return store.updates.get(chartId)
 }
-
-// Only the address: the update template holds its own subject, text and link.
-const emailParams = (to) => ({ to_email: to })
 
 // Newest first, removed ones included (the chart shows them greyed).
 export async function loadUpdates(chartId) {
@@ -51,12 +48,7 @@ export async function postUpdate({ chartId, to, body, fromNoteId = null, email }
     const entry = { id: demoId(), ...update, createdAt: new Date() }
     ;(await demoUpdates(chartId)).unshift(entry)
     if (wantsEmail) {
-      try {
-        if (updateEmailConfigured) await sendEmail(emailParams(to), UPDATE_TEMPLATE_ID)
-        entry.email = "sent"
-      } catch {
-        entry.email = "failed"
-      }
+      entry.email = "sent"
     }
     return { update: { ...entry }, emailed: entry.email }
   }
@@ -65,7 +57,8 @@ export async function postUpdate({ chartId, to, body, fromNoteId = null, email }
   await setDoc(ref, { ...update, createdAt: serverTimestamp() })
   let emailed = "none"
   if (wantsEmail) {
-    emailed = await sendEmail(emailParams(to), UPDATE_TEMPLATE_ID).then(
+    // Only the address: functions/emails.js holds the subject, text and link.
+    emailed = await queueMail(requireDb(), { kind: "update", to: to.trim().toLowerCase(), chartId }).then(
       () => "sent",
       () => "failed",
     )

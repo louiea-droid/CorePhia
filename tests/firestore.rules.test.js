@@ -1374,3 +1374,39 @@ describe("staff photos", () => {
     await assertFails(getDoc(doc(env.authenticatedContext("patient1", { email: "p1@x.co" }).firestore(), "staffPhotos", "provider")))
   })
 })
+describe("outgoing mail", () => {
+  const mail = (overrides = {}) => ({ kind: "update", to: "pat@x.co", chartId: "chart1", createdAt: serverTimestamp(), ...overrides })
+  const patient = () => env.authenticatedContext("patient1", { email: "p1@x.co" }).firestore()
+
+  test("clinical staff queue update and message notices to the chart's intake email", async () => {
+    await assertSucceeds(setDoc(doc(as("dietitian"), "mail", "m1"), mail()))
+    await assertSucceeds(setDoc(doc(as("provider"), "mail", "m2"), mail({ kind: "message" })))
+  })
+  test("the recipient must be that chart's intake email, and nothing else rides along", async () => {
+    await assertFails(setDoc(doc(as("super"), "mail", "m1"), mail({ to: "someone@else.com" })))
+    await assertFails(setDoc(doc(as("super"), "mail", "m1"), mail({ chartId: "nochart" })))
+    await assertFails(setDoc(doc(as("super"), "mail", "m1"), mail({ subject: "Free pills" })))
+    await assertFails(setDoc(doc(as("super"), "mail", "m1"), mail({ kind: "anything" })))
+    await assertFails(setDoc(doc(as("super"), "mail", "m1"), mail({ createdAt: new Date("2020-01-01") })))
+  })
+  test("only admitters queue an invite, and only for an invite that exists", async () => {
+    const invite = mail({ kind: "invite", inviteId: "ready1" })
+    await assertFails(setDoc(doc(as("dietitian"), "mail", "m1"), invite))
+    await assertFails(setDoc(doc(as("provider"), "mail", "m1"), mail({ kind: "invite", inviteId: "nope" })))
+    await assertFails(setDoc(doc(as("provider"), "mail", "m1"), mail({ kind: "invite" })))
+    await assertSucceeds(setDoc(doc(as("provider"), "mail", "m1"), invite))
+  })
+  test("a linked patient queues only the staff notice; visitors queue nothing", async () => {
+    await assertSucceeds(setDoc(doc(patient(), "mail", "m1"), { kind: "staff", createdAt: serverTimestamp() }))
+    await assertFails(setDoc(doc(patient(), "mail", "m2"), { kind: "staff", to: "x@y.co", createdAt: serverTimestamp() }))
+    await assertFails(setDoc(doc(patient(), "mail", "m2"), mail()))
+    await assertFails(setDoc(doc(env.authenticatedContext("stranger").firestore(), "mail", "m2"), { kind: "staff", createdAt: serverTimestamp() }))
+    await assertFails(setDoc(doc(env.unauthenticatedContext().firestore(), "mail", "m2"), { kind: "staff", createdAt: serverTimestamp() }))
+  })
+  test("nobody reads, edits or deletes mail from the browser", async () => {
+    await env.withSecurityRulesDisabled((c) => setDoc(doc(c.firestore(), "mail", "m1"), mail()))
+    await assertFails(getDoc(doc(as("super"), "mail", "m1")))
+    await assertFails(updateDoc(doc(as("super"), "mail", "m1"), { to: "x@y.co" }))
+    await assertFails(deleteDoc(doc(as("super"), "mail", "m1")))
+  })
+})

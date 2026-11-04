@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { flushSync } from "react-dom"
 import { Helmet } from "react-helmet-async"
 import { Link, useSearchParams } from "react-router-dom"
+import { SUPPORT_PHONE } from "../lib/siteContact"
 import { trackEvent } from "../lib/track"
 import { PLANS_SHOWN } from "../data/pricingTiers"
 import { ArrowRightIcon, CheckCircleIcon, ChevronRightIcon, CloseIcon } from "./icons"
@@ -791,7 +792,7 @@ export default function PatientIntakeForm() {
               <p className="font-medium text-ink-950">Still sending your intake form.</p>
               <p className="mt-1 text-sm text-ink-950/70">
                 This is taking longer than usual, which usually means the internet connection dropped. Keep this page
-                open and it will send once you are back online. If nothing changes, email us at info@corephia.com.
+                open and it will send once you are back online. If nothing changes, call us at {SUPPORT_PHONE}.
               </p>
             </div>
           )}
@@ -800,7 +801,7 @@ export default function PatientIntakeForm() {
               <p className="font-medium text-ink-950">We could not send your intake form.</p>
               <p className="mt-1 text-sm text-ink-950/70">
                 Nothing was submitted, so your answers are still here. Try again in a moment. If it keeps failing,
-                email us at info@corephia.com and we will help you finish it.
+                call us at {SUPPORT_PHONE} and we will take your intake over the phone.
               </p>
             </div>
           )}

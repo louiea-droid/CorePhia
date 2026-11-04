@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { Link } from "react-router-dom"
-import { messageEmailConfigured } from "../../lib/emailjs"
+import { messageEmailConfigured } from "../../lib/mail"
 import { unreadFor } from "../../lib/messageMath"
 import { usingSeedData } from "../lib/firebase"
 import { loadIntakeRecord } from "../patients/chartStore"

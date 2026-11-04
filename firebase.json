@@ -75,5 +75,9 @@
     "location": "us-central1",
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
+  },
+  "functions": {
+    "source": "functions",
+    "ignore": ["node_modules", "*.check.js", "send-test.js"]
   }
 }

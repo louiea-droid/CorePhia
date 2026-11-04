@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { messageEmailConfigured } from "../../lib/emailjs"
+import { messageEmailConfigured } from "../../lib/mail"
 import { usingSeedData } from "../lib/firebase"
 import { loadCharts, loadIntakeRecord } from "../patients/chartStore"
 import { inputClass, labelClass } from "../patients/noteUi"

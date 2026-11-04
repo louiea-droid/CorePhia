@@ -2,9 +2,9 @@ import { useState } from "react"
 import { Helmet } from "react-helmet-async"
 import { Link } from "react-router-dom"
 import { useReveal } from "../hooks/useReveal"
-import { CheckCircleIcon, MailIcon, MapPinIcon } from "../components/icons"
+import { CheckCircleIcon, MailIcon, MapPinIcon, PhoneIcon } from "../components/icons"
 import Select from "../components/Select"
-import { LOCATION, LOCATION_MAP_URL } from "../lib/siteContact"
+import { LOCATION, LOCATION_MAP_URL, SUPPORT_PHONE } from "../lib/siteContact"
 
 const INTERESTS = [
   "Starting a weight loss program",
@@ -21,9 +21,8 @@ const inputClass =
 const labelClass = "mb-1.5 block text-sm font-medium text-ink-950/80"
 
 const contactDetails = [
+  { icon: PhoneIcon, label: "Phone", value: SUPPORT_PHONE, href: `tel:${SUPPORT_PHONE.replace(/\D/g, "")}` },
   { icon: MailIcon, label: "Email", value: "info@corephia.com", href: "mailto:info@corephia.com" },
-  // Professional contact only: patients' health questions belong in the portal, not email.
-  { icon: MailIcon, label: "Professional inquiries", value: "providermd@corephia.com", href: "mailto:providermd@corephia.com" },
   { icon: MapPinIcon, label: "Location", value: LOCATION, href: LOCATION_MAP_URL },
 ]
 
@@ -175,7 +174,7 @@ export default function Contact() {
                     <div role="alert" className="mb-4 rounded-2xl border border-brand-dark/30 bg-paper-50 p-4">
                       <p className="text-sm font-medium text-ink-950">We could not send your message.</p>
                       <p className="mt-1 text-sm text-ink-950/70">
-                        Nothing was sent. Try again in a moment, or email us at info@corephia.com.
+                        Nothing was sent. Try again in a moment, or call us directly.
                       </p>
                     </div>
                   )}

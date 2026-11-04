@@ -1,22 +1,23 @@
 import { useState } from "react"
-import { emailjsConfigured } from "../../lib/emailjs"
+import { SUPPORT_PHONE } from "../../lib/siteContact"
+import { emailjsConfigured } from "../../lib/mail"
 import { AUDIT_ACTIONS, recordAuditEvent, usingSeedData } from "../lib/firebase"
 import Modal from "../ui/Modal"
 import { labelClass } from "./noteUi"
 import { PATIENTS_COLLECTION } from "./chartStore"
 import { sendInvite } from "./portalStore"
 
-// The invite as the EmailJS template has it typed in (docs/client-portal.md,
-// "EmailJS setup"). The browser sends only the address and the invite's ids,
-// so nobody holding the public key can send CorePhia email with their own text
-// or link. Change the wording there and here together.
+// The invite as functions/emails.js writes it. The browser queues only the
+// address and the invite's ids (firestore.rules, mail), so nobody can send
+// CorePhia email with their own text or link. Change the wording there and
+// here together.
 const INVITE_EMAIL = {
   subject: "Set up your CorePhia patient portal",
   lines: [
-    "Hello,",
-    "Your CorePhia patient portal is ready. Use the button below to choose a password and sign in. This is where you'll find updates and messages from your care team.",
+    "Your patient portal is ready",
+    "Use the button below to choose a password and sign in. Your CorePhia portal is where you'll find updates and messages from your care team.",
   ],
-  footer: `The link works for 7 days. Questions? Email us at info@corephia.com.`,
+  footer: `The link works for 7 days. Questions? Call us at ${SUPPORT_PHONE} or email info@corephia.com.`,
 }
 
 // Send a portal invite (spec: 2026-10-05-portal-invites-emailjs).

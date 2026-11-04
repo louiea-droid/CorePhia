@@ -15,7 +15,7 @@ import {
   writeBatch,
 } from "firebase/firestore"
 import { retryOnce } from "../../lib/inviteMath"
-import { MESSAGE_TEMPLATE_ID, messageEmailConfigured, sendEmail } from "../../lib/emailjs"
+import { queueMail } from "../../lib/mail"
 import { db, usingSeedData } from "../lib/firebase"
 import { PATIENTS_COLLECTION, demoId, getDemoStore } from "../patients/chartStore"
 
@@ -27,13 +27,11 @@ const requireDb = () => {
   return db
 }
 
-// Only the address: the message template holds its own subject, text and link.
-const emailParams = (to) => ({ to_email: to })
-
-async function emailPatient(to, wanted) {
+// Only the address: functions/emails.js holds the subject, text and link.
+async function emailPatient(chartId, to, wanted) {
   if (!wanted || !to) return "none"
-  if (usingSeedData && !messageEmailConfigured) return "sent"
-  return sendEmail(emailParams(to), MESSAGE_TEMPLATE_ID).then(
+  if (usingSeedData) return "sent"
+  return queueMail(requireDb(), { kind: "message", to: to.trim().toLowerCase(), chartId }).then(
     () => "sent",
     () => "failed",
   )
@@ -191,7 +189,7 @@ export async function startTopic({ chartId, subject, body, to, email }, actor) {
       messages: [message],
     }
     store.topics.push(topic)
-    message.email = await emailPatient(to, email)
+    message.email = await emailPatient(chartId, to, email)
     notify(store)
     return { topicId: topic.id, emailed: message.email }
   }
@@ -213,7 +211,7 @@ export async function startTopic({ chartId, subject, body, to, email }, actor) {
   })
   batch.set(messageRef, { body, from, createdAt: serverTimestamp(), email: "none", removed: false })
   await batch.commit()
-  const emailed = await emailPatient(to, email)
+  const emailed = await emailPatient(chartId, to, email)
   await recordEmail(messageRef, emailed)
   return { topicId: topicRef.id, emailed }
 }
@@ -227,7 +225,7 @@ export async function replyToTopic({ chartId, topicId, body, to, email }, actor)
     const message = { id: demoId(), body, from, createdAt: now, email: "none", removed: false }
     topic.messages.push(message)
     Object.assign(topic, { lastMessageAt: now, lastFrom: "staff", lastMessageId: message.id, status: "open", closed: null, staffReadAt: now })
-    message.email = await emailPatient(to, email)
+    message.email = await emailPatient(chartId, to, email)
     notify(store)
     return { emailed: message.email }
   }
@@ -245,7 +243,7 @@ export async function replyToTopic({ chartId, topicId, body, to, email }, actor)
   })
   batch.set(messageRef, { body, from, createdAt: serverTimestamp(), email: "none", removed: false })
   await batch.commit()
-  const emailed = await emailPatient(to, email)
+  const emailed = await emailPatient(chartId, to, email)
   await recordEmail(messageRef, emailed)
   return { emailed }
 }

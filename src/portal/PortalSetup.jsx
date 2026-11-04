@@ -12,6 +12,7 @@ import {
   signOutPatient,
   watchPatientUser,
 } from "./lib/patientAuth"
+import { SUPPORT_PHONE } from "../lib/siteContact"
 import { Loading, Skeleton } from "./Skeleton"
 
 const cardClass = "rounded-3xl border border-ink-950/10 bg-white p-8"
@@ -25,7 +26,11 @@ const RESET_SENT = "If that email has a portal login, we've sent a link to reset
 function ContactLine() {
   return (
     <>
-      Email{" "}
+      Call{" "}
+      <a href={`tel:${SUPPORT_PHONE.replace(/\D/g, "")}`} className={inlineLink}>
+        {SUPPORT_PHONE}
+      </a>{" "}
+      or email{" "}
       <a href="mailto:info@corephia.com" className={inlineLink}>
         info@corephia.com
       </a>

@@ -572,7 +572,7 @@ service cloud.firestore {
       }
 
       // Portal invites (Louie, 2026-10-05): the admin saves one as 'ready',
-      // sends it through EmailJS, then marks it 'sent' or 'failed'. The id is
+      // queues its email (mail, below), then marks it 'sent' or 'failed'. The id is
       // 128 random bits; the signed-out /portal/setup page may get a sent one
       // by its id for 7 days (the emailed link is the proof), never list them.
       match /invites/{inviteId} {
@@ -1017,6 +1017,46 @@ service cloud.firestore {
     // anywhere later becomes readable by every clinician through this rule.
     match /{path=**}/topics/{topicId} {
       allow read: if isClinical();
+    }
+
+    // Outgoing email, sent by the sendMail Cloud Function (functions/). The
+    // browser names only the kind and the chart: the recipient must be that
+    // chart's intake email, and the words and links live in the function
+    // (functions/emails.js), so nobody can send CorePhia email saying
+    // anything to anyone. A linked patient can only queue the fixed "new
+    // patient message" notice, which goes to info@. Nobody reads mail from
+    // the browser; the function writes back state and error.
+    match /mail/{mailId} {
+      function intakeEmail(chartId) {
+        return get(/databases/$(database)/documents/intakeRecords/$(chartId)).data.demographics.email.lower().trim();
+      }
+      function isPatientNotice() {
+        let data = request.resource.data;
+        return isClinical()
+          && data.keys().hasOnly(['kind', 'to', 'chartId', 'createdAt'])
+          && data.kind in ['update', 'message']
+          && data.chartId is string && data.chartId.size() <= 200
+          && data.to == intakeEmail(data.chartId);
+      }
+      function isInviteMail() {
+        let data = request.resource.data;
+        return isAdmitter()
+          && data.keys().hasOnly(['kind', 'to', 'chartId', 'inviteId', 'createdAt'])
+          && data.kind == 'invite'
+          && data.chartId is string && data.chartId.size() <= 200
+          && data.inviteId is string && data.inviteId.size() <= 200
+          && data.to == intakeEmail(data.chartId)
+          && exists(/databases/$(database)/documents/patients/$(data.chartId)/invites/$(data.inviteId));
+      }
+      function isStaffNotice() {
+        return request.auth != null
+          && request.resource.data.keys().hasOnly(['kind', 'createdAt'])
+          && request.resource.data.kind == 'staff'
+          && get(/databases/$(database)/documents/patientAccounts/$(request.auth.uid)).data.get('intakeId', null) is string;
+      }
+      allow create: if request.resource.data.createdAt == request.time
+        && (isPatientNotice() || isInviteMail() || isStaffNotice());
+      allow read, update, delete: if false;
     }
 
     match /{document=**} {

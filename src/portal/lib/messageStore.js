@@ -3,16 +3,16 @@
 // message that makes the topic newly need a reply, info@ gets a content-free
 // staff notice; its failure is logged, never shown (the message is saved).
 import { collection, doc, onSnapshot, query, serverTimestamp, updateDoc, where, writeBatch } from "firebase/firestore"
-import { STAFF_TEMPLATE_ID, sendEmail, staffEmailConfigured } from "../../lib/emailjs"
+import { queueMail } from "../../lib/mail"
 import { notifiesStaff } from "../../lib/messageMath"
 import { db } from "./patientAuth"
 
 const topicsOf = (intakeId) => collection(db, "patients", intakeId, "topics")
 
 function notifyStaff() {
-  if (!staffEmailConfigured) return
-  // No parameters: the template holds the recipient, text and link.
-  sendEmail({}, STAFF_TEMPLATE_ID).catch((cause) =>
+  if (!db) return
+  // Only the kind: functions/emails.js holds the recipient, text and link.
+  queueMail(db, { kind: "staff" }).catch((cause) =>
     console.error("Could not send the staff notice:", cause.message),
   )
 }

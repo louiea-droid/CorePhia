@@ -62,7 +62,7 @@ const faqGroups = [
       },
       {
         q: "What if I have an urgent problem or a side effect?",
-        a: "If you think it is an emergency, call 911 or go to the nearest emergency room. If it is not an emergency but can't wait until working hours, go to an urgent care clinic. For anything else, send a message in your patient portal. We read portal messages during working hours.",
+        a: "If you think it is an emergency, call 911 or go to the nearest emergency room. If it is not an emergency but can't wait until working hours, go to an urgent care clinic. For anything else, call us or send a message in your patient portal. We read portal messages during working hours.",
       },
       {
         q: "What happens to the health information I submit?",
