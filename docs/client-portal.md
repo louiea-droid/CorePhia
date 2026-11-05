@@ -226,6 +226,17 @@ in the admin searches by it. Batch alerts if bots ever flood the intake.
 
 ---
 
+## Portal redesign (2026-11-05, built on the branch, not deployed)
+
+Spec `docs/superpowers/specs/2026-11-05-patient-portal-redesign-design.md`. Own shell (no website
+frame), What's next card on Overview, patients see booked visits (never the staff note). Visits are
+copied by the functions `mirrorVisit` and `copyVisitsOnChartCreate` to `patients/{id}/visits/{id}`
+(`start, minutes, discipline, staffRole, status, updatedAt` only); they deploy with the Stripe
+functions (Cloud Build role first). A role change doesn't refresh existing copies until the
+appointment is next written. Demo: `/account?demoPortal=<scenario>` (dev, Firebase unconfigured).
+
+---
+
 ## Open decision
 
 Decided 2026-10-02 (Louie): **invite-only**. Section order Updates → Track progress →
@@ -272,7 +283,7 @@ computers (Overview · Progress · Messages · Updates · Membership, then the p
 corephia.com, Privacy policy, Terms, Sign out) and a bottom tab bar on phones (Membership
 swapped for Account). Pages: `/account` (Overview, `PortalHome.jsx`), `/account/progress`,
 `/account/messages`, `/account/updates`, `/account/membership`, `/account/account`; any other
-`/account/...` goes to `/account`.
+`/account/...` goes to `/account` (for a member; a patient without a membership sees the plan choice).
 
 **Messages is built** (spec `docs/superpowers/specs/2026-10-06-portal-messages-design.md`,
 plan `docs/superpowers/plans/2026-10-06-portal-messages.md`). Patients write to the care

@@ -128,7 +128,7 @@ const TOPICS = [
       "Press New appointment, click an empty slot, or click a \"Follow-up due\" marker (a follow-up from a signed note that isn't booked yet). Choose the patient, who it is with, the kind of visit, the date, time and length. A clash shows a warning but can still be booked.",
       "To change one, click it, edit it and save. You can mark it Completed or No-show, or cancel it with an optional reason.",
     ],
-    note: "Every change is kept on the appointment. The calendar doesn't send reminders.",
+    note: "Every change is kept on the appointment. The calendar doesn't send reminders. Patients see their booked visits (date, time, kind, your role) in the portal, never your note.",
   },
   {
     id: "membership",

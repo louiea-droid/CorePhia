@@ -79,7 +79,7 @@ roles, calendarMath, todoMath, staffMath, inviteMath, progressMath, messageMath,
 `googleAnalytics.check.js` (only public pages are trackable), `functions/emails.check.js` (every email builds, with the right links and recipients), and
 `auditActions.check.js`, which fails if `AUDIT_ACTIONS` in `admin/lib/firebase.js` and the action
 list in `firestore.rules` drift apart) and `npm run test:rules` (Firestore rules against the
-emulator: all 175 pass as of 2026-11-05). Java 21 and a global `firebase` CLI are installed on
+emulator: all 179 pass as of 2026-11-05). Java 21 and a global `firebase` CLI are installed on
 this machine now (2026-11-04), so `npm run test:rules` runs as is.
 
 ## Architecture
@@ -246,7 +246,7 @@ delete, vitals ranges, copy vs Terms) is planned for 2026-10-22. Strike items th
    See `docs/meeting-analysis.md`. `buildIntakeRecord()` deliberately groups fields to mirror
    standard EMR intake sections (demographics / vitals / medicalHistory /
    familyHistory / socialHistory / nutrition / visit / consent) so a vendor mapping is direct.
-2. **Firestore rules: deploy.** `npm run test:rules` runs now (Java 21 installed) and all 175
+2. **Firestore rules: deploy.** `npm run test:rules` runs now (Java 21 installed) and all 179
    tests pass (2026-11-04). The rules are not deployed: `firebase deploy --only firestore:rules`,
    **together with the site**, since the 2026-10-19 rules expect the new client (a chart's
    `lastNote` names its `noteId`, linking a portal login marks the invite used in the same batch,
@@ -504,9 +504,28 @@ Dr. Antonious's asks, the four sections, constraints and the notification email 
   account" leaves the site and "Log in" becomes "Patient portal".
 - **Start with the login only.** The sections wait. Agreed order for later: Updates → Track
   progress → Messages; Membership waits on a billing system. **Since built** (`src/portal/`):
-  Overview, Progress (patients log their own weight), Messages and Updates; Membership still
-  waits. Open portal issues are under "Known remaining gaps". Resume notes:
-  `docs/client-portal.md` "Where we left off".
+  Overview, Progress (patients log their own weight), Messages, Updates and Membership
+  (`/account/membership`; payment is built, see "Billing: Stripe"). Open portal issues are
+  under "Known remaining gaps". Resume notes: `docs/client-portal.md` "Where we left off".
+- **Redesign (2026-11-05, built on the branch, not deployed)**, spec
+  `docs/superpowers/specs/2026-11-05-patient-portal-redesign-design.md`:
+  - **Own shell** (`portal/PortalShell.jsx`): no website header, footer or cookie banner;
+    `App.jsx` branches `/account` and `/portal/*` before the site frame. Sidebar on computers,
+    tab bar on phones. Routes: `/account`, `/account/progress`, `/account/messages`,
+    `/account/updates`, `/account/membership`, `/account/account`. New tokens in `index.css`:
+    `good`, `good-soft`, `wash`.
+  - **What's next card** (Overview): one card chosen by `portal/lib/whatsNext.js` in priority
+    order (rules and order in that file; `whatsNext.check.js` is in `npm run check`). A
+    "seen update" is remembered per device in localStorage (`corephia-portal-seen-update`).
+  - **Visits:** patients see booked visits, never the staff note. Functions `mirrorVisit` and
+    `copyVisitsOnChartCreate` (`functions/index.js`; pure copy in `functions/visits.js`,
+    `visits.check.js` in `npm run check`) copy only `{ start, minutes, discipline, staffRole,
+    status, updatedAt }` to `patients/{id}/visits/{id}`. Visits and reminders show the staff
+    role only; Messages and Updates still show "Name (Role)". A staff member's role change does
+    not refresh existing copies until the appointment is next written. **Not deployed**: it goes
+    out with the Stripe functions (same Cloud Build role blocker).
+  - **Portal demo** (dev only): `/account?demoPortal=<scenario>` with Firebase unconfigured
+    (scenarios: unpaid, member, nothingBooked, ending, pastDue, manual, ended, closed).
 - Idea to check before relying on it: Firebase email-link sign-in sent from the admin, with
   rules matching the signed-in email to an admitted intake record, would avoid needing a
   server (Blaze plan + functions) for the invite.
@@ -641,7 +660,8 @@ and intake branches, so every route change passes through). **Never paste Google
   configured, and `.env.local` configures it. Don't touch the user's dev server. Start your own
   on another port from node, which can pass empty values (PowerShell drops an empty env var):
   `spawn('npx.cmd', ['vite','--port','5190','--strictPort'], { shell: true, env: { ...process.env, VITE_FIREBASE_API_KEY: '', VITE_FIREBASE_PROJECT_ID: '' } })`.
-  Then open `/admin?demoRole=superAdmin` (or `provider`, `dietitian`, `coAdmin`, `admin`).
+  Then open `/admin?demoRole=superAdmin` (or `provider`, `dietitian`, `coAdmin`, `admin`), or the
+  portal at `/account?demoPortal=member` (also unpaid, nothingBooked, ending, pastDue, manual, ended, closed).
   Demo data is in memory, so a reload resets it. Stop your server and run
   `git clean -fdq .playwright-mcp` afterwards (the folder also holds tracked files; never
   delete it whole).

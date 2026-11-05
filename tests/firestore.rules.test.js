@@ -3,7 +3,7 @@
 // and membership.
 //
 // Run: npm run test:rules
-// Needs Java 21+ for the Firestore emulator (firebase-tools starts it). All 175
+// Needs Java 21+ for the Firestore emulator (firebase-tools starts it). All 179
 // passed on 2026-11-05. Run them before every rules deploy.
 import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
