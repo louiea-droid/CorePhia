@@ -3,7 +3,7 @@ import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import {
   priceForPlan, planForPrice, membershipFromSubscription, checkoutDecision, cancelOnDischarge,
-  subscriptionIdFromEvent, subscriptionConflict, isTransientStripeError,
+  subscriptionIdFromEvent, subscriptionConflict, isTransientStripeError, cancelForInactiveChart,
 } from "./billing.js"
 
 assert.equal(priceForPlan("Core"), "price_1UYAmdGfYKc3UVG5MLvaqCfg")
@@ -84,5 +84,11 @@ assert.equal(isTransientStripeError({ type: "StripeInvalidRequestError", statusC
 assert.equal(isTransientStripeError({ type: "StripeInvalidRequestError", statusCode: 400 }), false)
 assert.equal(isTransientStripeError({ type: "StripeInvalidRequestError", statusCode: 404 }), false)
 assert.equal(isTransientStripeError(new Error("x")), false)
+
+for (const st of ["active", "trialing", "past_due"]) assert.equal(cancelForInactiveChart({ status: "inactive" }, { status: st }), true)
+assert.equal(cancelForInactiveChart({ status: "inactive" }, { status: "active", cancel_at_period_end: true }), true)
+for (const st of ["canceled", "unpaid", "incomplete", "incomplete_expired"]) assert.equal(cancelForInactiveChart({ status: "inactive" }, { status: st }), false)
+assert.equal(cancelForInactiveChart({ status: "active" }, { status: "active" }), false)
+assert.equal(cancelForInactiveChart(undefined, { status: "active" }), false)
 
 console.log("billing: ok")

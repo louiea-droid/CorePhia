@@ -11,7 +11,7 @@ import Stripe from "stripe"
 import { buildEmail } from "./emails.js"
 import {
   priceForPlan, membershipFromSubscription, checkoutDecision, cancelOnDischarge, subscriptionIdFromEvent,
-  subscriptionConflict, isTransientStripeError, LIVE_STATUSES,
+  subscriptionConflict, isTransientStripeError, cancelForInactiveChart, LIVE_STATUSES,
 } from "./billing.js"
 
 initializeApp()
@@ -90,6 +90,33 @@ async function linkedChartId(auth) {
 async function portalUrl(stripe, customer) {
   const session = await stripe.billingPortal.sessions.create({ customer, return_url: RETURN_URL })
   return { url: session.url }
+}
+
+// Ends a discharged patient's membership: cancels the subscription at the end
+// of the paid month (if it isn't already) and emails them once per
+// subscription, claimed on billing/{chartId}.cancelEmailedFor. Safe to repeat;
+// throws so the caller's retry runs it again.
+async function endMembership(stripe, chartId, sub) {
+  if (!sub.cancel_at_period_end) sub = await stripe.subscriptions.update(sub.id, { cancel_at_period_end: true })
+  const endsOn = periodEnd(sub)
+  if (!validDate(endsOn)) return console.error("Membership cancelled, but no valid period end, email skipped, chart", chartId, sub.id)
+  const billingRef = db().doc(`billing/${chartId}`)
+  const to = await db().runTransaction(async (tx) => {
+    const billing = (await tx.get(billingRef)).data() ?? {}
+    if (billing.cancelEmailedFor === sub.id) return null
+    if (!billing.email) return ""
+    tx.set(billingRef, { cancelEmailedFor: sub.id }, { merge: true })
+    return billing.email
+  })
+  if (to === "") return console.error("Membership cancelled, but no email on file, chart", chartId)
+  if (!to) return
+  try {
+    await send({ kind: "membershipCancelled", to, endsOn })
+  } catch (error) {
+    console.error("Membership cancelled email failed, will retry, chart", chartId, error)
+    await billingRef.update({ cancelEmailedFor: FieldValue.delete() })
+    throw error
+  }
 }
 
 async function liveSubscriptions(stripe, customer) {
@@ -175,7 +202,7 @@ export const openBillingPortal = onCall(CALLABLE, async (request) => {
 // notices are therefore harmless. Failures after the signature check answer
 // 500, so Stripe retries.
 export const stripeWebhook = onRequest(
-  { region: REGION, secrets: [STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET] },
+  { region: REGION, secrets: [STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, SMTP_PASSWORD] },
   async (req, res) => {
     const stripe = stripeClient()
     let event
@@ -227,10 +254,16 @@ export const stripeWebhook = onRequest(
         }
         tx.update(chartRef, { membership: { ...m, updatedAt: FieldValue.serverTimestamp() } })
         tx.set(billingRef, { subscriptionId: sub.id, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
+        // Discharged before this notice landed (onChartDischarged saw no
+        // membership then): end it here instead, after the transaction.
+        if (cancelForInactiveChart(chartSnap.data(), sub)) return { result: "updated, ending (chart inactive)", end: sub }
         return "updated"
       })
-      console.log("Stripe event", event.type, event.id, "chart", chartId, ":", result)
-      res.status(200).send(result)
+      const summary = result?.result ?? result
+      // A failure here answers 500, so Stripe resends and this runs again; both steps are safe to repeat.
+      if (result?.end) await endMembership(stripe, chartId, result.end)
+      console.log("Stripe event", event.type, event.id, "chart", chartId, ":", summary)
+      res.status(200).send(summary)
     } catch (error) {
       console.error("Stripe webhook failed:", event.type, event.id, error)
       res.status(500).send("error")
@@ -257,38 +290,20 @@ export const onChartDischarged = onDocumentUpdated(
       if (Date.now() - Date.parse(event.time) > DISCHARGE_RETRY_MS) {
         return console.error("Discharge: gave up retrying for chart", chartId, "- check the subscription and email in Stripe by hand")
       }
-      const stripe = stripeClient()
-      const billingRef = db().doc(`billing/${chartId}`)
-      const billing = (await billingRef.get()).data() ?? {}
-      let subs
+      // A Stripe membership on the chart means the webhook has run, and it
+      // writes subscriptionId in the same transaction. (Discharged before the
+      // first notice: the chart has no membership yet and stripeWebhook ends it.)
+      const subscriptionId = (await db().doc(`billing/${chartId}`).get()).data()?.subscriptionId
+      if (!subscriptionId) return console.error("Discharge: no Stripe subscription on file for chart", chartId, "- check Stripe by hand")
       try {
-        // Discharged before the first webhook landed: ask Stripe instead.
-        const ids = billing.subscriptionId
-          ? [billing.subscriptionId]
-          : billing.customerId ? (await liveSubscriptions(stripe, billing.customerId)).map((s) => s.id) : []
-        subs = []
-        for (const id of ids) subs.push(await stripe.subscriptions.update(id, { cancel_at_period_end: true }))
+        const stripe = stripeClient()
+        await endMembership(stripe, chartId, await stripe.subscriptions.retrieve(subscriptionId))
       } catch (error) {
-        if (isTransientStripeError(error)) throw error
-        return console.error("Discharge: could not cancel the Stripe subscription for chart", chartId, "- cancel it in Stripe by hand:", error)
-      }
-      if (!subs.length) return console.error("Discharge: no live Stripe subscription found for chart", chartId, "- check Stripe by hand")
-
-      const sub = subs[0]
-      const endsOn = periodEnd(sub)
-      if (!validDate(endsOn)) return console.error("Discharge: cancelled, but no valid period end, email skipped for chart", chartId, sub.id)
-      if (!billing.email) return console.error("Discharge: cancelled, but no email on file for chart", chartId)
-      const claimed = await db().runTransaction(async (tx) => {
-        if ((await tx.get(billingRef)).data()?.cancelEmailedFor === sub.id) return false
-        tx.set(billingRef, { cancelEmailedFor: sub.id }, { merge: true })
-        return true
-      })
-      if (!claimed) return
-      try {
-        await send({ kind: "membershipCancelled", to: billing.email, endsOn })
-      } catch (error) {
-        console.error("Membership cancelled email failed, will retry, chart", chartId, error)
-        await billingRef.update({ cancelEmailedFor: FieldValue.delete() })
+        // A Stripe error that won't fix itself (e.g. already fully cancelled) is
+        // left to staff; anything else (network, email, Firestore) is retried.
+        if (String(error?.type).startsWith("Stripe") && !isTransientStripeError(error)) {
+          return console.error("Discharge: could not cancel the Stripe subscription for chart", chartId, "- cancel it in Stripe by hand:", error)
+        }
         throw error
       }
       return

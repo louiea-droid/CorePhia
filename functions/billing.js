@@ -83,3 +83,10 @@ export function subscriptionConflict(membership, existing, currentId, subId) {
 export const isTransientStripeError = (error) =>
   ["StripeConnectionError", "StripeAPIError", "StripeRateLimitError"].includes(error?.type) ||
   error?.statusCode >= 500 || error?.statusCode === 429 || error?.statusCode === 409
+
+// A Stripe notice for a discharged chart whose subscription still charges:
+// the patient paid but was discharged before the first notice landed, so the
+// discharge found nothing to cancel. The webhook ends it then. (Already
+// cancelled at period end still counts, so a failed email is retried.)
+export const cancelForInactiveChart = (chart, sub) =>
+  chart?.status === "inactive" && LIVE_STATUSES.includes(sub?.status)
