@@ -48,3 +48,17 @@ export const cancelOnDischarge = (before, after) =>
   after?.status === "inactive" &&
   after.membership?.source === "stripe" &&
   after.membership.status !== "ended"
+
+// The subscription a webhook event is about, or null for events we ignore.
+// An invoice names it at the top on older API versions and under
+// parent.subscription_details from 2025-03-31 on.
+const SUBSCRIPTION_EVENTS = ["customer.subscription.created", "customer.subscription.updated", "customer.subscription.deleted"]
+export function subscriptionIdFromEvent(event) {
+  const obj = event?.data?.object ?? {}
+  let id = null
+  if (SUBSCRIPTION_EVENTS.includes(event?.type)) id = obj.id
+  else if (event?.type === "checkout.session.completed") id = obj.mode === "subscription" ? obj.subscription : null
+  else if (event?.type === "invoice.payment_failed") id = obj.subscription ?? obj.parent?.subscription_details?.subscription
+  if (id && typeof id === "object") id = id.id
+  return typeof id === "string" && id ? id : null
+}

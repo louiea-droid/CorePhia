@@ -3,6 +3,7 @@ import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import {
   priceForPlan, planForPrice, membershipFromSubscription, checkoutDecision, cancelOnDischarge,
+  subscriptionIdFromEvent,
 } from "./billing.js"
 
 assert.equal(priceForPlan("Core"), "price_1UYAmdGfYKc3UVG5MLvaqCfg")
@@ -54,5 +55,17 @@ assert.equal(cancelOnDischarge(active, live), true)
 assert.equal(cancelOnDischarge(active, { status: "inactive", membership: { source: "manual", status: "active" } }), false)
 assert.equal(cancelOnDischarge(active, { status: "inactive", membership: { source: "stripe", status: "ended" } }), false)
 assert.equal(cancelOnDischarge({ status: "inactive" }, live), false)
+
+const ev = (type, object) => ({ type, data: { object } })
+assert.equal(subscriptionIdFromEvent(ev("customer.subscription.updated", { id: "sub_1" })), "sub_1")
+assert.equal(subscriptionIdFromEvent(ev("customer.subscription.deleted", { id: "sub_1" })), "sub_1")
+assert.equal(subscriptionIdFromEvent(ev("checkout.session.completed", { mode: "subscription", subscription: "sub_2" })), "sub_2")
+assert.equal(subscriptionIdFromEvent(ev("checkout.session.completed", { mode: "payment", subscription: null })), null)
+assert.equal(subscriptionIdFromEvent(ev("invoice.payment_failed", { subscription: "sub_3" })), "sub_3")
+assert.equal(subscriptionIdFromEvent(ev("invoice.payment_failed", { parent: { subscription_details: { subscription: "sub_4" } } })), "sub_4")
+assert.equal(subscriptionIdFromEvent(ev("invoice.payment_failed", { subscription: { id: "sub_5" } })), "sub_5")
+assert.equal(subscriptionIdFromEvent(ev("invoice.payment_failed", { parent: null })), null)
+assert.equal(subscriptionIdFromEvent(ev("invoice.paid", { subscription: "sub_6" })), null)
+assert.equal(subscriptionIdFromEvent(null), null)
 
 console.log("billing: ok")
