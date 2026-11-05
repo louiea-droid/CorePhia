@@ -267,11 +267,12 @@ hosting). Signing a note with any vitals now also writes its progress entry in t
 save; with the old rules live, that save is refused and the note can't be signed at all.
 
 The portal now lives in `src/portal/`: `PortalApp.jsx` handles signing in and routes
-`/account/*`; `PortalLayout.jsx` is the shared welcome, tabs (Overview · Progress ·
-Messages · Updates) and side column (account, care team, coming soon). Pages:
-`/account` (Overview, `PortalHome.jsx`), `/account/progress`, `/account/messages`,
-`/account/updates`. Sections still to come are listed in `COMING_SOON` in PortalLayout
-(only Membership now, which waits on a billing system; it becomes a tab when built).
+`/account/*`; `PortalShell.jsx` (2026-11-05) is the portal's own frame, outside the website: a sidebar on
+computers (Overview · Progress · Messages · Updates · Membership, then the patient, Back to
+corephia.com, Privacy policy, Terms, Sign out) and a bottom tab bar on phones (Membership
+swapped for Account). Pages: `/account` (Overview, `PortalHome.jsx`), `/account/progress`,
+`/account/messages`, `/account/updates`, `/account/membership`, `/account/account`; any other
+`/account/...` goes to `/account`.
 
 **Messages is built** (spec `docs/superpowers/specs/2026-10-06-portal-messages-design.md`,
 plan `docs/superpowers/plans/2026-10-06-portal-messages.md`). Patients write to the care

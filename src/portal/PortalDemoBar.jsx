@@ -4,7 +4,7 @@ import { DEMO_SCENARIOS, portalDemo, switchDemoScenario } from "./lib/portalDemo
 export default function PortalDemoBar() {
   if (!portalDemo) return null
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 flex flex-wrap items-center justify-center gap-2 border-t border-ink-950/10 bg-ink-950 px-4 py-2.5 text-sm text-paper-50">
+    <div data-portal-demo className="flex flex-wrap items-center justify-center gap-2 bg-ink-950 px-4 py-2.5 lg:fixed lg:right-4 lg:bottom-4 lg:z-40 lg:rounded-full lg:shadow-lg text-sm text-paper-50">
       <span className="font-semibold">Portal demo</span>
       <label className="flex items-center gap-2">
         <span className="text-paper-50/70">Patient situation</span>

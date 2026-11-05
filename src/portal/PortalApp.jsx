@@ -1,24 +1,28 @@
 import { useEffect, useState } from "react"
 import { Helmet } from "react-helmet-async"
-import { Link, Route, Routes, useSearchParams } from "react-router-dom"
+import { Link, Navigate, Outlet, Route, Routes, useLocation, useSearchParams } from "react-router-dom"
 import IdleWarningModal from "../admin/layout/IdleWarningModal"
 import { PORTAL_ACTIVITY_KEY, useIdleTimeout } from "../admin/lib/useIdleTimeout"
 import LoginPanel from "../components/LoginPanel"
 import { ChevronRightIcon } from "../components/icons"
 import { Loading, Skeleton } from "./Skeleton"
 import { isMember } from "../admin/patients/chartMath"
+import { unreadFor } from "../lib/messageMath"
 import { SUPPORT_PHONE, SUPPORT_PHONE_HREF } from "../lib/siteContact"
 import { getMyPortalLink, signOutPatient, watchPatientUser } from "./lib/patientAuth"
 import { listenMyChart } from "./lib/messageStore"
+import AccountPage from "./AccountPage"
+import MembershipPage from "./membership/MembershipPage"
 import PlanChoice from "./membership/PlanChoice"
 import MessagesPage from "./messages/MessagesPage"
+import { useMyTopics } from "./messages/useMyTopics"
 import PortalDemoBar from "./PortalDemoBar"
 import PortalHome from "./PortalHome"
-import PortalLayout from "./PortalLayout"
+import PortalShell from "./PortalShell"
 import ProgressPage from "./progress/ProgressPage"
 import UpdatesPage from "./updates/UpdatesPage"
 
-const cardClass = "rounded-3xl border border-ink-950/10 bg-white p-8"
+const cardClass = "mx-auto max-w-3xl rounded-[20px] border border-ink-950/10 bg-white p-6 sm:rounded-[22px] sm:p-8"
 const primaryButton =
   "inline-flex rounded-full bg-ink-950 px-6 py-3 text-sm font-semibold text-paper-50 transition-colors duration-200 ease-out-smooth hover:bg-ink-900"
 const secondaryButton =
@@ -77,6 +81,17 @@ function LinkedPortal({ user, link }) {
 export function PortalForChart({ user, link, chart }) {
   const [params, setParams] = useSearchParams()
   const returning = params.get("checkout") === "done"
+  if (chart && isMember(chart) && !returning) return <MemberPortal user={user} link={link} chart={chart} />
+  return (
+    <PortalShell user={user} link={link} nav={false}>
+      <BeforePortal chart={chart} link={link} returning={returning} onDone={() => setParams({}, { replace: true })} />
+    </PortalShell>
+  )
+}
+
+// Every screen before the member portal opens: loading, the load error,
+// a closed program, the plan choice, the payment check, "You're all set".
+function BeforePortal({ chart, link, returning, onDone }) {
   if (chart === undefined) return <Loading label="Opening your portal…" className={cardClass} />
   if (chart === null)
     return (
@@ -110,24 +125,44 @@ export function PortalForChart({ user, link, chart }) {
       </div>
     )
   if (!isMember(chart)) return returning ? <Confirming /> : <PlanChoice chart={chart} link={link} />
-  if (returning)
-    return (
-      <div className={cardClass} role="status">
-        <h1 className="font-serif text-3xl text-ink-950">You're all set.</h1>
-        <p className="mt-3 max-w-prose text-ink-950/70">Our staff will contact you to book your first visit.</p>
-        <button type="button" onClick={() => setParams({}, { replace: true })} className={`mt-6 ${primaryButton}`}>
-          Go to your portal
-        </button>
+  return (
+    <div className={cardClass} role="status">
+      <h1 className="font-serif text-3xl text-ink-950">You're all set.</h1>
+      <p className="mt-3 max-w-prose text-ink-950/70">Our staff will contact you to book your first visit.</p>
+      <button type="button" onClick={onDone} className={`mt-6 ${primaryButton}`}>
+        Go to your portal
+      </button>
+    </div>
+  )
+}
+
+// A member's portal: the shell with its sidebar and tab bar, and the page.
+// Pages read { user, link, chart } from the outlet context.
+function MemberLayout({ user, link, chart }) {
+  const { topics } = useMyTopics(link.intakeId)
+  const newReplies = topics?.filter((topic) => unreadFor(topic, "patient")).length ?? 0
+  const { pathname } = useLocation()
+  return (
+    <PortalShell user={user} link={link} newReplies={newReplies}>
+      <div key={pathname} data-portal-page className="animate-page-in space-y-6">
+        <Outlet context={{ user, link, chart }} />
       </div>
-    )
+    </PortalShell>
+  )
+}
+
+function MemberPortal({ user, link, chart }) {
   return (
     <Routes>
-      <Route element={<PortalLayout user={user} link={link} chart={chart} />}>
+      <Route element={<MemberLayout user={user} link={link} chart={chart} />}>
         <Route index element={<PortalHome />} />
         <Route path="progress" element={<ProgressPage />} />
         <Route path="messages" element={<MessagesPage />} />
         <Route path="messages/:topicId" element={<MessagesPage />} />
         <Route path="updates" element={<UpdatesPage />} />
+        <Route path="membership" element={<MembershipPage />} />
+        <Route path="account" element={<AccountPage />} />
+        <Route path="*" element={<Navigate to="/account" replace />} />
       </Route>
     </Routes>
   )
@@ -195,81 +230,87 @@ export default function PortalApp() {
   )
 
   return (
-    <section className={`mx-auto px-4 py-20 sm:px-6 ${state === "linked" ? "max-w-5xl" : "max-w-3xl"}`}>
+    <>
       <Helmet>
         <title>Patient portal | CorePhia</title>
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
+      {/* Development only: above the page on phones (clear of the tab bar),
+          a small pill in the corner on computers. */}
+      <PortalDemoBar />
 
-      {state === "checking" && (
-        <Loading label="Opening your portal…" className={cardClass}>
-          <Skeleton className="h-8 w-2/3" />
-          <Skeleton className="mt-4 h-4 w-full" />
-          <Skeleton className="mt-2 h-4 w-4/5" />
-        </Loading>
+      {state === "linked" ? (
+        <LinkedPortal user={user} link={link} />
+      ) : (
+        <PortalShell nav={false}>
+          {state === "checking" && (
+            <Loading label="Opening your portal…" className={cardClass}>
+              <Skeleton className="h-8 w-2/3" />
+              <Skeleton className="mt-4 h-4 w-full" />
+              <Skeleton className="mt-2 h-4 w-4/5" />
+            </Loading>
+          )}
+
+          {state === "signedOut" && (
+            <div className={cardClass}>
+              <h1 className="font-serif text-3xl text-ink-950">Sign in to your patient portal</h1>
+              <p className="mt-3 max-w-prose text-ink-950/70">
+                Your portal opens once you're a CorePhia patient. We'll email you an invite.
+              </p>
+              <button type="button" onClick={() => setLoginOpen(true)} className={`mt-6 ${primaryButton}`}>
+                Sign in
+              </button>
+
+              <div className="mt-8 border-t border-ink-950/10 pt-6">
+                <h2 className="font-serif text-xl text-ink-950">Not a patient yet?</h2>
+                <p className="mt-1.5 text-sm text-ink-950/70">Start with a short health form.</p>
+                <Link
+                  to="/intake"
+                  className="mt-4 inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-ink-950 transition-colors duration-200 ease-out-smooth hover:bg-accent-dark hover:text-paper-50"
+                >
+                  Get started
+                  <ChevronRightIcon className="size-4" />
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {state === "error" && (
+            <div className={cardClass}>
+              <h1 className="font-serif text-3xl text-ink-950">We couldn't load your portal.</h1>
+              <p className="mt-3 text-ink-950/70">Please try again.</p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <button type="button" onClick={() => setAttempt((n) => n + 1)} className={primaryButton}>
+                  Try again
+                </button>
+                {signOutButton}
+              </div>
+            </div>
+          )}
+
+          {state === "notLinked" && (
+            <div className={cardClass}>
+              <h1 className="font-serif text-3xl text-ink-950">Your portal isn't set up yet</h1>
+              <p className="mt-3 max-w-prose text-ink-950/70">
+                If you're a CorePhia patient, contact us and we'll send you an invite. Call{" "}
+                <a href={SUPPORT_PHONE_HREF} className={inlineLink}>
+                  {SUPPORT_PHONE}
+                </a>{" "}
+                or email{" "}
+                <a href="mailto:info@corephia.com" className={inlineLink}>
+                  info@corephia.com
+                </a>
+                .
+              </p>
+              <p className="mt-6 text-sm text-ink-950/60">Signed in as {user.email}</p>
+              <div className="mt-4">{signOutButton}</div>
+            </div>
+          )}
+        </PortalShell>
       )}
-
-      {state === "signedOut" && (
-        <div className={cardClass}>
-          <h1 className="font-serif text-3xl text-ink-950">Sign in to your patient portal</h1>
-          <p className="mt-3 max-w-prose text-ink-950/70">
-            Your portal opens once you're a CorePhia patient. We'll email you an invite.
-          </p>
-          <button type="button" onClick={() => setLoginOpen(true)} className={`mt-6 ${primaryButton}`}>
-            Sign in
-          </button>
-
-          <div className="mt-8 border-t border-ink-950/10 pt-6">
-            <h2 className="font-serif text-xl text-ink-950">Not a patient yet?</h2>
-            <p className="mt-1.5 text-sm text-ink-950/70">Start with a short health intake.</p>
-            <Link
-              to="/intake"
-              className="mt-4 inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-ink-950 transition-colors duration-200 ease-out-smooth hover:bg-accent-dark hover:text-paper-50"
-            >
-              Get started
-              <ChevronRightIcon className="size-4" />
-            </Link>
-          </div>
-        </div>
-      )}
-
-      {state === "error" && (
-        <div className={cardClass}>
-          <h1 className="font-serif text-3xl text-ink-950">We couldn't load your portal.</h1>
-          <p className="mt-3 text-ink-950/70">Please try again.</p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <button type="button" onClick={() => setAttempt((n) => n + 1)} className={primaryButton}>
-              Try again
-            </button>
-            {signOutButton}
-          </div>
-        </div>
-      )}
-
-      {state === "notLinked" && (
-        <div className={cardClass}>
-          <h1 className="font-serif text-3xl text-ink-950">Your portal isn't set up yet</h1>
-          <p className="mt-3 max-w-prose text-ink-950/70">
-            If you're a CorePhia patient, contact us and we'll send you an invite. Call{" "}
-            <a href={SUPPORT_PHONE_HREF} className={inlineLink}>
-              {SUPPORT_PHONE}
-            </a>{" "}
-            or email{" "}
-            <a href="mailto:info@corephia.com" className={inlineLink}>
-              info@corephia.com
-            </a>
-            .
-          </p>
-          <p className="mt-6 text-sm text-ink-950/60">Signed in as {user.email}</p>
-          <div className="mt-4">{signOutButton}</div>
-        </div>
-      )}
-
-      {state === "linked" && <LinkedPortal user={user} link={link} />}
 
       <LoginPanel open={loginOpen} onClose={() => setLoginOpen(false)} />
       {idleSecondsLeft != null && <IdleWarningModal secondsLeft={idleSecondsLeft} onSignOut={signOut} />}
-      <PortalDemoBar />
-    </section>
+    </>
   )
 }

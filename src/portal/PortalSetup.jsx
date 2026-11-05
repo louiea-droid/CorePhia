@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { Helmet } from "react-helmet-async"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import PasswordField from "../components/PasswordField"
+import PortalShell from "./PortalShell"
 import {
   connectExistingLogin,
   createPortalLogin,
@@ -15,7 +16,7 @@ import {
 import { SUPPORT_PHONE, SUPPORT_PHONE_HREF } from "../lib/siteContact"
 import { Loading, Skeleton } from "./Skeleton"
 
-const cardClass = "rounded-3xl border border-ink-950/10 bg-white p-8"
+const cardClass = "rounded-[20px] border border-ink-950/10 bg-white p-6 sm:rounded-[22px] sm:p-8"
 const primaryButton =
   "inline-flex cursor-pointer justify-center rounded-full bg-ink-950 px-6 py-3 text-sm font-semibold text-paper-50 transition-colors duration-200 ease-out-smooth hover:bg-ink-900 disabled:opacity-60"
 const secondaryButton =
@@ -144,16 +145,16 @@ export default function PortalSetup() {
         : refused
           ? "refused"
           : user && !sameUser && !busy
-          ? "other"
-          : sameUser && !busy
-            ? link === undefined
-              ? "loading"
-              : link
-                ? "linked"
-                : "connectSignedIn"
-            : exists
-              ? "exists"
-              : "create"
+            ? "other"
+            : sameUser && !busy
+              ? link === undefined
+                ? "loading"
+                : link
+                  ? "linked"
+                  : "connectSignedIn"
+              : exists
+                ? "exists"
+                : "create"
 
   const errorLine = error && (
     <p role="alert" className="text-sm text-brand-dark">
@@ -162,131 +163,125 @@ export default function PortalSetup() {
   )
 
   return (
-    <section className="mx-auto max-w-xl px-4 py-20 sm:px-6">
-      <Helmet>
-        <title>Set up your portal | CorePhia</title>
-        <meta name="robots" content="noindex, nofollow" />
-      </Helmet>
+    <PortalShell nav={false}>
+      <section className="mx-auto max-w-xl sm:pt-6 lg:pt-12">
+        <Helmet>
+          <title>Set up your portal | CorePhia</title>
+          <meta name="robots" content="noindex, nofollow" />
+        </Helmet>
 
-      {state === "loading" && (
-        <Loading label="Checking your invite…" className={cardClass}>
-          <Skeleton className="h-8 w-2/3" />
-          <Skeleton className="mt-4 h-4 w-full" />
-          <Skeleton className="mt-2 h-4 w-4/5" />
-        </Loading>
-      )}
+        {state === "loading" && (
+          <Loading label="Checking your invite…" className={cardClass}>
+            <Skeleton className="h-8 w-2/3" />
+            <Skeleton className="mt-4 h-4 w-full" />
+            <Skeleton className="mt-2 h-4 w-4/5" />
+          </Loading>
+        )}
 
-      {state === "invalid" && (
-        <div className={cardClass}>
-          <h1 className="font-serif text-3xl text-ink-950">This invite link has expired or isn't valid</h1>
-          <p className="mt-3 text-ink-950/70">
-            Contact us and we'll send you a new one. <ContactLine />
-          </p>
-          {/* An invite closes once it is used, so this also shows when the
+        {state === "invalid" && (
+          <div className={cardClass}>
+            <h1 className="font-serif text-3xl text-ink-950">This invite link has expired or isn't valid</h1>
+            <p className="mt-3 text-ink-950/70">
+              Contact us and we'll send you a new one. <ContactLine />
+            </p>
+            {/* An invite closes once it is used, so this also shows when the
               patient opens the email again after setting up. */}
-          <p className="mt-3 text-ink-950/70">
-            Already set up your portal?{" "}
-            <Link to="/account" className="font-medium text-ink-950 underline underline-offset-2">
-              Go to your portal
-            </Link>
-          </p>
-        </div>
-      )}
+            <p className="mt-3 text-ink-950/70">
+              Already set up your portal?{" "}
+              <Link to="/account" className="font-medium text-ink-950 underline underline-offset-2">
+                Go to your portal
+              </Link>
+            </p>
+          </div>
+        )}
 
-      {/* The login exists but the link save was refused: the invite expired
+        {/* The login exists but the link save was refused: the invite expired
           while the page was open, or the live rules are behind. Not "expired". */}
-      {state === "refused" && (
-        <div className={cardClass}>
-          <h1 className="font-serif text-3xl text-ink-950">We couldn't connect your login</h1>
-          <p className="mt-3 text-ink-950/70">
-            Your login was created, but we couldn't connect it to your portal. Contact us and we'll sort it out.{" "}
-            <ContactLine />
-          </p>
-        </div>
-      )}
+        {state === "refused" && (
+          <div className={cardClass}>
+            <h1 className="font-serif text-3xl text-ink-950">We couldn't connect your login</h1>
+            <p className="mt-3 text-ink-950/70">
+              Your login was created, but we couldn't connect it to your portal. Contact us and we'll sort it out. <ContactLine />
+            </p>
+          </div>
+        )}
 
-      {state === "other" && (
-        <div className={cardClass}>
-          <h1 className="font-serif text-3xl text-ink-950">Set up your portal</h1>
-          <p className="mt-3 text-ink-950/70">You're signed in as {user.email}. Log out to set up this invite.</p>
-          <button type="button" onClick={() => signOutPatient()} className={`mt-6 ${secondaryButton}`}>
-            Log out
-          </button>
-        </div>
-      )}
-
-      {state === "linked" && (
-        <div className={cardClass}>
-          <h1 className="font-serif text-3xl text-ink-950">You're already set up</h1>
-          <p className="mt-3 text-ink-950/70">Your login is connected to your portal.</p>
-          <Link to="/account" className={`mt-6 ${primaryButton}`}>
-            Open your portal
-          </Link>
-        </div>
-      )}
-
-      {state === "connectSignedIn" && (
-        <div className={cardClass}>
-          <h1 className="font-serif text-3xl text-ink-950">Set up your portal</h1>
-          <p className="mt-3 text-ink-950/70">Hi {invite.firstName}. Connect this invite to your login.</p>
-          <div className="mt-6 space-y-4">
-            {errorLine}
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => run(() => linkCurrentLogin(ref))}
-              className={primaryButton}
-            >
-              {busy ? "Please wait…" : "Connect"}
+        {state === "other" && (
+          <div className={cardClass}>
+            <h1 className="font-serif text-3xl text-ink-950">Set up your portal</h1>
+            <p className="mt-3 text-ink-950/70">You're signed in as {user.email}. Log out to set up this invite.</p>
+            <button type="button" onClick={() => signOutPatient()} className={`mt-6 ${secondaryButton}`}>
+              Log out
             </button>
           </div>
-        </div>
-      )}
+        )}
 
-      {state === "create" && (
-        <div className={cardClass}>
-          <h1 className="font-serif text-3xl text-ink-950">Set up your portal</h1>
-          <p className="mt-3 text-ink-950/70">
-            Hi {invite.firstName || "there"}. Choose a password for {invite.to}.
-          </p>
-          <form className="mt-6 space-y-4" onSubmit={create} noValidate>
-            <PasswordField label="Password" value={password} onChange={setPassword} />
-            <PasswordField label="Confirm password" value={confirm} onChange={setConfirm} />
-            <p className="text-xs text-ink-950/55">At least 8 characters.</p>
-            {errorLine}
-            <button type="submit" disabled={busy} className={`w-full ${primaryButton}`}>
-              {busy ? "Please wait…" : "Create my login"}
-            </button>
-          </form>
-        </div>
-      )}
+        {state === "linked" && (
+          <div className={cardClass}>
+            <h1 className="font-serif text-3xl text-ink-950">You're already set up</h1>
+            <p className="mt-3 text-ink-950/70">Your login is connected to your portal.</p>
+            <Link to="/account" className={`mt-6 ${primaryButton}`}>
+              Open your portal
+            </Link>
+          </div>
+        )}
 
-      {state === "exists" && (
-        <div className={cardClass}>
-          <h1 className="font-serif text-3xl text-ink-950">Set up your portal</h1>
-          <p className="mt-3 text-ink-950/70">
-            You already have a login with this email. Enter your password to connect it.
-          </p>
-          <form className="mt-6 space-y-4" onSubmit={connect} noValidate>
-            <PasswordField label="Password" value={password} onChange={setPassword} autoComplete="current-password" />
-            {errorLine}
-            <button type="submit" disabled={busy} className={`w-full ${primaryButton}`}>
-              {busy ? "Please wait…" : "Log in and connect"}
-            </button>
-          </form>
-          {resetSent ? (
-            <p className="mt-4 text-sm text-ink-950/70">{RESET_SENT}</p>
-          ) : (
-            <button
-              type="button"
-              onClick={sendReset}
-              className="mt-4 cursor-pointer text-sm font-medium text-ink-950 underline underline-offset-2"
-            >
-              Forgot password?
-            </button>
-          )}
-        </div>
-      )}
-    </section>
+        {state === "connectSignedIn" && (
+          <div className={cardClass}>
+            <h1 className="font-serif text-3xl text-ink-950">Set up your portal</h1>
+            <p className="mt-3 text-ink-950/70">Hi {invite.firstName}. Connect this invite to your login.</p>
+            <div className="mt-6 space-y-4">
+              {errorLine}
+              <button type="button" disabled={busy} onClick={() => run(() => linkCurrentLogin(ref))} className={primaryButton}>
+                {busy ? "Please wait…" : "Connect"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {state === "create" && (
+          <div className={cardClass}>
+            <h1 className="font-serif text-3xl text-ink-950">Set up your portal</h1>
+            <p className="mt-3 text-ink-950/70">
+              Hi {invite.firstName || "there"}. Choose a password for {invite.to}.
+            </p>
+            <form className="mt-6 space-y-4" onSubmit={create} noValidate>
+              <PasswordField label="Password" value={password} onChange={setPassword} />
+              <PasswordField label="Confirm password" value={confirm} onChange={setConfirm} />
+              <p className="text-xs text-ink-950/55">At least 8 characters.</p>
+              {errorLine}
+              <button type="submit" disabled={busy} className={`w-full ${primaryButton}`}>
+                {busy ? "Please wait…" : "Create my login"}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {state === "exists" && (
+          <div className={cardClass}>
+            <h1 className="font-serif text-3xl text-ink-950">Set up your portal</h1>
+            <p className="mt-3 text-ink-950/70">You already have a login with this email. Enter your password to connect it.</p>
+            <form className="mt-6 space-y-4" onSubmit={connect} noValidate>
+              <PasswordField label="Password" value={password} onChange={setPassword} autoComplete="current-password" />
+              {errorLine}
+              <button type="submit" disabled={busy} className={`w-full ${primaryButton}`}>
+                {busy ? "Please wait…" : "Log in and connect"}
+              </button>
+            </form>
+            {resetSent ? (
+              <p className="mt-4 text-sm text-ink-950/70">{RESET_SENT}</p>
+            ) : (
+              <button
+                type="button"
+                onClick={sendReset}
+                className="mt-4 cursor-pointer text-sm font-medium text-ink-950 underline underline-offset-2"
+              >
+                Forgot password?
+              </button>
+            )}
+          </div>
+        )}
+      </section>
+    </PortalShell>
   )
 }

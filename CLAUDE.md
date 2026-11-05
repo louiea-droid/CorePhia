@@ -121,7 +121,8 @@ src/pages/            Home, About, Contact, Faq, Membership, ProgramPage, Succes
 src/entry-server.jsx  build-time render for scripts/prerender.mjs
 src/components/       PatientIntakeForm + intakeScreens (the /intake route) + all homepage sections,
                       ErrorBoundary (a plain "Something went wrong" screen instead of a blank page)
-src/portal/           the patient portal (/account/*, /portal/setup, /portal/reset)
+src/portal/           the patient portal (/account/*, /portal/setup, /portal/reset),
+                      outside the website frame in its own PortalShell (sidebar / phone tab bar)
 src/admin/            the staff admin (/admin/*)
 src/lib/              Firebase submission, patient auth, analytics consent/tracking, siteContact
 src/data/             programs.js, pricingTiers.js, guides.js

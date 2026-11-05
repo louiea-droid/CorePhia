@@ -4,5 +4,10 @@ import PortalUpdates from "./PortalUpdates"
 // /account/updates: every update from the care team, newest first.
 export default function UpdatesPage() {
   const { link } = useOutletContext()
-  return <PortalUpdates intakeId={link.intakeId} />
+  return (
+    <>
+      <h1 className="sr-only">Updates</h1>
+      <PortalUpdates intakeId={link.intakeId} />
+    </>
+  )
 }

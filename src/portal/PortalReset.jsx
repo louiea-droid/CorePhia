@@ -3,9 +3,10 @@ import { Helmet } from "react-helmet-async"
 import { Link, useSearchParams } from "react-router-dom"
 import LoginPanel from "../components/LoginPanel"
 import PasswordField from "../components/PasswordField"
+import PortalShell from "./PortalShell"
 import { checkResetCode, saveNewPassword } from "./lib/patientAuth"
 
-const cardClass = "rounded-3xl border border-ink-950/10 bg-white p-8"
+const cardClass = "rounded-[20px] border border-ink-950/10 bg-white p-6 sm:rounded-[22px] sm:p-8"
 const primaryButton =
   "inline-flex cursor-pointer justify-center rounded-full bg-ink-950 px-6 py-3 text-sm font-semibold text-paper-50 transition-colors duration-200 ease-out-smooth hover:bg-ink-900 disabled:opacity-60"
 
@@ -66,55 +67,57 @@ export default function PortalReset() {
   }
 
   return (
-    <section className="mx-auto max-w-xl px-4 py-20 sm:px-6">
-      <Helmet>
-        <title>Reset your password | CorePhia</title>
-        <meta name="robots" content="noindex, nofollow" />
-      </Helmet>
+    <PortalShell nav={false}>
+      <section className="mx-auto max-w-xl sm:pt-6 lg:pt-12">
+        <Helmet>
+          <title>Reset your password | CorePhia</title>
+          <meta name="robots" content="noindex, nofollow" />
+        </Helmet>
 
-      {email === null && (
-        <div className={cardClass}>
-          <h1 className="font-serif text-3xl text-ink-950">This reset link has expired or was already used.</h1>
-          <p className="mt-3 text-ink-950/70">Reset links work once and only for a short time. Ask for a new one.</p>
-          <button type="button" onClick={() => setLoginOpen(true)} className={`mt-6 ${primaryButton}`}>
-            Send a new link
-          </button>
-        </div>
-      )}
-
-      {email && done && (
-        <div className={cardClass}>
-          <h1 className="font-serif text-3xl text-ink-950">Password changed</h1>
-          <p className="mt-3 text-ink-950/70">You can log in with your new password now.</p>
-          <Link to={continuePath(params.get("continueUrl"))} className={`mt-6 ${primaryButton}`}>
-            Continue
-          </Link>
-        </div>
-      )}
-
-      {email && !done && (
-        <div className={cardClass}>
-          <h1 className="font-serif text-3xl text-ink-950">Choose a new password</h1>
-          <p className="mt-3 text-ink-950/70">For {email}.</p>
-          <form className="mt-6 space-y-4" onSubmit={submit} noValidate>
-            <PasswordField label="New password" value={password} onChange={setPassword} />
-            <PasswordField label="Confirm new password" value={confirm} onChange={setConfirm} />
-            <p className="text-xs text-ink-950/55">At least 8 characters.</p>
-            {error && (
-              <p role="alert" className="text-sm text-brand-dark">
-                {error}
-              </p>
-            )}
-            <button type="submit" disabled={busy} className={`w-full ${primaryButton}`}>
-              {busy ? "Please wait…" : "Save password"}
+        {email === null && (
+          <div className={cardClass}>
+            <h1 className="font-serif text-3xl text-ink-950">This reset link has expired or was already used.</h1>
+            <p className="mt-3 text-ink-950/70">Reset links work once and only for a short time. Ask for a new one.</p>
+            <button type="button" onClick={() => setLoginOpen(true)} className={`mt-6 ${primaryButton}`}>
+              Send a new link
             </button>
-          </form>
-        </div>
-      )}
+          </div>
+        )}
 
-      {loginOpen && (
-        <LoginPanel open onClose={() => setLoginOpen(false)} startView="reset" resetBack={continuePath(params.get("continueUrl"))} />
-      )}
-    </section>
+        {email && done && (
+          <div className={cardClass}>
+            <h1 className="font-serif text-3xl text-ink-950">Password changed</h1>
+            <p className="mt-3 text-ink-950/70">You can log in with your new password now.</p>
+            <Link to={continuePath(params.get("continueUrl"))} className={`mt-6 ${primaryButton}`}>
+              Continue
+            </Link>
+          </div>
+        )}
+
+        {email && !done && (
+          <div className={cardClass}>
+            <h1 className="font-serif text-3xl text-ink-950">Choose a new password</h1>
+            <p className="mt-3 text-ink-950/70">For {email}.</p>
+            <form className="mt-6 space-y-4" onSubmit={submit} noValidate>
+              <PasswordField label="New password" value={password} onChange={setPassword} />
+              <PasswordField label="Confirm new password" value={confirm} onChange={setConfirm} />
+              <p className="text-xs text-ink-950/55">At least 8 characters.</p>
+              {error && (
+                <p role="alert" className="text-sm text-brand-dark">
+                  {error}
+                </p>
+              )}
+              <button type="submit" disabled={busy} className={`w-full ${primaryButton}`}>
+                {busy ? "Please wait…" : "Save password"}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {loginOpen && (
+          <LoginPanel open onClose={() => setLoginOpen(false)} startView="reset" resetBack={continuePath(params.get("continueUrl"))} />
+        )}
+      </section>
+    </PortalShell>
   )
 }

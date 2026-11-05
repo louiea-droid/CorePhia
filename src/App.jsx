@@ -87,6 +87,23 @@ function App() {
     )
   }
 
+  // The patient portal has its own frame too (PortalShell): no website menu,
+  // footer or cookie banner. Nothing is tracked on these paths.
+  if (/^\/(account(\/|$)|portal\/(setup|reset)\/?$)/.test(pathname)) {
+    return (
+      <>
+        <ScrollManager />
+        <Suspense fallback={null}>
+          <Routes>
+            <Route path="/account/*" element={<PortalApp />} />
+            <Route path="/portal/setup" element={<PortalSetup />} />
+            <Route path="/portal/reset" element={<PortalReset />} />
+          </Routes>
+        </Suspense>
+      </>
+    )
+  }
+
   return (
     <div className="bg-paper-50">
       <ScrollManager />
@@ -106,30 +123,6 @@ function App() {
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy-practices" element={<PrivacyPractices />} />
           <Route path="/success-stories" element={<SuccessStories />} />
-          <Route
-            path="/account/*"
-            element={
-              <Suspense fallback={null}>
-                <PortalApp />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/portal/setup"
-            element={
-              <Suspense fallback={null}>
-                <PortalSetup />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/portal/reset"
-            element={
-              <Suspense fallback={null}>
-                <PortalReset />
-              </Suspense>
-            }
-          />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>

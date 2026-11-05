@@ -5,7 +5,7 @@ import { openBillingPortal } from "../lib/billing"
 // First card on the Overview: the plan, the next billing date (or the end
 // date once cancelled), and Stripe's hosted page for card changes and
 // receipts. Memberships staff set by hand have no Stripe customer: plan only.
-export default function MembershipCard({ membership }) {
+export default function MembershipCard({ membership, Heading = "h2" }) {
   const [busy, setBusy] = useState(false)
   const [failed, setFailed] = useState(false)
   const date = longDateTampa(membership.currentPeriodEnd)
@@ -25,9 +25,9 @@ export default function MembershipCard({ membership }) {
 
   return (
     <section aria-labelledby="membership-heading" className="rounded-3xl border border-ink-950/10 bg-white p-6 sm:p-8">
-      <h2 id="membership-heading" className="font-serif text-2xl text-ink-950">
+      <Heading id="membership-heading" className="font-serif text-2xl text-ink-950">
         Membership
-      </h2>
+      </Heading>
       <p className="mt-2 text-lg font-medium text-ink-950">{membership.plan}</p>
       {stripe && date && (
         <p className="mt-1 text-sm text-ink-950/70">{membership.cancelAtPeriodEnd ? `Ends on ${date}` : `Next billing date: ${date}`}</p>
