@@ -91,9 +91,13 @@ export default function NewTopicDialog({ actor, initialChartId = "", onClose, on
             ))}
           </select>
         </label>
-        {awaiting && picked && (
+        {awaiting && (
           <p role="status" className="text-sm text-ink-950/65">
-            {discharged ? "This patient is discharged, so their portal is closed." : "Opens once the patient’s membership starts"}
+            {!picked
+              ? "Can't message this patient."
+              : discharged
+                ? "This patient is discharged, so their portal is closed."
+                : "Opens once the patient’s membership starts"}
           </p>
         )}
         <label className="block">

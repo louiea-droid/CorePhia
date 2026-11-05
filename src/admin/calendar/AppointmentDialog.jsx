@@ -162,11 +162,12 @@ export default function AppointmentDialog({ appointment, prefill = {}, actor, on
               ? "Choose who the appointment is with."
               : null
 
-  // A new booking refused by the rules is almost always an unpaid patient
-  // whose membership changed after the lookup.
+  // A refused new booking for a chart the lookup found unpaid is waiting on
+  // payment; any other refusal of a new booking is the role.
   const fail = (cause, fallback) => {
     console.error("Appointment write failed:", cause.code ?? cause.message)
-    setError(cause?.code === "permission-denied" ? (isNew ? "Waiting for the patient to choose a plan and pay." : STALE) : fallback)
+    const refused = isNew ? (unpaid ? "Waiting for the patient to choose a plan and pay." : "Your role can't do this.") : STALE
+    setError(cause?.code === "permission-denied" ? refused : fallback)
   }
 
   const save = async () => {
