@@ -6,7 +6,10 @@ const DAY = 86400000
 const WEIGH_IN_AFTER_DAYS = 7
 const OVER = ["cancelled", "completed", "noShow"]
 
-const asDate = (v) => (v?.toDate ? v.toDate() : new Date(v))
+const asDate = (v) => {
+  const d = v?.toDate ? v.toDate() : new Date(v)
+  return Number.isNaN(d.getTime()) ? null : d
+}
 const role = (staffRole) => (staffRole === "provider" || staffRole === "admin" ? "provider" : staffRole === "dietitian" ? "dietitian" : "care team")
 const fmt = (date, options) => new Intl.DateTimeFormat("en-US", { timeZone: TIME_ZONE, ...options }).format(date)
 const clock = (d) => fmt(d, { hour: "numeric", minute: "2-digit" })
@@ -21,6 +24,7 @@ export function whatsNext({ membership, visits = [], topics = [], updates = [], 
   const latestWeighIn = progress.reduce((m, p) => (p.date > m ? p.date : m), "")
   const daysSince = latestWeighIn ? Math.round((dayUtc(today) - dayUtc(latestWeighIn)) / DAY) : 0
 
+  const periodEnd = membership?.currentPeriodEnd && asDate(membership.currentPeriodEnd)
   const list = []
   const add = (applies, reminder) => applies && list.push(reminder())
   add(membership?.status === "pastDue", () => ({ kind: "pastDue", title: "We couldn't take your last payment. Update your card.", action: "billing" }))
@@ -33,9 +37,9 @@ export function whatsNext({ membership, visits = [], topics = [], updates = [], 
   }))
   add(updates.length > 0 && updates[0].id !== lastSeenUpdateId, () => ({ kind: "newUpdate", title: "Your care team posted an update", action: "updates" }))
   add(daysSince > WEIGH_IN_AFTER_DAYS, () => ({ kind: "weighIn", title: `Time for a weigh-in. Your last one was ${daysSince} days ago.`, action: "log-weight" }))
-  add(membership?.status === "active" && membership.cancelAtPeriodEnd && membership.currentPeriodEnd, () => ({
+  add(membership?.status === "active" && membership.cancelAtPeriodEnd && periodEnd, () => ({
     kind: "ending",
-    title: `Your membership ends on ${fmt(asDate(membership.currentPeriodEnd), { month: "long", day: "numeric", year: "numeric" })}`,
+    title: `Your membership ends on ${fmt(periodEnd, { month: "long", day: "numeric", year: "numeric" })}`,
     action: "billing",
   }))
 

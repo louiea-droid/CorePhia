@@ -73,6 +73,10 @@ const endTitle = "Your membership ends on November 27, 2026"
 assert.equal(run({ membership: { ...ends, currentPeriodEnd: { toDate: () => at("2026-11-27", "12:00") } } }).main.title, endTitle)
 assert.equal(run({ membership: { ...ends, currentPeriodEnd: "2026-11-27T17:00:00Z" } }).main.title, endTitle)
 
+assert.equal(kind({ membership: { ...ends, currentPeriodEnd: "not a date" } }), "nextVisitUnbooked")
+assert.equal(run({ updates: [{ id: "u2" }], lastSeenUpdateId: "u1" }).main.action, "updates")
+assert.equal(run({ progress: [{ date: "2026-11-02", weightLb: 1 }] }).main.action, "log-weight")
+
 // Fallbacks.
 assert.equal(kind({ visits: [] }), "firstVisit")
 assert.equal(kind({ visits: [visit({ status: "completed" })] }), "nextVisitUnbooked")
