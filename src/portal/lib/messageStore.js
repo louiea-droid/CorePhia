@@ -28,8 +28,12 @@ export function listenMyTopics(intakeId, onChange, onError) {
 }
 
 export function listenMyMessages(intakeId, topicId, onChange, onError) {
+  if (portalDemo) {
+    onChange(demoMessages(topicId))
+    return () => {}
+  }
   if (!db) {
-    onChange(portalDemo ? demoMessages(topicId) : [])
+    onChange([])
     return () => {}
   }
   return onSnapshot(

@@ -41,15 +41,15 @@ function Wave({ points }) {
   const id = useId()
   const { line, area } = wavePath(points)
   return (
-    <svg viewBox="0 0 800 120" preserveAspectRatio="none" aria-hidden="true" className="mt-6 block h-12 w-full sm:h-14">
+    <svg viewBox="0 0 800 120" preserveAspectRatio="none" aria-hidden="true" className="mt-6 block h-12 w-full text-accent sm:h-14">
       <defs>
         <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#60a5fa" stopOpacity=".18" />
-          <stop offset="1" stopColor="#60a5fa" stopOpacity="0" />
+          <stop offset="0" stopColor="currentColor" stopOpacity=".18" />
+          <stop offset="1" stopColor="currentColor" stopOpacity="0" />
         </linearGradient>
       </defs>
       <path d={area} fill={`url(#${id})`} />
-      <path d={line} fill="none" stroke="#60a5fa" strokeWidth="2.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+      <path d={line} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
     </svg>
   )
 }
@@ -82,7 +82,7 @@ function CompactProgress({ current, points, numbers, onRetry }) {
   const stats = [
     ["Starting weight", numbers.startLb != null && `${numbers.startLb} lbs`],
     ["Latest weight", `${numbers.latestLb} lbs`],
-    ["Change", numbers.changeLb != null && signedLb(numbers.changeLb), numbers.changeLb < 0 ? "text-[#1f6b4f]" : ""],
+    ["Change", numbers.changeLb != null && signedLb(numbers.changeLb), numbers.changeLb < 0 ? "text-good" : ""],
     ["To your goal", numbers.toGoalLb != null && (numbers.toGoalLb === 0 ? "Reached" : `${numbers.toGoalLb} lbs`)],
   ].filter(([, value]) => value)
   return (
@@ -116,7 +116,8 @@ export default function PortalProgress({ intakeId, compact = false, onLoad }) {
   const dialogRef = useRef(null)
   const [deleteError, setDeleteError] = useState(null)
 
-  useEffect(() => listenMyChartStatus(intakeId, (status) => setActive(status === "active")), [intakeId])
+  // The Overview's compact view has no Log button, so it skips the listener.
+  useEffect(() => (compact ? undefined : listenMyChartStatus(intakeId, (status) => setActive(status === "active"))), [intakeId, compact])
 
   useEffect(() => {
     let live = true

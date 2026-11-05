@@ -10,7 +10,7 @@ const PILLS = {
   weighIn: "Weigh-in",
   ending: "Membership",
   firstVisit: "Next: your first visit",
-  nextVisitUnbooked: "Next: your visit",
+  nextVisitUnbooked: "Your care",
 }
 
 // A second line under the heading, where it helps.
@@ -41,11 +41,14 @@ export default function WhatsNextCard({ reminders, onAction, children }) {
   return (
     <section
       aria-labelledby="whats-next-heading"
-      className="overflow-hidden rounded-3xl border border-ink-950/10 bg-linear-to-b from-white to-[#f2f6fd]"
+      className="overflow-hidden rounded-3xl border border-ink-950/10 bg-linear-to-b from-white to-wash"
     >
       <div className="px-6 pt-6 sm:px-8 sm:pt-7">
         {!main ? (
           <Loading label="Loading what's next…" className="">
+            <h2 id="whats-next-heading" className="sr-only">
+              What's next
+            </h2>
             <Skeleton className="h-6 w-40 rounded-full" />
             <Skeleton className="mt-4 h-7 w-full max-w-md" />
             <Skeleton className="mt-2 h-7 w-2/3 max-w-xs" />
@@ -56,7 +59,7 @@ export default function WhatsNextCard({ reminders, onAction, children }) {
               <div className="min-w-0">
                 <p
                   className={`inline-flex items-center gap-[7px] rounded-full px-[11px] py-[5px] text-[12.5px] font-semibold ${
-                    main.kind === "pastDue" ? "bg-amber-100 text-amber-900" : "bg-[#e7f3ee] text-[#1f6b4f]"
+                    main.kind === "pastDue" ? "bg-amber-100 text-amber-900" : "bg-good-soft text-good"
                   }`}
                 >
                   <span aria-hidden="true" className="size-[7px] rounded-full bg-current" />

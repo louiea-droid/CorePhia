@@ -45,6 +45,12 @@
   --color-brand: #3b5bdb;
   --color-brand-dark: #1e3a8a;
 
+  /* Patient portal: a good-news tone (a weight going down, the What's next
+     pill) and the pale blue the What's next card fades to. */
+  --color-good: #1f6b4f;
+  --color-good-soft: #e7f3ee;
+  --color-wash: #f2f6fd;
+
   /* Label/icon color for text sitting on a solid colored surface (a badge,
      an active pill) that must stay light whether the page is in light or
      dark mode — unlike paper-50, this one is never redefined under .dark. */
