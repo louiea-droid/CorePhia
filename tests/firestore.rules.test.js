@@ -1517,3 +1517,26 @@ describe("membership", () => {
     await assertSucceeds(setDoc(doc(as("provider"), "appointments", "b1"), booking("chart1")))
   })
 })
+
+describe("patient visits", () => {
+  const visitRef = (db, id = "v1", chart = "chart1") => doc(db, `patients/${chart}/visits/${id}`)
+  const visit = { start: new Date("2026-11-10T15:00:00Z"), minutes: 30, discipline: "medical", staffRole: "provider", status: "scheduled", updatedAt: new Date() }
+  const asPatient = (uid, email) => env.authenticatedContext(uid, { email }).firestore()
+  beforeEach(() => env.withSecurityRulesDisabled((c) => setDoc(visitRef(c.firestore()), visit)))
+
+  test("the linked patient reads their visit copy", async () => {
+    await assertSucceeds(getDoc(visitRef(asPatient("patient1", "p1@x.co"))))
+  })
+  test("another patient can't read it", async () => {
+    await assertFails(getDoc(visitRef(asPatient("patient2", "p2@x.co"))))
+  })
+  test("a clinician reads it", async () => {
+    await assertSucceeds(getDoc(visitRef(as("provider"))))
+  })
+  test("nobody writes a visit copy from the browser", async () => {
+    await assertFails(setDoc(visitRef(asPatient("patient1", "p1@x.co"), "v2"), visit))
+    await assertFails(setDoc(visitRef(as("provider"), "v2"), visit))
+    await assertFails(updateDoc(visitRef(as("provider")), { minutes: 60 }))
+    await assertFails(deleteDoc(visitRef(asPatient("patient1", "p1@x.co"))))
+  })
+})

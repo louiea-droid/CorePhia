@@ -651,6 +651,16 @@ service cloud.firestore {
         allow delete: if false;
       }
 
+      // Patient-safe copies of this chart's appointments (spec
+      // 2026-11-05-patient-portal-redesign-design, "Patient-visible visits"):
+      // start, minutes, discipline, staff role and status only, never the
+      // staff note or names. Written only by Cloud Functions (mirrorVisit,
+      // copyVisitsOnChartCreate), which the rules don't apply to.
+      match /visits/{visitId} {
+        allow read: if isLinkedTo(chartId) || isClinical();
+        allow write: if false;
+      }
+
       // Portal updates (spec 2026-10-05-portal-updates-design): short dated
       // messages from staff that the patient reads in the portal. Posted by a
       // clinician as themselves; afterwards only two changes: the author

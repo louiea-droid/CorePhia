@@ -1,7 +1,7 @@
 // Email, sent through the info@corephia.com Google Workspace mailbox. The
 // words and links live in emails.js. The app password is the SMTP_PASSWORD
 // secret in Google Secret Manager.
-import { onDocumentCreated, onDocumentUpdated } from "firebase-functions/v2/firestore"
+import { onDocumentCreated, onDocumentUpdated, onDocumentWritten } from "firebase-functions/v2/firestore"
 import { onCall, onRequest, HttpsError } from "firebase-functions/v2/https"
 import { defineSecret } from "firebase-functions/params"
 import { initializeApp } from "firebase-admin/app"
@@ -13,6 +13,7 @@ import {
   priceForPlan, membershipFromSubscription, checkoutDecision, cancelOnDischarge, subscriptionIdFromEvent,
   subscriptionConflict, isTransientStripeError, cancelForInactiveChart, LIVE_STATUSES, dischargeCancelAction,
 } from "./billing.js"
+import { visitFromAppointment } from "./visits.js"
 
 initializeApp()
 const SMTP_PASSWORD = defineSecret("SMTP_PASSWORD")
@@ -325,3 +326,38 @@ export const onChartDischarged = onDocumentUpdated(
     }
   },
 )
+
+// ---------------------------------------------------------------------------
+// Patient-safe visit copies (spec: docs/superpowers/specs/
+// 2026-11-05-patient-portal-redesign-design.md, "Patient-visible visits").
+// The portal can't read appointments/{id} (staff note, names), so each
+// appointment is mirrored to patients/{intakeId}/visits/{id} through the
+// visitFromAppointment allowlist. Only this server writes the copies.
+const staffRoleOf = async (uid) => (uid ? (await db().doc(`user/${uid}`).get()).data()?.role : undefined)
+const visitCopy = async (appointment) => ({
+  ...visitFromAppointment(appointment, await staffRoleOf(appointment.staffUid)),
+  updatedAt: FieldValue.serverTimestamp(),
+})
+
+export const mirrorVisit = onDocumentWritten({ region: REGION, document: "appointments/{id}" }, async (event) => {
+  const id = event.params.id
+  const before = event.data.before.data()
+  const after = event.data.after.data()
+  // Deleted, or moved off a chart: remove the old copy.
+  if (before?.intakeId && before.intakeId !== after?.intakeId) await db().doc(`patients/${before.intakeId}/visits/${id}`).delete()
+  if (!after?.intakeId) return
+  const chart = db().doc(`patients/${after.intakeId}`)
+  // No chart yet: copyVisitsOnChartCreate copies it when the chart is created.
+  if (!(await chart.get()).exists) return
+  await chart.collection("visits").doc(id).set(await visitCopy(after))
+})
+
+export const copyVisitsOnChartCreate = onDocumentCreated({ region: REGION, document: "patients/{chartId}" }, async (event) => {
+  const chartId = event.params.chartId
+  const appointments = await db().collection("appointments").where("intakeId", "==", chartId).get()
+  if (appointments.empty) return
+  // ponytail: one batch (500 writes max); a chart won't have 500 appointments at creation.
+  const batch = db().batch()
+  for (const entry of appointments.docs) batch.set(db().doc(`patients/${chartId}/visits/${entry.id}`), await visitCopy(entry.data()))
+  await batch.commit()
+})
