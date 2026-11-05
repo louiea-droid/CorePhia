@@ -24,14 +24,14 @@ export function MarkMemberDialog({ chart, patientName, onClose, onDone }) {
     setBusy(true)
     setError(null)
     try {
-      const membership = await setManualMembership(chart.id, plan)
+      await setManualMembership(chart.id, plan)
       recordAuditEvent({
         action: AUDIT_ACTIONS.setMembership,
         targetCollection: PATIENTS_COLLECTION,
         targetId: chart.id,
         targetLabel: `${patientName}, ${plan}, ${reason.trim()}`.slice(0, 200),
       })
-      onDone(membership)
+      onDone()
     } catch (cause) {
       setError(failure(cause))
       setBusy(false)
@@ -105,14 +105,14 @@ export function EndMembershipDialog({ chart, patientName, open, onClose, onDone 
     setBusy(true)
     setError(null)
     try {
-      const membership = await endManualMembership(chart.id, chart.membership.plan)
+      await endManualMembership(chart.id, chart.membership)
       recordAuditEvent({
         action: AUDIT_ACTIONS.endMembership,
         targetCollection: PATIENTS_COLLECTION,
         targetId: chart.id,
         targetLabel: `${patientName}, ${chart.membership.plan}`.slice(0, 200),
       })
-      onDone(membership)
+      onDone()
     } catch (cause) {
       setError(failure(cause))
     }

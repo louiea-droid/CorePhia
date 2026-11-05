@@ -118,13 +118,22 @@ export function dueTasks(notes, today, windowDays = 7, { member = true, hasUpcom
   return [...renewals, ...followUps, ...bookFirstVisit]
 }
 
+// The plan the applicant picked on the form, kept on the chart so staff see it
+// when they mark a payment by hand. Anything but a real plan name (planNames)
+// is dropped (undefined). Core+ was merged into Core (2026-11-02): old
+// applicants who picked it count as Core.
+export const formPlanFrom = (picked, planNames) => {
+  const name = picked === "Core+" ? "Core" : picked
+  return planNames.includes(name) ? name : undefined
+}
+
 // Paid up: a membership that is active or past due (still covered while the card is fixed).
 export const isMember = (chart) => chart?.membership?.status === "active" || chart?.membership?.status === "pastDue"
 
 // The badge text for a chart: what the staff sees next to a patient about their membership.
 export function membershipLabel(chart) {
   const membership = chart?.membership
-  if (membership?.status === "active" && membership.cancelAtPeriodEnd)
+  if (membership?.status === "active" && membership.cancelAtPeriodEnd && longDateTampa(membership.currentPeriodEnd))
     return { text: `Member: ${membership.plan} (ends ${longDateTampa(membership.currentPeriodEnd)})`, tone: "good" }
   if (membership?.status === "active") return { text: `Member: ${membership.plan}`, tone: "good" }
   if (membership?.status === "pastDue") return { text: "Payment problem", tone: "warn" }

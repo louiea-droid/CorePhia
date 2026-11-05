@@ -10,6 +10,7 @@ import {
   daysFrom,
   isMember,
   membershipLabel,
+  formPlanFrom,
   disciplineOf,
   dueTasks,
   latestSignedByDiscipline,
@@ -276,5 +277,15 @@ assert.deepEqual(label({ status: "active", plan: "Core", cancelAtPeriodEnd: true
 })
 assert.deepEqual(label({ status: "active", plan: "Core", cancelAtPeriodEnd: false }), { text: "Member: Core", tone: "good" })
 assert.deepEqual(label({ status: "ended", plan: "Core", cancelAtPeriodEnd: true }), { text: "Membership ended", tone: "muted" })
+// Cancelling with no period end on the chart yet: no "(ends undefined)".
+assert.deepEqual(label({ status: "active", plan: "Core", cancelAtPeriodEnd: true }), { text: "Member: Core", tone: "good" })
+
+const plans = ["Core", "Core Complete"]
+assert.equal(formPlanFrom("Core", plans), "Core")
+assert.equal(formPlanFrom("Core+", plans), "Core")
+assert.equal(formPlanFrom("Core Complete", plans), "Core Complete")
+assert.equal(formPlanFrom("", plans), undefined)
+assert.equal(formPlanFrom(undefined, plans), undefined)
+assert.equal(formPlanFrom("Gold", plans), undefined)
 
 console.log("chartMath: all checks passed")

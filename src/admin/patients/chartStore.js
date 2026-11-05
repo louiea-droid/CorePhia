@@ -26,6 +26,7 @@ import {
 import { config, db, INTAKE_COLLECTION, sendStaffResetEmail, USERS_COLLECTION, usingSeedData } from "../lib/firebase"
 import { visitEntryFor } from "../../lib/progressMath"
 import { todayInTampa } from "../calendar/calendarMath"
+import { formPlanFrom } from "./chartMath"
 import { tiers } from "../../data/pricingTiers"
 
 export const PATIENTS_COLLECTION = "patients"
@@ -83,13 +84,8 @@ export const demoId = () => `demo-${Math.random().toString(36).slice(2, 10)}`
 
 // --- Admission ---------------------------------------------------------------
 
-// The plan the applicant picked on the form, kept on the chart so staff see it
-// when they mark a payment by hand. Anything but a real plan name is dropped.
-// Core+ was merged into Core (2026-11-02): old applicants who picked it count as Core.
-export const formPlanOf = (record) => {
-  const name = record.visit?.membershipPlan === "Core+" ? "Core" : record.visit?.membershipPlan
-  return tiers.find((tier) => tier.name === name)?.name
-}
+const PLAN_NAMES = tiers.map((tier) => tier.name)
+const formPlanOf = (record) => formPlanFrom(record.visit?.membershipPlan, PLAN_NAMES)
 
 const chartFromRecord = (record, actor, timestamp) => ({
   intakeRecordId: record.id,
@@ -149,19 +145,20 @@ export async function setApplicantStatus(record, status, actor) {
 // Staff record a membership by hand (a payment taken outside Stripe), or end
 // one. Admin and super admin only, and never over a live Stripe membership:
 // firestore.rules enforces both. The audit entry is written by the caller.
-async function writeManualMembership(chartId, plan, status) {
+// Ending keeps the membership's start date; marking starts it now.
+async function writeManualMembership(chartId, plan, status, since) {
   if (usingSeedData) {
     const chart = (await getDemoStore()).charts.get(chartId)
     const now = new Date()
-    chart.membership = { plan, status, source: "manual", since: now, updatedAt: now }
-    return chart.membership
+    chart.membership = { plan, status, source: "manual", since: since ?? now, updatedAt: now }
+    return
   }
-  const membership = { plan, status, source: "manual", since: serverTimestamp(), updatedAt: serverTimestamp() }
+  const membership = { plan, status, source: "manual", since: since ?? serverTimestamp(), updatedAt: serverTimestamp() }
   await updateDoc(doc(requireDb(), PATIENTS_COLLECTION, chartId), { membership, updatedAt: serverTimestamp() })
-  return membership
 }
 export const setManualMembership = (chartId, plan) => writeManualMembership(chartId, plan, "active")
-export const endManualMembership = (chartId, plan) => writeManualMembership(chartId, plan, "ended")
+export const endManualMembership = (chartId, membership) =>
+  writeManualMembership(chartId, membership.plan, "ended", membership.since)
 
 export async function loadCharts() {
   if (usingSeedData) return [...(await getDemoStore()).charts.values()].map((chart) => ({ ...chart }))

@@ -273,6 +273,16 @@ export default function PatientChart({ actor }) {
     }
   }
 
+  // Reloaded rather than patched, so the badge shows the stored dates, not
+  // serverTimestamp() placeholders.
+  const afterMembership = () => {
+    setMembershipDialog(null)
+    loadChart(chartId).then(setChart, (cause) => {
+      console.error("Chart refresh failed:", cause.code ?? cause.message)
+      setCreateError("Saved, but the chart didn't refresh. Reload the page to see the membership.")
+    })
+  }
+
   if (error)
     return (
       <div className="flex h-full flex-col">
@@ -431,10 +441,7 @@ export default function PatientChart({ actor }) {
           chart={chart}
           patientName={name}
           onClose={() => setMembershipDialog(null)}
-          onDone={(membership) => {
-            setChart((current) => ({ ...current, membership }))
-            setMembershipDialog(null)
-          }}
+          onDone={afterMembership}
         />
       )}
       <EndMembershipDialog
@@ -442,10 +449,7 @@ export default function PatientChart({ actor }) {
         patientName={name}
         open={membershipDialog === "end"}
         onClose={() => setMembershipDialog(null)}
-        onDone={(membership) => {
-          setChart((current) => ({ ...current, membership: { ...current.membership, ...membership } }))
-          setMembershipDialog(null)
-        }}
+        onDone={afterMembership}
       />
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]">
