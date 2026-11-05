@@ -85,7 +85,11 @@ export const demoId = () => `demo-${Math.random().toString(36).slice(2, 10)}`
 
 // The plan the applicant picked on the form, kept on the chart so staff see it
 // when they mark a payment by hand. Anything but a real plan name is dropped.
-const formPlanOf = (record) => tiers.find((tier) => tier.name === record.visit?.membershipPlan)?.name
+// Core+ was merged into Core (2026-11-02): old applicants who picked it count as Core.
+export const formPlanOf = (record) => {
+  const name = record.visit?.membershipPlan === "Core+" ? "Core" : record.visit?.membershipPlan
+  return tiers.find((tier) => tier.name === name)?.name
+}
 
 const chartFromRecord = (record, actor, timestamp) => ({
   intakeRecordId: record.id,

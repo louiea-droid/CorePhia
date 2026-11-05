@@ -10,7 +10,7 @@ const EMAIL_WORDS = { sent: "Email sent", failed: "Email not sent", none: "Not e
 // The chart's "Updates" card: what the patient sees in their portal, newest
 // first. Posting is the chart's job (it also opens the dialog after a
 // signing); this card lists, reloads on `version`, and removes.
-export default function UpdatesCard({ chartId, notes, actor, canPost, version, emailFailed, onPost }) {
+export default function UpdatesCard({ chartId, notes, actor, canPost, awaitingMembership = false, version, emailFailed, onPost }) {
   const [updates, setUpdates] = useState(null)
   const [failed, setFailed] = useState(false)
   const [showAll, setShowAll] = useState(false)
@@ -53,7 +53,8 @@ export default function UpdatesCard({ chartId, notes, actor, canPost, version, e
     <section className="rounded-2xl border border-ink-950/10 bg-white p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-sm font-semibold text-ink-950">Updates</h2>
-        {canPost && (
+        {canPost && awaitingMembership && <p className="text-xs text-ink-950/55">Opens once the patient’s membership starts</p>}
+        {canPost && !awaitingMembership && (
           <button
             type="button"
             onClick={onPost}

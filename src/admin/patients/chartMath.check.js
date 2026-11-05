@@ -156,9 +156,12 @@ assert.deepEqual(
   ["followUp::2"],
 )
 
-// No signed note at all means the first consultation is still to happen.
-assert.deepEqual(summary(dueTasks([], "2026-10-01")), ["firstConsult::"])
-assert.deepEqual(summary(dueTasks([{ status: "draft", visitDate: "2026-10-01" }], "2026-10-01")), ["firstConsult::"])
+// No signed medical note: a paid member with no booked visit gets "book first visit";
+// one with a visit booked, or one who hasn't paid, gets nothing.
+assert.deepEqual(summary(dueTasks([], "2026-10-01")), ["bookFirstVisit::"])
+assert.deepEqual(summary(dueTasks([{ status: "draft", visitDate: "2026-10-01" }], "2026-10-01")), ["bookFirstVisit::"])
+assert.deepEqual(summary(dueTasks([], "2026-10-01", 7, { member: true, hasUpcomingVisit: true })), [])
+assert.deepEqual(summary(dueTasks([], "2026-10-01", 7, { member: false })), [])
 
 // Day counts are calendar days, unaffected by the November DST change.
 assert.deepEqual(summary(dueTasks([visit("2026-10-01", { nextFollowUp: "2026-11-02" })], "2026-10-31")), ["followUp::2"])
@@ -222,13 +225,13 @@ assert.deepEqual(
   )
 }
 
-// Only a dietitian note signed: the first consultation is still to happen,
+// Only a dietitian note signed: the first visit is still to book,
 // and the dietitian follow-up still shows.
 assert.deepEqual(
   dueTasks([visit("2026-09-20", { type: "dietitian", nextFollowUp: "2026-10-02" })], "2026-10-01").map(
     (task) => `${task.kind}:${task.discipline}`,
   ),
-  ["followUp:dietitian", "firstConsult:medical"],
+  ["followUp:dietitian", "bookFirstVisit:medical"],
 )
 
 // Renewals are medical.

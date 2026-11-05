@@ -39,9 +39,9 @@ async function loadScheduledToday() {
 async function loadDue(uid) {
   const today = todayInTampa()
   const perChart = await loadActiveChartNotes(uid)
-  // A first consultation has no due date; it's counted on the To-do page
+  // Book-first-visit has no due date; it's counted on the To-do page
   // but isn't "due this week", so the strip counts dated items only.
-  const tasks = perChart.flatMap(({ notes }) => dueTasks(notes, today)).filter((task) => task.kind !== "firstConsult")
+  const tasks = perChart.flatMap(({ notes }) => dueTasks(notes, today)).filter((task) => task.kind !== "bookFirstVisit")
   return { total: tasks.length, overdue: tasks.filter((task) => task.days < 0).length }
 }
 

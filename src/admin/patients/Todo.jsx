@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
-import { asDate, dueTasks } from "./chartMath"
+import { asDate, dueTasks, isMember } from "./chartMath"
 import { loadAppointments } from "../calendar/appointmentStore"
 import { addDays, fromTampa, matchingAppointment, tampaParts, todayInTampa } from "../calendar/calendarMath"
 import AddedTodos from "./AddedTodos"
@@ -11,19 +11,19 @@ import { DISCIPLINE_LABELS, formatDay } from "./noteUi"
 import PageHeader from "../layout/PageHeader"
 import { ApplicantsSkeleton } from "../ui/Skeleton"
 
-// A first consultation has no due date (days is null), so it only ever
+// Book-first-visit has no due date (days is null), so it only ever
 // matches the last group.
 const GROUPS = [
   { key: "overdue", title: "Overdue", test: (task) => task.days < 0 },
   { key: "today", title: "Today", test: (task) => task.days === 0 },
   { key: "week", title: "Next 7 days", test: (task) => task.days > 0 },
-  { key: "first", title: "Waiting for a first consultation", test: (task) => task.kind === "firstConsult" },
+  { key: "first", title: "Paid: book first visit", test: (task) => task.kind === "bookFirstVisit" },
 ]
 
 const plural = (count, word) => `${count} ${word}${count === 1 ? "" : "s"}`
 
 function whenLabel(task) {
-  if (task.kind === "firstConsult") return `Admitted ${formatDay(task.admittedAt)}`
+  if (task.kind === "bookFirstVisit") return `Admitted ${formatDay(task.admittedAt)}`
   if (task.days < 0) return `${plural(-task.days, "day")} overdue`
   if (task.days === 0) return "Due today"
   if (task.days === 1) return "Due tomorrow"
@@ -37,7 +37,7 @@ const taskLabel = (task) =>
       ? task.discipline === "medical"
         ? "Follow-up visit"
         : `${DISCIPLINE_LABELS[task.discipline]} follow-up`
-      : "First consultation"
+      : "Book first visit"
 
 // Renewals, follow-ups and first consultations due, worked out from signed
 // notes (chartMath.dueTasks). Nothing is ticked off here: signing the note
@@ -77,14 +77,15 @@ export default function Todo({ actor }) {
     // follow-up that's already booked says so.
     Promise.all([
       loadActiveChartNotes(actor.uid),
-      loadAppointments(fromTampa(addDays(todayInTampa(), -33)), fromTampa(addDays(todayInTampa(), 11))).catch(() => []),
+      loadAppointments(fromTampa(addDays(todayInTampa(), -33)), fromTampa(addDays(todayInTampa(), 180))).catch(() => []),
     ])
       .then(([perChart, appointments]) => {
         if (active) setChartIds(new Set(perChart.map(({ chart }) => chart.id)))
         return perChart.flatMap(({ chart, notes }) => {
           const name = `${chart.firstName} ${chart.lastName}`.trim() || "Unnamed patient"
           const admittedAt = asDate(chart.admittedAt)
-          return dueTasks(notes, today).map((task, index) => ({
+          const hasUpcomingVisit = appointments.some((a) => a.intakeId === chart.id && a.status === "scheduled")
+          return dueTasks(notes, today, 7, { member: isMember(chart), hasUpcomingVisit }).map((task, index) => ({
             ...task,
             id: `${chart.id}-${index}`,
             chartId: chart.id,

@@ -5,7 +5,8 @@ import Select from "../../components/Select"
 import { bookAppointment, changeAppointment, loadAppointments, loadChanges } from "./appointmentStore"
 import { addDays, changeFor, fromTampa, overlaps, tampaParts, todayInTampa } from "./calendarMath"
 import TimePicker from "./TimePicker"
-import { loadStaff } from "../patients/chartStore"
+import { loadChart, loadStaff } from "../patients/chartStore"
+import { isMember } from "../patients/chartMath"
 import { AUDIT_ACTIONS, recordAuditEvent } from "../lib/firebase"
 import PatientPicker from "../ui/PatientPicker"
 import { CloseIcon } from "../ui/icons"
@@ -90,6 +91,8 @@ export default function AppointmentDialog({ appointment, prefill = {}, actor, on
   const [staff, setStaff] = useState([])
   const [sameDay, setSameDay] = useState([])
   const [history, setHistory] = useState(null)
+  // The chart for the picked patient (chart null = an applicant, no chart yet).
+  const [looked, setLooked] = useState(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const [cancelling, setCancelling] = useState(false)
@@ -120,11 +123,27 @@ export default function AppointmentDialog({ appointment, prefill = {}, actor, on
     }
   }, [form.day])
 
+  // A new booking for a patient waits for their membership; moving one that exists is never blocked.
+  useEffect(() => {
+    if (!isNew || !form.intakeId || form.patientKind === "applicant") return
+    let active = true
+    loadChart(form.intakeId)
+      .then((found) => active && setLooked({ id: form.intakeId, chart: found }))
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [isNew, form.intakeId, form.patientKind])
+
   useDialog({ onClose, closable: !busy })
 
   const start = fromTampa(form.day, form.time)
   const clashes = overlaps({ id: appointment?.id, staffUid: form.staffUid, start, minutes: form.minutes }, sameDay)
-  const problem = !form.intakeId ? "Choose a patient." : !form.staffUid ? "Choose who the appointment is with." : null
+  const chart = looked?.id === form.intakeId ? looked.chart : null
+  const unpaid = isNew && Boolean(chart) && !isMember(chart)
+  const problem = unpaid
+    ? "Waiting for the patient to choose a plan and pay."
+    : !form.intakeId ? "Choose a patient." : !form.staffUid ? "Choose who the appointment is with." : null
 
   const fail = (cause, fallback) => {
     console.error("Appointment write failed:", cause.code ?? cause.message)
@@ -289,6 +308,11 @@ export default function AppointmentDialog({ appointment, prefill = {}, actor, on
                   </Field>
                 </div>
               </div>
+              {isNew && form.patientKind === "applicant" && (
+                <p className="rounded-lg bg-paper-100 px-3 py-2 text-sm text-ink-950/75">
+                  Not admitted yet. Visits for this program start once they’re admitted and paid.
+                </p>
+              )}
               {clashes.length > 0 && editable && (
                 <p className="rounded-lg bg-paper-100 px-3 py-2 text-sm text-ink-950/75">
                   {form.staffName || "This person"} already has{" "}

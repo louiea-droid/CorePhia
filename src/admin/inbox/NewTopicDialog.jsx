@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { messageEmailConfigured } from "../../lib/mail"
 import { usingSeedData } from "../lib/firebase"
 import { loadCharts, loadIntakeRecord } from "../patients/chartStore"
+import { isMember } from "../patients/chartMath"
 import { inputClass, labelClass } from "../patients/noteUi"
 import Modal from "../ui/Modal"
 import { startTopic } from "./topicStore"
@@ -28,9 +29,12 @@ export default function NewTopicDialog({ actor, initialChartId = "", onClose, on
     }
   }, [])
 
+  const awaiting = Boolean(charts && chartId) && !isMember(charts.find((chart) => chart.id === chartId))
+
   const submit = async (event) => {
     event.preventDefault()
     if (!chartId) return setError("Choose a patient.")
+    if (awaiting) return
     if (!subject.trim()) return setError("Add a subject.")
     if (!body.trim()) return setError("Write a message first.")
     if (body.trim().length > 2000) return setError("Keep it to 2,000 characters.")
@@ -63,7 +67,7 @@ export default function NewTopicDialog({ actor, initialChartId = "", onClose, on
           <button
             type="submit"
             form="new-topic"
-            disabled={busy || !charts}
+            disabled={busy || !charts || awaiting}
             className="cursor-pointer rounded-full bg-ink-950 px-5 py-2 text-sm font-semibold text-paper-50 transition-colors duration-200 hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
           >
             {busy ? "Sending…" : "Send"}
@@ -83,6 +87,7 @@ export default function NewTopicDialog({ actor, initialChartId = "", onClose, on
             ))}
           </select>
         </label>
+        {awaiting && <p className="text-sm text-ink-950/65">Opens once the patient’s membership starts</p>}
         <label className="block">
           <span className={labelClass}>Subject</span>
           <input value={subject} maxLength={120} onChange={(event) => setSubject(event.target.value)} className={inputClass} />

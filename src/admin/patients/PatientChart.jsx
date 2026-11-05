@@ -4,7 +4,7 @@ import ApplicantModal from "../applicants/ApplicantModal"
 import AppointmentDialog from "../calendar/AppointmentDialog"
 import { loadAppointmentsFor } from "../calendar/appointmentStore"
 import { medicationInterestLabel } from "../analytics/analytics"
-import { ageFrom, asDate, bmi, currentExercisePlan, currentPrescriptions, disciplineOf, nextFollowUps, updatePrefill } from "./chartMath"
+import { ageFrom, asDate, bmi, currentExercisePlan, currentPrescriptions, disciplineOf, isMember, nextFollowUps, updatePrefill } from "./chartMath"
 import { countAmendments, createDraftNote, loadChart, loadIntakeRecord, loadNotes } from "./chartStore"
 import { AUDIT_ACTIONS, recordAuditEvent } from "../lib/firebase"
 import { ChevronLeftIcon } from "../ui/icons"
@@ -530,6 +530,7 @@ export default function PatientChart({ actor }) {
             notes={notes}
             actor={actor}
             canPost={chart.status === "active"}
+            awaitingMembership={!isMember(chart)}
             version={updatesVersion}
             emailFailed={updateEmailFailed}
             onPost={() => setPosting({ body: "", fromNoteId: null })}
@@ -676,7 +677,7 @@ export default function PatientChart({ actor }) {
           onClose={afterEditor}
           onSigned={async (signed, { share }) => {
             await afterEditor()
-            if (share) setPosting({ body: updatePrefill(signed), fromNoteId: signed.id })
+            if (share && isMember(chart)) setPosting({ body: updatePrefill(signed), fromNoteId: signed.id })
           }}
           onDiscarded={afterEditor}
         />

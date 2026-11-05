@@ -87,10 +87,10 @@ export const daysFrom = (from, to) => Math.round((utcDay(to) - utcDay(from)) / 8
 
 // What the To-do page lists for one patient, as of `today` (YYYY-MM-DD):
 // renewals and each discipline's follow-up due within `windowDays` (or
-// overdue), and the first consultation while no medical note is signed.
+// overdue), and "book first visit" for a paid member with no signed medical note and no booked visit.
 // Nothing here is ticked off by hand: signing the note that renews or follows
 // up is what clears an item.
-export function dueTasks(notes, today, windowDays = 7) {
+export function dueTasks(notes, today, windowDays = 7, { member = true, hasUpcomingVisit = false } = {}) {
   const signed = signedNewestFirst(notes)
   const withinWindow = (due) => due && daysFrom(today, due) <= windowDays
   const renewals = currentPrescriptions(signed)
@@ -110,10 +110,12 @@ export function dueTasks(notes, today, windowDays = 7) {
       due: followUp.date,
       days: daysFrom(today, followUp.date),
     }))
-  const firstConsult = latestSignedByDiscipline(signed).medical
-    ? []
-    : [{ kind: "firstConsult", discipline: "medical", due: null, days: null }]
-  return [...renewals, ...followUps, ...firstConsult]
+  // Paid and not yet booked: the first visit is the next step. Unpaid patients can't be seen yet.
+  const bookFirstVisit =
+    latestSignedByDiscipline(signed).medical || !member || hasUpcomingVisit
+      ? []
+      : [{ kind: "bookFirstVisit", discipline: "medical", due: null, days: null }]
+  return [...renewals, ...followUps, ...bookFirstVisit]
 }
 
 // Paid up: a membership that is active or past due (still covered while the card is fixed).
