@@ -91,8 +91,10 @@ export default function AppointmentDialog({ appointment, prefill = {}, actor, on
   const [staff, setStaff] = useState([])
   const [sameDay, setSameDay] = useState([])
   const [history, setHistory] = useState(null)
-  // The chart for the picked patient (chart null = an applicant, no chart yet).
+  // The picked patient's chart lookup: { id, chart } (chart null = an applicant,
+  // no chart yet) or { id, failed }. lookupTry bumps to retry a failed one.
   const [looked, setLooked] = useState(null)
+  const [lookupTry, setLookupTry] = useState(0)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const [cancelling, setCancelling] = useState(false)
@@ -129,25 +131,42 @@ export default function AppointmentDialog({ appointment, prefill = {}, actor, on
     let active = true
     loadChart(form.intakeId)
       .then((found) => active && setLooked({ id: form.intakeId, chart: found }))
-      .catch(() => {})
+      .catch((cause) => {
+        console.error("Chart lookup failed:", cause.code ?? cause.message)
+        if (active) setLooked({ id: form.intakeId, failed: true })
+      })
     return () => {
       active = false
     }
-  }, [isNew, form.intakeId, form.patientKind])
+  }, [isNew, form.intakeId, form.patientKind, lookupTry])
 
   useDialog({ onClose, closable: !busy })
 
   const start = fromTampa(form.day, form.time)
   const clashes = overlaps({ id: appointment?.id, staffUid: form.staffUid, start, minutes: form.minutes }, sameDay)
-  const chart = looked?.id === form.intakeId ? looked.chart : null
-  const unpaid = isNew && Boolean(chart) && !isMember(chart)
-  const problem = unpaid
-    ? "Waiting for the patient to choose a plan and pay."
-    : !form.intakeId ? "Choose a patient." : !form.staffUid ? "Choose who the appointment is with." : null
+  const lookup = isNew && Boolean(form.intakeId) && form.patientKind !== "applicant" ? (looked?.id === form.intakeId ? looked : "checking") : null
+  const lookupFailed = Boolean(lookup?.failed)
+  const chart = lookup?.chart ?? null
+  const unpaid = Boolean(chart) && !isMember(chart)
+  const applicant = isNew && (form.patientKind === "applicant" || lookup?.chart === null)
+  const problem =
+    lookup === "checking"
+      ? "Checking membership…"
+      : lookupFailed
+        ? "Couldn't check this patient's membership. Try again."
+        : unpaid
+          ? "Waiting for the patient to choose a plan and pay."
+          : !form.intakeId
+            ? "Choose a patient."
+            : !form.staffUid
+              ? "Choose who the appointment is with."
+              : null
 
+  // A new booking refused by the rules is almost always an unpaid patient
+  // whose membership changed after the lookup.
   const fail = (cause, fallback) => {
     console.error("Appointment write failed:", cause.code ?? cause.message)
-    setError(cause?.code === "permission-denied" ? (isNew ? "Your role can't do this." : STALE) : fallback)
+    setError(cause?.code === "permission-denied" ? (isNew ? "Waiting for the patient to choose a plan and pay." : STALE) : fallback)
   }
 
   const save = async () => {
@@ -308,7 +327,7 @@ export default function AppointmentDialog({ appointment, prefill = {}, actor, on
                   </Field>
                 </div>
               </div>
-              {isNew && form.patientKind === "applicant" && (
+              {applicant && (
                 <p className="rounded-lg bg-paper-100 px-3 py-2 text-sm text-ink-950/75">
                   Not admitted yet. Visits for this program start once they’re admitted and paid.
                 </p>
@@ -417,6 +436,18 @@ export default function AppointmentDialog({ appointment, prefill = {}, actor, on
                 <p role={error ? "alert" : undefined} className={`max-w-80 text-sm ${error ? "text-brand-dark" : "text-ink-950/55"}`}>
                   {error ?? problem}
                 </p>
+              )}
+              {lookupFailed && !error && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLooked(null)
+                    setLookupTry((n) => n + 1)
+                  }}
+                  className="cursor-pointer rounded-full px-3 py-2 text-sm font-medium whitespace-nowrap text-accent-text transition-colors duration-200 hover:bg-ink-950/5"
+                >
+                  Try again
+                </button>
               )}
               {editable && (
                 <button

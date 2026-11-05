@@ -21,7 +21,36 @@ export function buildDemoStore(records) {
 
   records
     .filter((record) => record.status === "admitted")
-    .forEach((record, index) => {
+    .forEach((record, index, admittedList) => {
+      // The last one just paid: a member with no notes and no visit yet, so
+      // the To-do's "Paid: book first visit" group has a row.
+      if (index === admittedList.length - 1) {
+        charts.set(record.id, {
+          id: record.id,
+          intakeRecordId: record.id,
+          firstName: record.demographics?.firstName ?? "",
+          lastName: record.demographics?.lastName ?? "",
+          dateOfBirth: record.demographics?.dateOfBirth ?? "",
+          sexAssignedAtBirth: record.demographics?.sexAssignedAtBirth ?? "",
+          status: "active",
+          admittedAt: new Date(now - 4 * DAY),
+          admittedBy: PROVIDER,
+          updatedAt: new Date(now - 2 * DAY),
+          lastNote: null,
+          formPlan: "Core",
+          membership: {
+            plan: "Core",
+            status: "active",
+            source: "stripe",
+            since: new Date(now - 2 * DAY),
+            currentPeriodEnd: new Date(now + 28 * DAY),
+            cancelAtPeriodEnd: false,
+            updatedAt: new Date(now - 2 * DAY),
+          },
+        })
+        notes.set(record.id, [])
+        return
+      }
       const admitted = now - (40 + index * 9) * DAY
       const consultAt = admitted + 2 * DAY
       const progressAt = consultAt + 30 * DAY
@@ -191,7 +220,8 @@ export function buildDemoStore(records) {
 
   // A week of appointments across the first few charts, with one moved and
   // one cancelled so the History list has something to show. The last
-  // chart's medical follow-up is left unbooked, for the calendar marker.
+  // chart with notes keeps its medical follow-up unbooked, for the calendar
+  // marker, and the new member (last) has no visit.
   const today = todayInTampa()
   const chartIds = [...charts.keys()]
   const appointments = []
@@ -204,7 +234,7 @@ export function buildDemoStore(records) {
     [3, "09:30", "dietitian", DIETITIAN],
   ]
   SLOTS.forEach(([offset, time, discipline, staffMember], index) => {
-    const chartId = chartIds[index % Math.max(1, chartIds.length - 1)]
+    const chartId = chartIds[index % Math.max(1, chartIds.length - 2)]
     if (!chartId) return
     const chart = charts.get(chartId)
     appointments.push({

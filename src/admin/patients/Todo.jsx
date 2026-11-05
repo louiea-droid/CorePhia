@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
-import { asDate, dueTasks, isMember } from "./chartMath"
+import { asDate, dueTasks, isMember, longDateTampa } from "./chartMath"
 import { loadAppointments } from "../calendar/appointmentStore"
 import { addDays, fromTampa, matchingAppointment, tampaParts, todayInTampa } from "../calendar/calendarMath"
 import AddedTodos from "./AddedTodos"
@@ -37,15 +37,20 @@ const taskLabel = (task) =>
       ? task.discipline === "medical"
         ? "Follow-up visit"
         : `${DISCIPLINE_LABELS[task.discipline]} follow-up`
-      : "Book first visit"
+      : task.memberSince
+        ? `Member since ${task.memberSince}`
+        : "Paid"
 
-// Renewals, follow-ups and first consultations due, worked out from signed
-// notes (chartMath.dueTasks). Nothing is ticked off here: signing the note
-// that renews or follows up is what clears an item, so this can't drift from
-// the charts. The dietitian sees dietitian follow-ups first, with a switch
-// to everything.
+// Renewals, follow-ups, and paid patients with no first visit booked, worked
+// out from signed notes (chartMath.dueTasks) and the calendar. Nothing is
+// ticked off here: signing the note that renews or follows up (or booking
+// the first visit) is what clears an item, so this can't drift from the
+// charts. The dietitian sees dietitian follow-ups first, with a switch to
+// everything.
 export default function Todo({ actor }) {
   const [tasks, setTasks] = useState(null)
+  // The calendar didn't load, so who still needs a first visit is unknown.
+  const [firstUnknown, setFirstUnknown] = useState(false)
   const [error, setError] = useState(null)
   const [showAll, setShowAll] = useState(actor.role !== "dietitian")
   // Staff-added to-dos load on their own, so a failure there never hides
@@ -77,11 +82,15 @@ export default function Todo({ actor }) {
     // follow-up that's already booked says so.
     Promise.all([
       loadActiveChartNotes(actor.uid),
-      loadAppointments(fromTampa(addDays(todayInTampa(), -33)), fromTampa(addDays(todayInTampa(), 180))).catch(() => []),
+      loadAppointments(fromTampa(addDays(todayInTampa(), -33)), fromTampa(addDays(todayInTampa(), 180))).catch((cause) => {
+        console.error("Appointments failed:", cause.code ?? cause.message)
+        return null
+      }),
     ])
-      .then(([perChart, appointments]) => {
+      .then(([perChart, loaded]) => {
         if (active) setChartIds(new Set(perChart.map(({ chart }) => chart.id)))
-        return perChart.flatMap(({ chart, notes }) => {
+        const appointments = loaded ?? []
+        const all = perChart.flatMap(({ chart, notes }) => {
           const name = `${chart.firstName} ${chart.lastName}`.trim() || "Unnamed patient"
           const admittedAt = asDate(chart.admittedAt)
           const hasUpcomingVisit = appointments.some((a) => a.intakeId === chart.id && a.status === "scheduled")
@@ -91,12 +100,18 @@ export default function Todo({ actor }) {
             chartId: chart.id,
             name,
             admittedAt,
+            memberSince: longDateTampa(chart.membership?.since),
             booked:
               task.kind === "followUp"
                 ? matchingAppointment({ intakeId: chart.id, discipline: task.discipline, date: task.due }, appointments)
                 : null,
           }))
         })
+        if (loaded) return all
+        // Without the calendar every paid patient would look unbooked.
+        const kept = all.filter((task) => task.kind !== "bookFirstVisit")
+        if (active) setFirstUnknown(kept.length < all.length)
+        return kept
       })
       .then((all) => active && setTasks(all))
       .catch((cause) => active && setError(cause.code ?? cause.message))
@@ -114,7 +129,7 @@ export default function Todo({ actor }) {
           .sort((a, b) =>
             group.key === "first" ? (a.admittedAt?.getTime() ?? 0) - (b.admittedAt?.getTime() ?? 0) : a.days - b.days,
           ),
-      })).filter((group) => group.tasks.length)
+      })).filter((group) => group.tasks.length || (group.key === "first" && firstUnknown && showAll))
     : null
 
   return (
@@ -178,8 +193,14 @@ export default function Todo({ actor }) {
                     id={`todo-${group.key}`}
                     className={`text-sm font-semibold ${group.key === "overdue" ? "text-brand-dark" : "text-ink-950"}`}
                   >
-                    {group.title} <span className="font-normal text-ink-950/45 tabular-nums">{group.tasks.length}</span>
+                    {group.title}{" "}
+                    {group.tasks.length > 0 && <span className="font-normal text-ink-950/45 tabular-nums">{group.tasks.length}</span>}
                   </h2>
+                  {group.key === "first" && firstUnknown && (
+                    <p role="status" className="mt-2 text-sm text-ink-950/65">
+                      Couldn't check booked visits. Reload to see who still needs a first visit.
+                    </p>
+                  )}
                   <ul className="mt-2 divide-y divide-ink-950/5">
                     {group.tasks.map((task) => (
                       <li key={task.id}>

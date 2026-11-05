@@ -7,8 +7,9 @@ import { inputClass, labelClass } from "../patients/noteUi"
 import Modal from "../ui/Modal"
 import { startTopic } from "./topicStore"
 
-// Start a topic with a patient. Active charts only: an applicant has no chart
-// and an inactive chart can't be messaged.
+// Start a topic with a patient. Active members only: an applicant has no chart,
+// an inactive chart can't be messaged, and an unpaid one waits for payment.
+// Every chart is loaded so one opened from a discharged chart says why.
 export default function NewTopicDialog({ actor, initialChartId = "", onClose, onStarted }) {
   const [charts, setCharts] = useState(null)
   const [chartId, setChartId] = useState(initialChartId)
@@ -22,14 +23,17 @@ export default function NewTopicDialog({ actor, initialChartId = "", onClose, on
   useEffect(() => {
     let live = true
     loadCharts()
-      .then((all) => live && setCharts(all.filter((chart) => chart.status === "active").sort((a, b) => `${a.lastName}${a.firstName}`.localeCompare(`${b.lastName}${b.firstName}`))))
+      .then((all) => live && setCharts(all.sort((a, b) => `${a.lastName}${a.firstName}`.localeCompare(`${b.lastName}${b.firstName}`))))
       .catch(() => live && setCharts([]))
     return () => {
       live = false
     }
   }, [])
 
-  const awaiting = Boolean(charts && chartId) && !isMember(charts.find((chart) => chart.id === chartId))
+  const picked = charts?.find((chart) => chart.id === chartId)
+  const discharged = picked?.status === "inactive"
+  const awaiting = Boolean(charts && chartId) && (discharged || !isMember(picked))
+  const activeCharts = charts?.filter((chart) => chart.status === "active")
 
   const submit = async (event) => {
     event.preventDefault()
@@ -80,14 +84,18 @@ export default function NewTopicDialog({ actor, initialChartId = "", onClose, on
           <span className={labelClass}>Patient</span>
           <select value={chartId} onChange={(event) => setChartId(event.target.value)} className={inputClass} disabled={!charts}>
             <option value="">{charts ? "Choose a patient" : "Loading patients…"}</option>
-            {charts?.map((chart) => (
+            {activeCharts?.map((chart) => (
               <option key={chart.id} value={chart.id}>
                 {`${chart.firstName} ${chart.lastName}`.trim() || "Unnamed patient"}
               </option>
             ))}
           </select>
         </label>
-        {awaiting && <p className="text-sm text-ink-950/65">Opens once the patient’s membership starts</p>}
+        {awaiting && picked && (
+          <p role="status" className="text-sm text-ink-950/65">
+            {discharged ? "This patient is discharged, so their portal is closed." : "Opens once the patient’s membership starts"}
+          </p>
+        )}
         <label className="block">
           <span className={labelClass}>Subject</span>
           <input value={subject} maxLength={120} onChange={(event) => setSubject(event.target.value)} className={inputClass} />
