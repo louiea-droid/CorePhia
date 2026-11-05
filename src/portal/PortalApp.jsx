@@ -71,6 +71,24 @@ export function LinkedPortal({ user, link, chart }) {
         </p>
       </div>
     )
+  // Discharged and unpaid: checkout would refuse them, so no plan choice.
+  if (!isMember(chart) && chart.status === "inactive")
+    return (
+      <div className={cardClass}>
+        <h1 className="font-serif text-3xl text-ink-950">Your program with CorePhia is closed.</h1>
+        <p className="mt-3 max-w-prose text-ink-950/70">
+          If you have questions, call us at{" "}
+          <a href={SUPPORT_PHONE_HREF} className={inlineLink}>
+            {SUPPORT_PHONE}
+          </a>{" "}
+          or email{" "}
+          <a href="mailto:info@corephia.com" className={inlineLink}>
+            info@corephia.com
+          </a>
+          .
+        </p>
+      </div>
+    )
   if (!isMember(chart)) return returning ? <Confirming /> : <PlanChoice chart={chart} link={link} />
   if (returning)
     return (
@@ -126,6 +144,9 @@ export default function PortalApp() {
     }
   }, [key, user])
 
+  const current = result?.key === key ? result : null
+  const link = current?.link
+
   // The chart, live: undefined until the first snapshot (a payment lands here),
   // null when it can't be read (an error or a missing doc, never "unpaid").
   const [chartState, setChartState] = useState({ id: null, chart: undefined })
@@ -139,9 +160,6 @@ export default function PortalApp() {
     )
   }, [intakeId])
   const chart = chartState.id === intakeId ? chartState.chart : undefined
-
-  const current = result?.key === key ? result : null
-  const link = current?.link
 
   const state =
     user === undefined
