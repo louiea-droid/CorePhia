@@ -6,7 +6,7 @@ import { collection, doc, onSnapshot, query, serverTimestamp, updateDoc, where, 
 import { queueMail } from "../../lib/mail"
 import { notifiesStaff } from "../../lib/messageMath"
 import { db } from "./patientAuth"
-import { listenDemoChart, portalDemo } from "./portalDemo"
+import { demoMarkRead, demoMessages, listenDemoChart, listenDemoTopics, portalDemo } from "./portalDemo"
 
 const topicsOf = (intakeId) => collection(db, "patients", intakeId, "topics")
 
@@ -19,6 +19,7 @@ function notifyStaff() {
 }
 
 export function listenMyTopics(intakeId, onChange, onError) {
+  if (portalDemo) return listenDemoTopics(onChange)
   if (!db) {
     onChange([])
     return () => {}
@@ -28,7 +29,7 @@ export function listenMyTopics(intakeId, onChange, onError) {
 
 export function listenMyMessages(intakeId, topicId, onChange, onError) {
   if (!db) {
-    onChange([])
+    onChange(portalDemo ? demoMessages(topicId) : [])
     return () => {}
   }
   return onSnapshot(
@@ -118,5 +119,6 @@ export async function closeConversation(intakeId, topicId) {
 }
 
 export async function markConversationRead(intakeId, topicId) {
+  if (portalDemo) return demoMarkRead(topicId)
   await updateDoc(doc(topicsOf(intakeId), topicId), { patientReadAt: serverTimestamp() })
 }

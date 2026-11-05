@@ -3,11 +3,11 @@
 // appointments. Fails silently to an empty list (spec 2026-11-05-patient-portal-redesign).
 import { collection, onSnapshot } from "firebase/firestore"
 import { db } from "./patientAuth"
-import { portalDemo } from "./portalDemo"
+import { demoVisits, portalDemo } from "./portalDemo"
 
 export function listenMyVisits(intakeId, onChange) {
   if (portalDemo || !db || !intakeId) {
-    onChange([])
+    onChange(portalDemo ? demoVisits() : [])
     return () => {}
   }
   return onSnapshot(

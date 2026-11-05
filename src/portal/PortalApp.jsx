@@ -137,15 +137,16 @@ function BeforePortal({ chart, link, returning, onDone }) {
 }
 
 // A member's portal: the shell with its sidebar and tab bar, and the page.
-// Pages read { user, link, chart } from the outlet context.
+// Pages read { user, link, chart, topics } from the outlet context (topics:
+// null while loading, [] if they can't be read).
 function MemberLayout({ user, link, chart }) {
-  const { topics } = useMyTopics(link.intakeId)
+  const { topics, failed } = useMyTopics(link.intakeId)
   const newReplies = topics?.filter((topic) => unreadFor(topic, "patient")).length ?? 0
   const { pathname } = useLocation()
   return (
     <PortalShell user={user} link={link} newReplies={newReplies}>
       <div key={pathname} data-portal-page className="animate-page-in space-y-6">
-        <Outlet context={{ user, link, chart }} />
+        <Outlet context={{ user, link, chart, topics: failed ? [] : topics }} />
       </div>
     </PortalShell>
   )

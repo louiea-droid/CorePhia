@@ -50,3 +50,23 @@ export function whatsNext({ membership, visits = [], topics = [], updates = [], 
 
   return list.length ? { main: list[0], more: list.slice(1, 3) } : { main: fallback, more: [] }
 }
+
+// "Seen" for updates is per device (spec): the id of the newest update the
+// patient has had open on the Updates page.
+const SEEN_UPDATE_KEY = "corephia-portal-seen-update"
+
+export function seenUpdateId() {
+  try {
+    return localStorage.getItem(SEEN_UPDATE_KEY)
+  } catch {
+    return null
+  }
+}
+
+export function markUpdatesSeen(updates) {
+  try {
+    if (updates[0]) localStorage.setItem(SEEN_UPDATE_KEY, updates[0].id)
+  } catch {
+    // Without storage the update reminder simply stays on.
+  }
+}

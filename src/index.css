@@ -833,11 +833,3 @@ body {
     animation: none;
   }
 }
-
-/* Portal demo (development only): room under the page for its corner pill
-   on computers (PortalDemoBar.jsx). */
-@media (width >= 64rem) {
-  body:has([data-portal-demo]) main {
-    padding-bottom: 6rem;
-  }
-}

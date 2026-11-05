@@ -13,7 +13,7 @@ import { addDoc, collection, doc, getDoc, getDocs, getFirestore, query, serverTi
 import { isInviteUsable } from "../../lib/inviteMath"
 import { setPatientSessionHint } from "../../lib/patientSessionHint"
 import { markPortalActivity } from "../../admin/lib/useIdleTimeout"
-import { DEMO_LINK, DEMO_USER, portalDemo } from "./portalDemo"
+import { DEMO_LINK, DEMO_USER, demoProgress, demoUpdates, portalDemo } from "./portalDemo"
 
 const config = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -83,6 +83,7 @@ export async function getMyPortalLink(uid) {
 // here rather than by Firestore so no composite index is needed; a patient
 // has tens of updates at most.
 export async function getMyUpdates(intakeId) {
+  if (portalDemo) return demoUpdates()
   if (!db) return []
   const snap = await getDocs(query(collection(db, "patients", intakeId, "updates"), where("removed", "==", false)))
   const millis = (value) => value?.toMillis?.() ?? 0
@@ -93,6 +94,7 @@ export async function getMyUpdates(intakeId) {
 // only what isn't removed (the rules refuse any query that could return a
 // removed entry).
 export async function getMyProgress(intakeId) {
+  if (portalDemo) return demoProgress()
   if (!db) return { entries: [], baseline: null }
   const snap = await getDocs(query(collection(db, "patients", intakeId, "progress"), where("removed", "==", false)))
   const all = snap.docs.map((entry) => ({ id: entry.id, ...entry.data() }))

@@ -1,5 +1,6 @@
 import { Link, NavLink } from "react-router-dom"
 import { signOutPatient } from "./lib/patientAuth"
+import { portalDemo } from "./lib/portalDemo"
 
 // Icons drawn like the approved mockup (24px grid, 1.7 stroke).
 const ICONS = {
@@ -65,11 +66,11 @@ const footLink = `block rounded-lg px-2 py-1.5 text-sm text-ink-950/75 transitio
 function Logo() {
   return (
     <p className="flex items-center gap-2 text-[17px] font-semibold text-ink-950">
-      <svg width="26" height="16" viewBox="0 0 26 16" aria-hidden="true" className="shrink-0">
+      <svg width="26" height="16" viewBox="0 0 26 16" aria-hidden="true" className="shrink-0 text-brand">
         <path
           d="M7 8c0-3 2-5 4.5-5S16 8 16 8s2 5 4.5 5S25 11 25 8s-2-5-4.5-5S16 8 16 8s-2 5-4.5 5S7 11 7 8z"
           fill="none"
-          stroke="#3b5bdb"
+          stroke="currentColor"
           strokeWidth="2.2"
         />
       </svg>
@@ -181,7 +182,7 @@ export default function PortalShell({ user, link, nav = true, newReplies = 0, ch
       </header>
 
       <main
-        className={`min-w-0 px-4 pt-2 sm:px-6 lg:px-10 lg:pt-[34px] lg:pb-10 ${
+        className={`min-w-0 px-4 pt-2 sm:px-6 lg:px-10 lg:pt-[34px] ${portalDemo ? "lg:pb-24" : "lg:pb-10"} ${
           nav ? "pb-[calc(6rem+env(safe-area-inset-bottom))]" : "pb-10"
         }`}
       >

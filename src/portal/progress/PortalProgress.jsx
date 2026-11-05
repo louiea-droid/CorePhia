@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from "react"
-import { Link } from "react-router-dom"
+import { useEffect, useId, useRef, useState } from "react"
 import WeightChart from "../../components/WeightChart"
 import { series, summary, vitalsText } from "../../lib/progressMath"
 import { deleteWeighIn, getMyProgress } from "../lib/patientAuth"
@@ -17,10 +16,96 @@ function changeLine(changeLb) {
   return `${changeLb < 0 ? "Down" : "Up"} ${Math.abs(changeLb)} lbs since you started`
 }
 
+// The weight line as a soft wave, oldest to newest, heavier higher, drawn on
+// an 800 x 120 box: the line stays between y 30 and 92, the fill runs under it.
+function wavePath(points) {
+  const weights = points.map((point) => point.weightLb)
+  const max = Math.max(...weights)
+  const min = Math.min(...weights)
+  const xy =
+    points.length > 1
+      ? points.map((point, i) => [(i / (points.length - 1)) * 800, max === min ? 60 : 30 + ((max - point.weightLb) / (max - min)) * 62])
+      : [
+          [0, 60],
+          [800, 60],
+        ]
+  let line = `M0 ${xy[0][1].toFixed(1)}`
+  for (let i = 1; i < xy.length; i++) {
+    const mid = ((xy[i - 1][0] + xy[i][0]) / 2).toFixed(1)
+    line += ` C${mid} ${xy[i - 1][1].toFixed(1)} ${mid} ${xy[i][1].toFixed(1)} ${xy[i][0].toFixed(1)} ${xy[i][1].toFixed(1)}`
+  }
+  return { line, area: `${line} L800 120 L0 120 Z` }
+}
+
+function Wave({ points }) {
+  const id = useId()
+  const { line, area } = wavePath(points)
+  return (
+    <svg viewBox="0 0 800 120" preserveAspectRatio="none" aria-hidden="true" className="mt-6 block h-12 w-full sm:h-14">
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#60a5fa" stopOpacity=".18" />
+          <stop offset="1" stopColor="#60a5fa" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={area} fill={`url(#${id})`} />
+      <path d={line} fill="none" stroke="#60a5fa" strokeWidth="2.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+    </svg>
+  )
+}
+
+const signedLb = (lb) => (lb < 0 ? `−${Math.abs(lb)} lbs` : lb > 0 ? `+${lb} lbs` : "No change")
+
+// The Overview's progress, inside the What's next card (WhatsNextCard has no
+// bottom padding): the headline numbers, then the weight wave along the
+// card's bottom edge, in the flow below the numbers so it never sits under text.
+function CompactProgress({ current, points, numbers, onRetry }) {
+  const box = "mt-6 px-6 pb-6 sm:px-8 sm:pb-7"
+  if (!current)
+    return (
+      <Loading label="Loading your progress…" className={`${box} flex gap-8`}>
+        <Skeleton className="h-12 w-24" />
+        <Skeleton className="h-12 w-24" />
+      </Loading>
+    )
+  if (current.failed)
+    return (
+      <p className={`${box} text-sm text-ink-950/75`}>
+        We couldn't load your progress.{" "}
+        <button type="button" onClick={onRetry} className="cursor-pointer font-semibold text-accent-dark underline underline-offset-2 hover:text-ink-950">
+          Try again
+        </button>
+      </p>
+    )
+  if (!points.length)
+    return <p className={`${box} max-w-prose text-sm leading-relaxed text-ink-950/70`}>Your weight from each visit will show here. You can also log your own weigh-ins.</p>
+  const stats = [
+    ["Starting weight", numbers.startLb != null && `${numbers.startLb} lbs`],
+    ["Latest weight", `${numbers.latestLb} lbs`],
+    ["Change", numbers.changeLb != null && signedLb(numbers.changeLb), numbers.changeLb < 0 ? "text-[#1f6b4f]" : ""],
+    ["To your goal", numbers.toGoalLb != null && (numbers.toGoalLb === 0 ? "Reached" : `${numbers.toGoalLb} lbs`)],
+  ].filter(([, value]) => value)
+  return (
+    <div className="mt-6">
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-4 px-6 sm:flex sm:flex-wrap sm:gap-x-10 sm:px-8">
+        {stats.map(([label, value, tone = ""]) => (
+          <div key={label}>
+            <dt className="text-[12.5px] text-ink-950/65">{label}</dt>
+            <dd className={`mt-0.5 font-serif text-[22px] leading-tight sm:text-[28px] ${tone || "text-ink-950"}`}>{value}</dd>
+          </div>
+        ))}
+      </dl>
+      <Wave points={points} />
+    </div>
+  )
+}
+
 // The portal's Track progress box: visit weights and the patient's own
 // weigh-ins on one chart, visit BP and heart rate, and logging a weigh-in.
-// `compact` (the Overview): the headline numbers and a link to the full page.
-export default function PortalProgress({ intakeId, compact = false }) {
+// `compact` (the Overview): the headline numbers and the weight wave, for
+// inside the What's next card. onLoad gets the entries once they load ([] if
+// they can't), for the card's weigh-in reminder.
+export default function PortalProgress({ intakeId, compact = false, onLoad }) {
   const [attempt, setAttempt] = useState(0)
   const [result, setResult] = useState(null) // { attempt, data } | { attempt, failed }
   const [logging, setLogging] = useState(false)
@@ -36,16 +121,22 @@ export default function PortalProgress({ intakeId, compact = false }) {
   useEffect(() => {
     let live = true
     getMyProgress(intakeId).then(
-      (data) => live && setResult({ attempt, data }),
+      (data) => {
+        if (!live) return
+        setResult({ attempt, data })
+        onLoad?.(data.entries)
+      },
       (cause) => {
         console.error("Could not load progress:", cause.code ?? cause.message)
-        if (live) setResult({ attempt, failed: true })
+        if (!live) return
+        setResult({ attempt, failed: true })
+        onLoad?.([])
       },
     )
     return () => {
       live = false
     }
-  }, [intakeId, attempt])
+  }, [intakeId, attempt, onLoad])
 
   // Keep the last answer on screen while a reload (after logging or deleting)
   // is in flight, so the box and its open history don't flicker shut.
@@ -77,23 +168,15 @@ export default function PortalProgress({ intakeId, compact = false }) {
     dialogRef.current?.close()
   }
 
+  if (compact) return <CompactProgress current={current} points={points} numbers={numbers} onRetry={reload} />
+
   return (
     <section id="progress" aria-labelledby="progress-heading" className="scroll-mt-24 rounded-3xl border border-ink-950/10 bg-white p-6 sm:p-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 id="progress-heading" className="font-serif text-2xl text-ink-950">
           Track progress
         </h2>
-        {compact ? (
-          <Link
-            to="/account/progress"
-            className="rounded-full border border-ink-950/15 px-5 py-2.5 text-sm font-semibold text-ink-950 transition-colors duration-200 hover:bg-paper-100"
-          >
-            View progress
-          </Link>
-        ) : (
-          current?.data &&
-          active &&
-          !logging && (
+        {current?.data && active && !logging && (
           <button
             type="button"
             onClick={() => setLogging(true)}
@@ -101,7 +184,6 @@ export default function PortalProgress({ intakeId, compact = false }) {
           >
             Log your weight
           </button>
-          )
         )}
       </div>
 
@@ -120,7 +202,7 @@ export default function PortalProgress({ intakeId, compact = false }) {
         <Loading label="Loading your progress…">
           <Skeleton className="h-10 w-40" />
           <Skeleton className="mt-3 h-4 w-56" />
-          {!compact && <Skeleton className="mt-6 h-52 w-full rounded-2xl" />}
+          <Skeleton className="mt-6 h-52 w-full rounded-2xl" />
         </Loading>
       ) : current.failed ? (
         <div className="mt-6">
@@ -146,9 +228,9 @@ export default function PortalProgress({ intakeId, compact = false }) {
               )}
             </div>
           </div>
-          {!compact && <WeightChart points={points} goalLb={numbers.goalLb} animate />}
+          <WeightChart points={points} goalLb={numbers.goalLb} animate />
 
-          {!compact && visits.length + weighIns.length > 0 && (
+          {visits.length + weighIns.length > 0 && (
             <div className="mt-2">
               {visits.length > 0 && (
                 <div className="mt-8">

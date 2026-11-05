@@ -13,23 +13,30 @@ const yearOf = (value) => asDate(value)?.getFullYear() ?? ""
 // timeline. Plain text only; React escapes it, so staff text never renders
 // as HTML.
 // `latestOnly` (the Overview): the newest update and a link to the rest.
-export default function PortalUpdates({ intakeId, latestOnly = false }) {
+// onLoad gets the updates once they load ([] if they can't).
+export default function PortalUpdates({ intakeId, latestOnly = false, onLoad }) {
   const [attempt, setAttempt] = useState(0)
   const [result, setResult] = useState(null) // { attempt, updates } | { attempt, failed }
 
   useEffect(() => {
     let live = true
     getMyUpdates(intakeId).then(
-      (updates) => live && setResult({ attempt, updates }),
+      (updates) => {
+        if (!live) return
+        setResult({ attempt, updates })
+        onLoad?.(updates)
+      },
       (cause) => {
         console.error("Could not load updates:", cause.code ?? cause.message)
-        if (live) setResult({ attempt, failed: true })
+        if (!live) return
+        setResult({ attempt, failed: true })
+        onLoad?.([])
       },
     )
     return () => {
       live = false
     }
-  }, [intakeId, attempt])
+  }, [intakeId, attempt, onLoad])
 
   const current = result?.attempt === attempt ? result : null
 

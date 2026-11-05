@@ -53,7 +53,7 @@ export default function MessagesBox({ intakeId }) {
           {latest.map((topic) => (
             <li key={topic.id}>
               <Link to={`/account/messages/${topic.id}`} className="flex items-center justify-between gap-4 py-3 transition-colors hover:text-accent-dark">
-                <span className="min-w-0 truncate text-ink-950">{topic.subject}</span>
+                <span className="min-w-0 wrap-break-word text-ink-950">{topic.subject}</span>
                 <span className="flex shrink-0 items-center gap-3 text-sm text-ink-950/60">
                   {unreadFor(topic, "patient") && <span className="rounded-full bg-accent/20 px-2.5 py-0.5 text-xs font-semibold text-ink-950">New reply</span>}
                   {when(topic.lastMessageAt)}
