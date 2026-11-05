@@ -12,6 +12,7 @@ import { getMyPortalLink, signOutPatient, watchPatientUser } from "./lib/patient
 import { listenMyChart } from "./lib/messageStore"
 import PlanChoice from "./membership/PlanChoice"
 import MessagesPage from "./messages/MessagesPage"
+import PortalDemoBar from "./PortalDemoBar"
 import PortalHome from "./PortalHome"
 import PortalLayout from "./PortalLayout"
 import ProgressPage from "./progress/ProgressPage"
@@ -268,6 +269,7 @@ export default function PortalApp() {
 
       <LoginPanel open={loginOpen} onClose={() => setLoginOpen(false)} />
       {idleSecondsLeft != null && <IdleWarningModal secondsLeft={idleSecondsLeft} onSignOut={signOut} />}
+      <PortalDemoBar />
     </section>
   )
 }

@@ -13,6 +13,7 @@ import { addDoc, collection, doc, getDoc, getDocs, getFirestore, query, serverTi
 import { isInviteUsable } from "../../lib/inviteMath"
 import { setPatientSessionHint } from "../../lib/patientSessionHint"
 import { markPortalActivity } from "../../admin/lib/useIdleTimeout"
+import { DEMO_LINK, DEMO_USER, portalDemo } from "./portalDemo"
 
 const config = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -35,6 +36,10 @@ const auth = app ? getAuth(app) : null
 export const db = app ? getFirestore(app) : null
 
 export function watchPatientUser(onChange) {
+  if (portalDemo) {
+    onChange(DEMO_USER)
+    return () => {}
+  }
   if (!auth) {
     onChange(null)
     return () => {}
@@ -65,6 +70,7 @@ export async function signInPatient(email, password) {
 // (see firestore.rules). null = not linked yet, which includes old self
 // sign-up docs with no intakeId.
 export async function getMyPortalLink(uid) {
+  if (portalDemo) return DEMO_LINK
   if (!db) return null
   const snap = await getDoc(doc(db, "patientAccounts", uid))
   const data = snap.data()

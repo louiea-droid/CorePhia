@@ -6,6 +6,7 @@ import { collection, doc, onSnapshot, query, serverTimestamp, updateDoc, where, 
 import { queueMail } from "../../lib/mail"
 import { notifiesStaff } from "../../lib/messageMath"
 import { db } from "./patientAuth"
+import { listenDemoChart, portalDemo } from "./portalDemo"
 
 const topicsOf = (intakeId) => collection(db, "patients", intakeId, "topics")
 
@@ -49,6 +50,7 @@ export function listenMyMessages(intakeId, topicId, onChange, onError) {
 // missing. A failed read goes to onError instead, so callers never mistake it
 // for a chart with no membership.
 export function listenMyChart(intakeId, onChange, onError) {
+  if (portalDemo) return listenDemoChart(onChange)
   if (!db) {
     onError()
     return () => {}
