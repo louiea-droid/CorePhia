@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState } from "react"
 import { NavLink, Outlet, useLocation } from "react-router-dom"
 import { MailIcon, PhoneIcon } from "../components/icons"
 import { unreadFor } from "../lib/messageMath"
-import { SUPPORT_PHONE } from "../lib/siteContact"
+import { SUPPORT_PHONE, SUPPORT_PHONE_HREF } from "../lib/siteContact"
 import { signOutPatient } from "./lib/patientAuth"
 import { useMyTopics } from "./messages/useMyTopics"
 
@@ -114,7 +114,7 @@ export default function PortalLayout({ user, link, chart }) {
             <ul className="mt-4 space-y-1 text-sm">
               <li>
                 <a
-                  href={`tel:${SUPPORT_PHONE.replace(/\D/g, "")}`}
+                  href={SUPPORT_PHONE_HREF}
                   className="-mx-2 flex items-center gap-3 rounded-xl px-2 py-2 font-medium text-ink-950 transition-colors duration-200 hover:bg-paper-100"
                 >
                   <PhoneIcon className="size-4 shrink-0 text-accent-dark" aria-hidden="true" />

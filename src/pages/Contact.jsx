@@ -4,7 +4,7 @@ import { Link } from "react-router-dom"
 import { useReveal } from "../hooks/useReveal"
 import { CheckCircleIcon, MailIcon, MapPinIcon, PhoneIcon } from "../components/icons"
 import Select from "../components/Select"
-import { LOCATION, LOCATION_MAP_URL, SUPPORT_PHONE } from "../lib/siteContact"
+import { LOCATION, LOCATION_MAP_URL, SUPPORT_PHONE, SUPPORT_PHONE_HREF } from "../lib/siteContact"
 
 const INTERESTS = [
   "Starting a weight loss program",
@@ -21,7 +21,7 @@ const inputClass =
 const labelClass = "mb-1.5 block text-sm font-medium text-ink-950/80"
 
 const contactDetails = [
-  { icon: PhoneIcon, label: "Phone", value: SUPPORT_PHONE, href: `tel:${SUPPORT_PHONE.replace(/\D/g, "")}` },
+  { icon: PhoneIcon, label: "Phone", value: SUPPORT_PHONE, href: SUPPORT_PHONE_HREF },
   { icon: MailIcon, label: "Email", value: "info@corephia.com", href: "mailto:info@corephia.com" },
   { icon: MapPinIcon, label: "Location", value: LOCATION, href: LOCATION_MAP_URL },
 ]

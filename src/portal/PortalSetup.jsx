@@ -12,7 +12,7 @@ import {
   signOutPatient,
   watchPatientUser,
 } from "./lib/patientAuth"
-import { SUPPORT_PHONE } from "../lib/siteContact"
+import { SUPPORT_PHONE, SUPPORT_PHONE_HREF } from "../lib/siteContact"
 import { Loading, Skeleton } from "./Skeleton"
 
 const cardClass = "rounded-3xl border border-ink-950/10 bg-white p-8"
@@ -27,7 +27,7 @@ function ContactLine() {
   return (
     <>
       Call{" "}
-      <a href={`tel:${SUPPORT_PHONE.replace(/\D/g, "")}`} className={inlineLink}>
+      <a href={SUPPORT_PHONE_HREF} className={inlineLink}>
         {SUPPORT_PHONE}
       </a>{" "}
       or email{" "}

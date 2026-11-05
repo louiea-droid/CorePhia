@@ -53,8 +53,27 @@ function Confirming() {
   )
 }
 
-// A linked patient: unpaid ones see only the plan choice; members get the portal.
-export function LinkedPortal({ user, link, chart }) {
+// A linked patient's chart, live: undefined until the first snapshot (a payment
+// lands here), null when it can't be read (an error or a missing doc, never
+// "unpaid"). Mounted only once the login is linked, so nothing listens before.
+function LinkedPortal({ user, link }) {
+  const [chartState, setChartState] = useState({ id: null, chart: undefined })
+  const intakeId = link.intakeId
+  useEffect(
+    () =>
+      listenMyChart(
+        intakeId,
+        (chart) => setChartState({ id: intakeId, chart }),
+        () => setChartState({ id: intakeId, chart: null }),
+      ),
+    [intakeId],
+  )
+  const chart = chartState.id === intakeId ? chartState.chart : undefined
+  return <PortalForChart user={user} link={link} chart={chart} />
+}
+
+// Unpaid patients see only the plan choice; members get the portal.
+export function PortalForChart({ user, link, chart }) {
   const [params, setParams] = useSearchParams()
   const returning = params.get("checkout") === "done"
   if (chart === undefined) return <Loading label="Opening your portal…" className={cardClass} />
@@ -146,20 +165,6 @@ export default function PortalApp() {
 
   const current = result?.key === key ? result : null
   const link = current?.link
-
-  // The chart, live: undefined until the first snapshot (a payment lands here),
-  // null when it can't be read (an error or a missing doc, never "unpaid").
-  const [chartState, setChartState] = useState({ id: null, chart: undefined })
-  const intakeId = link?.intakeId
-  useEffect(() => {
-    if (!intakeId) return
-    return listenMyChart(
-      intakeId,
-      (chart) => setChartState({ id: intakeId, chart }),
-      () => setChartState({ id: intakeId, chart: null }),
-    )
-  }, [intakeId])
-  const chart = chartState.id === intakeId ? chartState.chart : undefined
 
   const state =
     user === undefined
@@ -259,9 +264,7 @@ export default function PortalApp() {
         </div>
       )}
 
-      {state === "linked" && (
-        <LinkedPortal user={user} link={link} chart={chart} />
-      )}
+      {state === "linked" && <LinkedPortal user={user} link={link} />}
 
       <LoginPanel open={loginOpen} onClose={() => setLoginOpen(false)} />
       {idleSecondsLeft != null && <IdleWarningModal secondsLeft={idleSecondsLeft} onSignOut={signOut} />}

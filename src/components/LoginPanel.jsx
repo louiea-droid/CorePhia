@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { Link, useNavigate } from "react-router-dom"
 import { resetPatientPassword, signInPatient } from "../portal/lib/patientAuth"
-import { SUPPORT_PHONE } from "../lib/siteContact"
+import { SUPPORT_PHONE, SUPPORT_PHONE_HREF } from "../lib/siteContact"
 import { ChevronRightIcon, CloseIcon, EyeIcon, EyeOffIcon } from "./icons"
 
 const labelClass = "mb-1.5 block text-sm font-medium text-ink-950/80"
@@ -248,7 +248,7 @@ export default function LoginPanel({ open, onClose, startView = "login", resetBa
           <p className="mt-5 text-center text-sm leading-relaxed text-ink-950/70">
             Trouble logging in? Call{" "}
             <a
-              href={`tel:${SUPPORT_PHONE.replace(/\D/g, "")}`}
+              href={SUPPORT_PHONE_HREF}
               className="font-medium text-ink-950 underline underline-offset-2"
             >
               {SUPPORT_PHONE}

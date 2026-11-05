@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { longDateTampa } from "../../admin/patients/chartMath"
-import { BadgeCheckIcon } from "../../components/icons"
-import { PLANS_SHOWN, PRICES_ANNOUNCED, tiers } from "../../data/pricingTiers"
+import PlanCard from "../../components/PlanCard"
+import { PLANS_SHOWN, tiers } from "../../data/pricingTiers"
 import { SUPPORT_PHONE, SUPPORT_PHONE_HREF } from "../../lib/siteContact"
 import { startCheckout } from "../lib/billing"
 
@@ -39,38 +39,17 @@ export default function PlanChoice({ chart, link }) {
       <ul className="mt-8 grid gap-6 lg:grid-cols-2">
         {shown.map((tier) => (
           <li key={tier.name} className="flex">
-            <article className="flex w-full flex-col gap-6 rounded-3xl border border-ink-950/10 bg-white p-6 shadow-md sm:p-8">
-              <header>
-                <span className="flex size-11 items-center justify-center rounded-2xl bg-accent/12 text-accent-dark">
-                  <tier.icon className="size-5" />
-                </span>
-                <h2 className="mt-5 font-serif text-2xl text-ink-950">{tier.name}</h2>
-                <p className="mt-1 text-sm font-medium text-accent-dark">{tier.tagline}</p>
-                <p className="mt-3 text-sm leading-relaxed text-ink-950/70">{tier.description}</p>
-                {chart?.formPlan === tier.name && (
+            <PlanCard
+              tier={tier}
+              className="flex w-full flex-col gap-6 rounded-3xl border border-ink-950/10 bg-white p-6 shadow-md sm:p-8"
+              tag={
+                chart?.formPlan === tier.name && (
                   <p className="mt-3 inline-flex rounded-full bg-accent/12 px-3 py-1 text-xs font-semibold text-accent-dark">
                     You picked this on your form
                   </p>
-                )}
-              </header>
-
-              {PRICES_ANNOUNCED && (
-                <p className="border-y border-ink-950/10 py-5 font-serif text-4xl text-ink-950">
-                  <span className="align-top text-xl">$</span>
-                  {tier.price}
-                  <span className="ml-1 font-sans text-sm font-medium text-ink-950/60">per month</span>
-                </p>
-              )}
-
-              <ul className="space-y-3">
-                {tier.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2.5 text-sm text-ink-950/75">
-                    <BadgeCheckIcon className="mt-0.5 size-5 shrink-0 text-accent-dark" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-
+                )
+              }
+            >
               <button
                 type="button"
                 disabled={busy !== null}
@@ -79,7 +58,7 @@ export default function PlanChoice({ chart, link }) {
               >
                 {busy === tier.name ? "Opening checkout…" : `Choose ${tier.name}`}
               </button>
-            </article>
+            </PlanCard>
           </li>
         ))}
       </ul>
