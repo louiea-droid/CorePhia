@@ -331,6 +331,12 @@ your portal" (2026-10-13), to match the Terms (messages are read in working hour
 
 ### Billing: Stripe (started 2026-11-04, nothing built yet)
 
+Design approved 2026-11-05: `docs/superpowers/specs/2026-11-05-stripe-membership-billing-design.md`;
+plan: `docs/superpowers/plans/2026-11-05-stripe-membership-billing.md`. Monthly only (no enrollment
+or first-visit fee). Patients pay in the portal after admission and before the first visit can be
+booked. Discharge cancels the subscription and emails the patient. Refund and cancellation policy
+are still waiting on Dr. Antonious.
+
 Stripe chosen over Hint Health. Account "CorePhia", in the **sandbox** (test mode) so far, set up
 for online payments + subscriptions (no Stripe banking, not a platform). Planned flow: form →
 staff admit → portal invite → patient picks a plan and pays in the portal (Stripe Checkout) →
