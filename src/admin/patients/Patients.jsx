@@ -221,28 +221,28 @@ export default function Patients({ actor, role }) {
               <div className="scrollbar-thin -mx-4 overflow-x-auto px-4">
                 <table className="w-full min-w-2xl table-fixed text-left text-sm">
                   <colgroup>
-                    <col className="w-[20%]" />
-                    <col className="w-[7%]" />
+                    <col className="w-[18%]" />
+                    <col className="w-[6%]" />
                     <col className="w-[14%]" />
                     <col className="w-[20%]" />
-                    <col className="w-[17%]" />
-                    <col className="w-[22%]" />
+                    <col className="w-[19%]" />
+                    <col className="w-[23%]" />
                   </colgroup>
                   <thead>
                     <tr className="sticky top-0 z-10 border-b border-ink-950/10 bg-white text-xs tracking-wide text-ink-950/45 uppercase">
-                      <th scope="col" className="pb-2 font-medium">
+                      <th scope="col" className="pr-4 pb-2 font-medium">
                         Patient
                       </th>
-                      <th scope="col" className="pb-2 font-medium">
+                      <th scope="col" className="pr-4 pb-2 font-medium">
                         Age
                       </th>
-                      <th scope="col" className="pb-2 font-medium">
+                      <th scope="col" className="pr-4 pb-2 font-medium">
                         Admitted
                       </th>
-                      <th scope="col" className="pb-2 font-medium">
+                      <th scope="col" className="pr-4 pb-2 font-medium">
                         Last note
                       </th>
-                      <th scope="col" className="pb-2 font-medium">
+                      <th scope="col" className="pr-4 pb-2 font-medium">
                         Membership
                       </th>
                       <th scope="col" className="pb-2 font-medium">
@@ -268,18 +268,18 @@ export default function Patients({ actor, role }) {
                           aria-label={`Open ${name}'s chart`}
                           className="cursor-pointer outline-none transition-colors duration-150 hover:bg-paper-50 focus-visible:bg-paper-100"
                         >
-                          <td className="truncate py-4 font-medium text-ink-950">{name}</td>
-                          <td className="py-4 tabular-nums text-ink-950/60">{ageFrom(chart.dateOfBirth) ?? "—"}</td>
-                          <td className="truncate py-4 whitespace-nowrap text-ink-950/60">
+                          <td className="truncate py-4 pr-4 font-medium text-ink-950">{name}</td>
+                          <td className="py-4 pr-4 tabular-nums text-ink-950/60">{ageFrom(chart.dateOfBirth) ?? "—"}</td>
+                          <td className="truncate py-4 pr-4 whitespace-nowrap text-ink-950/60">
                             {formatDate(chart.admittedAt)}
                           </td>
-                          <td className="truncate py-4 text-ink-950/60">
+                          <td className="truncate py-4 pr-4 text-ink-950/60">
                             {chart.lastNote
                               ? `${NOTE_TYPE_LABELS[chart.lastNote.type] ?? "Note"}, ${formatDate(chart.lastNote.signedAt)}`
                               : "No notes yet"}
                           </td>
-                          <td className="py-3">
-                            <MembershipBadge chart={chart} />
+                          <td className="py-3 pr-4">
+                            <MembershipBadge chart={chart} compact />
                           </td>
                           <td className="py-3">
                             <div className="flex items-center gap-2">

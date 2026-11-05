@@ -270,10 +270,12 @@ assert.deepEqual(label({ status: "pastDue", plan: "Core" }), { text: "Payment pr
 assert.deepEqual(label({ status: "ended", plan: "Core" }), { text: "Membership ended", tone: "muted" })
 assert.deepEqual(label({ status: "active", plan: "Core", source: "manual" }), { text: "Member: Core", tone: "good" })
 assert.equal(membershipLabel(null).text, "Awaiting payment")
-// Cancelling at period end: still a member, with the end date shown.
+// Cancelling at period end: still a member, with the end date as a note under
+// the badge (inside it, the badge is too wide for the Patients table).
 assert.deepEqual(label({ status: "active", plan: "Core", cancelAtPeriodEnd: true, currentPeriodEnd: "2026-12-05T17:00:00Z" }), {
-  text: "Member: Core (ends December 5, 2026)",
+  text: "Member: Core",
   tone: "good",
+  note: "Ends December 5, 2026",
 })
 assert.deepEqual(label({ status: "active", plan: "Core", cancelAtPeriodEnd: false }), { text: "Member: Core", tone: "good" })
 assert.deepEqual(label({ status: "ended", plan: "Core", cancelAtPeriodEnd: true }), { text: "Membership ended", tone: "muted" })

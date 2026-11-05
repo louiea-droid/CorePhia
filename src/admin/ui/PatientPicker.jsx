@@ -11,6 +11,9 @@ const nameOf = (record) => `${record.demographics?.firstName ?? ""} ${record.dem
 export default function PatientPicker({ value, onChange, label = "Patient or applicant", optional = false, canChange = true }) {
   const [records, setRecords] = useState(null)
   const [search, setSearch] = useState("")
+  // The results float over the form (an overlay), so the dialog never changes
+  // size while typing. Closed by Escape, by leaving the box, or by a pick.
+  const [open, setOpen] = useState(false)
 
   // One load at a time (focus and each keystroke both ask before the first
   // finishes). A failed load is tried again next time instead of showing
@@ -59,7 +62,7 @@ export default function PatientPicker({ value, onChange, label = "Patient or app
     )
 
   return (
-    <div>
+    <div className="relative">
       <label className="block">
         <span className={labelClass}>
           {label}
@@ -67,16 +70,27 @@ export default function PatientPicker({ value, onChange, label = "Patient or app
         </span>
         <input
           value={search}
-          onFocus={load}
+          onFocus={() => {
+            load()
+            setOpen(true)
+          }}
+          onBlur={() => setOpen(false)}
           onChange={(event) => {
             load()
             setSearch(event.target.value)
+            setOpen(true)
           }}
           placeholder={records || !search ? "Search by name" : "Loading…"}
           autoComplete="off"
           // Enter picks the first match. It never submits a form the picker
           // sits in (the To-do form), which would save without the patient.
+          // Escape closes the list only, not the dialog around it.
           onKeyDown={(event) => {
+            if (event.key === "Escape" && open && search.trim()) {
+              event.preventDefault() // useDialog skips an Escape already handled
+              setOpen(false)
+              return
+            }
             if (event.key !== "Enter") return
             event.preventDefault()
             if (matches[0]) pick(matches[0])
@@ -84,8 +98,13 @@ export default function PatientPicker({ value, onChange, label = "Patient or app
           className={inputClass}
         />
       </label>
-      {search.trim() && records && (
-        <ul className="mt-1.5 overflow-hidden rounded-lg border border-ink-950/10 bg-white">
+      {open && search.trim() && records && (
+        // mousedown keeps focus in the box, so the blur doesn't close the list
+        // before the click on a name lands.
+        <ul
+          onMouseDown={(event) => event.preventDefault()}
+          className="absolute inset-x-0 top-full z-20 mt-1.5 max-h-72 overflow-y-auto rounded-lg border border-ink-950/10 bg-white shadow-xl"
+        >
           {matches.length === 0 ? (
             <li className="px-3 py-2 text-sm text-ink-950/55">No patient or applicant matches "{search.trim()}".</li>
           ) : (

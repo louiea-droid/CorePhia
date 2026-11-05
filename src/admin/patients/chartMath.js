@@ -134,7 +134,7 @@ export const isMember = (chart) => chart?.membership?.status === "active" || cha
 export function membershipLabel(chart) {
   const membership = chart?.membership
   if (membership?.status === "active" && membership.cancelAtPeriodEnd && longDateTampa(membership.currentPeriodEnd))
-    return { text: `Member: ${membership.plan} (ends ${longDateTampa(membership.currentPeriodEnd)})`, tone: "good" }
+    return { text: `Member: ${membership.plan}`, tone: "good", note: `Ends ${longDateTampa(membership.currentPeriodEnd)}` }
   if (membership?.status === "active") return { text: `Member: ${membership.plan}`, tone: "good" }
   if (membership?.status === "pastDue") return { text: "Payment problem", tone: "warn" }
   if (membership?.status === "ended") return { text: "Membership ended", tone: "muted" }

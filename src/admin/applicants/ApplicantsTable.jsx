@@ -94,7 +94,7 @@ export default function ApplicantsTable({ records, charts, onSelect, minRows = 0
                   </span>
                 </td>
                 <td className="py-4">
-                  {record.status === "admitted" && charts?.has(record.id) ? <MembershipBadge chart={charts.get(record.id)} /> : <span className="text-ink-950/60">—</span>}
+                  {record.status === "admitted" && charts?.has(record.id) ? <MembershipBadge chart={charts.get(record.id)} compact /> : <span className="text-ink-950/60">—</span>}
                 </td>
                 <td className="truncate py-4 text-ink-950/60">{goalBucket(record).replace("Not sure, I just need to lose weight", "Not sure") || "—"}</td>
                 <td className="truncate py-4 text-ink-950/60">{record.visit?.reason || "—"}</td>

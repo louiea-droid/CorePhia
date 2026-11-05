@@ -163,11 +163,11 @@ function buildSeedRecords(count) {
   return records.sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))
 }
 
-// Seven admitted, so demo mode has patient charts (seedCharts.js) to show.
+// Eight admitted, so demo mode has patient charts (seedCharts.js) to show.
 // The sixth has no email, so the chart's "No email on this intake" shows too;
-// the seventh is a new member with no notes yet.
+// the seventh was just admitted and hasn't paid; the eighth just paid.
 export const seedRecords = buildSeedRecords(48).map((record, index) =>
-  index % 8 !== 1 && index !== 46
+  index % 8 !== 1 && index !== 45 && index !== 46
     ? record
     : { ...record, status: "admitted", ...(index === 41 && { demographics: { ...record.demographics, email: "" } }) },
 )

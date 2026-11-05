@@ -13,6 +13,24 @@ const isoDay = (ms) => new Date(ms).toLocaleDateString("en-CA")
 const PROVIDER = { uid: "demo-admin", name: "Dr. Antonious", role: "admin" }
 const DIETITIAN = { uid: "demo-dietitian", name: "Sam Rivera, RD", role: "dietitian" }
 
+// Everyone with history has paid (they were seen), in a mix of states so each
+// badge shows somewhere: active on either plan, a failed renewal, one set to
+// end at the period's end, and one marked by hand.
+function demoMembership(index, admitted, now) {
+  const plan = index % 2 ? "Core Complete" : "Core"
+  const since = new Date(admitted + DAY)
+  if (index === 3) return { plan, status: "active", source: "manual", since, updatedAt: since }
+  return {
+    plan,
+    status: index === 2 ? "pastDue" : "active",
+    source: "stripe",
+    since,
+    currentPeriodEnd: new Date(now + (6 + index * 4) * DAY),
+    cancelAtPeriodEnd: index === 4,
+    updatedAt: since,
+  }
+}
+
 export function buildDemoStore(records) {
   const now = Date.now()
   const charts = new Map()
@@ -22,6 +40,26 @@ export function buildDemoStore(records) {
   records
     .filter((record) => record.status === "admitted")
     .forEach((record, index, admittedList) => {
+      // The second to last was just admitted and hasn't paid: an empty chart
+      // marked "Awaiting payment", which can't be booked yet.
+      if (index === admittedList.length - 2) {
+        charts.set(record.id, {
+          id: record.id,
+          intakeRecordId: record.id,
+          firstName: record.demographics?.firstName ?? "",
+          lastName: record.demographics?.lastName ?? "",
+          dateOfBirth: record.demographics?.dateOfBirth ?? "",
+          sexAssignedAtBirth: record.demographics?.sexAssignedAtBirth ?? "",
+          status: "active",
+          admittedAt: new Date(now - 1 * DAY),
+          admittedBy: PROVIDER,
+          updatedAt: new Date(now - 1 * DAY),
+          lastNote: null,
+          formPlan: "Core Complete",
+        })
+        notes.set(record.id, [])
+        return
+      }
       // The last one just paid: a member with no notes and no visit yet, so
       // the To-do's "Paid: book first visit" group has a row.
       if (index === admittedList.length - 1) {
@@ -204,6 +242,7 @@ export function buildDemoStore(records) {
         admittedBy: PROVIDER,
         updatedAt: progress.signedAt,
         lastNote: { type: "progress", signedAt: progress.signedAt },
+        membership: demoMembership(index, admitted, now),
       })
       notes.set(record.id, [consult, progress, ...extra])
       amendments.set(consult.id, [
@@ -221,7 +260,7 @@ export function buildDemoStore(records) {
   // A week of appointments across the first few charts, with one moved and
   // one cancelled so the History list has something to show. The last
   // chart with notes keeps its medical follow-up unbooked, for the calendar
-  // marker, and the new member (last) has no visit.
+  // marker, and the two new charts (unpaid, just paid) have no visit.
   const today = todayInTampa()
   const chartIds = [...charts.keys()]
   const appointments = []
