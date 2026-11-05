@@ -253,7 +253,8 @@ service cloud.firestore {
              'rename_staff_account', 'delete_staff_account', 'book_appointment',
              'move_appointment', 'cancel_appointment', 'update_appointment_status',
              'send_portal_invite', 'list_intake_records', 'sign_in', 'sign_out',
-             'idle_sign_out', 'change_password', 'enable_two_step', 'disable_two_step'
+             'idle_sign_out', 'change_password', 'enable_two_step', 'disable_two_step',
+             'set_membership_manually', 'end_membership_manually'
            ]
         && data.targetCollection is string && data.targetCollection.size() <= 60
         && data.targetId is string && data.targetId.size() > 0 && data.targetId.size() <= 200
@@ -417,9 +418,11 @@ service cloud.firestore {
       let data = request.resource.data;
       return data.keys().hasOnly([
             'intakeRecordId', 'firstName', 'lastName', 'dateOfBirth', 'sexAssignedAtBirth',
-            'status', 'admittedAt', 'admittedBy', 'updatedAt', 'lastNote'
+            'status', 'admittedAt', 'admittedBy', 'updatedAt', 'lastNote', 'formPlan'
           ])
         && data.intakeRecordId == chartId
+        // The plan the applicant picked on the form, a hint only.
+        && (!('formPlan' in data) || (data.formPlan is string && data.formPlan.size() <= 100))
         && data.status == 'active'
         && data.admittedAt == request.time
         && data.updatedAt == request.time
@@ -500,6 +503,22 @@ service cloud.firestore {
                 && getAfter(/databases/$(database)/documents/patients/$(chartId)/notes/$(request.resource.data.lastNote.noteId)).data.status == 'signed'
                 && getAfter(/databases/$(database)/documents/patients/$(chartId)/notes/$(request.resource.data.lastNote.noteId)).data.signedAt == request.time
                 && getAfter(/databases/$(database)/documents/patients/$(chartId)/notes/$(request.resource.data.lastNote.noteId)).data.type == request.resource.data.lastNote.type));
+      // Membership is written by the Stripe functions (Admin SDK, no rules).
+      // The only client write is the admin's "Mark as member" / "End" for
+      // someone paying outside Stripe, and never over a live Stripe membership.
+      allow update: if role() in ['admin', 'superAdmin']
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['membership', 'updatedAt'])
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.membership is map
+        && request.resource.data.membership.keys().hasOnly(['plan', 'status', 'source', 'since', 'updatedAt'])
+        && request.resource.data.membership.source == 'manual'
+        && request.resource.data.membership.plan in ['Core', 'Core Complete']
+        && request.resource.data.membership.status in ['active', 'ended']
+        && request.resource.data.membership.since is timestamp
+        && request.resource.data.membership.updatedAt == request.time
+        && (resource.data.get('membership', null) == null
+            || resource.data.membership.get('source', '') == 'manual'
+            || resource.data.membership.get('status', '') == 'ended');
       allow delete: if false;
 
       // Drafts are visible only to their author; signed notes to every
@@ -920,6 +939,11 @@ service cloud.firestore {
         && by.role == role();
     }
 
+    // Stripe customer ids per chart. Only the functions (Admin SDK) use it.
+    match /billing/{chartId} {
+      allow read, write: if false;
+    }
+
     match /appointments/{appointmentId} {
       allow read: if isClinical();
       allow create: if isClinical()
@@ -928,6 +952,10 @@ service cloud.firestore {
         // Checked on create only: intakeId never changes afterwards, and a
         // deleted intake record mustn't freeze its appointments forever.
         && exists(/databases/$(database)/documents/intakeRecords/$(request.resource.data.intakeId))
+        // An admitted patient is booked only once they pay (past due still
+        // counts). An applicant with no chart yet can still get a first visit.
+        && (!exists(/databases/$(database)/documents/patients/$(request.resource.data.intakeId))
+            || get(/databases/$(database)/documents/patients/$(request.resource.data.intakeId)).data.get('membership', {}).get('status', '') in ['active', 'pastDue'])
         && request.resource.data.status == 'scheduled'
         && isMe(request.resource.data.addedBy)
         && exists(/databases/$(database)/documents/user/$(request.resource.data.staffUid))

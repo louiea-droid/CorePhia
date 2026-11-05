@@ -1,9 +1,10 @@
 // firestore.rules tests for charts, notes (all four types), amendments, staff
-// roles, appointments, patient portal links, portal invites, setup links, portal updates, portal progress and portal messages.
+// roles, appointments, patient portal links, portal invites, setup links, portal updates, portal progress, portal messages
+// and membership.
 //
 // Run: npm run test:rules
-// Needs Java 21+ for the Firestore emulator (firebase-tools starts it). All 153
-// passed on 2026-10-21. Run them before every rules deploy.
+// Needs Java 21+ for the Firestore emulator (firebase-tools starts it). All 175
+// passed on 2026-11-05. Run them before every rules deploy.
 import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import { after, before, beforeEach, describe, test } from "node:test"
@@ -76,6 +77,12 @@ beforeEach(async () => {
     await setDoc(doc(db, "intakeRecords", "inactive1"), { status: "declined", demographics: { email: "pat@x.co" } })
     await setDoc(doc(db, "patientAccounts", "patient1"), { email: "p1@x.co", intakeId: "chart1", firstName: "Pat", linkedAt: new Date() })
     await setDoc(doc(db, "patientAccounts", "patient2"), { email: "p2@x.co", intakeId: "pending1", firstName: "Sam", linkedAt: new Date() })
+    await setDoc(doc(db, "intakeRecords", "paid1"), { status: "admitted", demographics: { email: "paid@x.co" } })
+    await setDoc(doc(db, "patients", "paid1"), {
+      intakeRecordId: "paid1",
+      status: "active",
+      membership: { plan: "Core", status: "active", source: "stripe", currentPeriodEnd: new Date(), cancelAtPeriodEnd: false, since: new Date(), updatedAt: new Date() },
+    })
   })
 })
 
@@ -1408,5 +1415,105 @@ describe("outgoing mail", () => {
     await assertFails(getDoc(doc(as("super"), "mail", "m1")))
     await assertFails(updateDoc(doc(as("super"), "mail", "m1"), { to: "x@y.co" }))
     await assertFails(deleteDoc(doc(as("super"), "mail", "m1")))
+  })
+})
+
+describe("membership", () => {
+  const newChart = (overrides = {}) => ({
+    intakeRecordId: "pending1",
+    firstName: "",
+    lastName: "",
+    dateOfBirth: "",
+    sexAssignedAtBirth: "",
+    status: "active",
+    admittedAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    admittedBy: { uid: "admin", name: "admin", role: "admin" },
+    lastNote: null,
+    ...overrides,
+  })
+  const admitWith = (chart) => {
+    const db = as("admin")
+    const batch = writeBatch(db)
+    batch.update(doc(db, "intakeRecords", "pending1"), { status: "admitted" })
+    batch.set(doc(db, "patients", "pending1"), chart)
+    return batch.commit()
+  }
+  const manual = (overrides = {}) => ({
+    plan: "Core",
+    status: "active",
+    source: "manual",
+    since: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    ...overrides,
+  })
+  const setMembership = (uid, chartId, membership) =>
+    updateDoc(doc(as(uid), "patients", chartId), { membership, updatedAt: serverTimestamp() })
+  const booking = (intakeId) => ({
+    intakeId,
+    patientName: "Pat Doe",
+    staffUid: "provider",
+    staffName: "provider",
+    discipline: "medical",
+    start: new Date("2026-10-05T14:00:00Z"),
+    minutes: 30,
+    status: "scheduled",
+    note: "",
+    addedBy: { uid: "provider", name: "provider", role: "provider" },
+    addedAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  })
+
+  test("a new chart may carry the plan picked on the form, up to 100 characters", async () => {
+    await assertFails(admitWith(newChart({ formPlan: "x".repeat(101) })))
+    await assertSucceeds(admitWith(newChart({ formPlan: "Core" })))
+  })
+  test("the patient can't mark themselves as a member", async () => {
+    await assertFails(setMembership("patient1", "chart1", manual()))
+  })
+  test("a provider and a co-admin can't set a membership", async () => {
+    await assertFails(setMembership("provider", "chart1", manual()))
+    await assertFails(setMembership("coadmin", "chart1", manual()))
+  })
+  test("the admin and super admin can mark a chart as a member by hand", async () => {
+    await assertSucceeds(setMembership("admin", "chart1", manual()))
+    await env.withSecurityRulesDisabled((c) => updateDoc(doc(c.firestore(), "patients", "chart1"), { membership: null }))
+    await assertSucceeds(setMembership("super", "chart1", manual({ plan: "Core Complete" })))
+  })
+  test("a manual membership is only the manual shape", async () => {
+    await assertFails(setMembership("admin", "chart1", manual({ source: "stripe" })))
+    await assertFails(setMembership("admin", "chart1", manual({ plan: "Core+" })))
+    await assertFails(setMembership("admin", "chart1", manual({ status: "pastDue" })))
+    await assertFails(setMembership("admin", "chart1", manual({ extra: 1 })))
+    await assertFails(setMembership("admin", "chart1", manual({ updatedAt: new Date("2020-01-01") })))
+    await assertFails(
+      updateDoc(doc(as("admin"), "patients", "chart1"), { membership: manual(), updatedAt: serverTimestamp(), status: "inactive" }),
+    )
+  })
+  test("the admin can end a manual membership but not a live Stripe one", async () => {
+    await assertSucceeds(setMembership("admin", "chart1", manual()))
+    await assertSucceeds(setMembership("admin", "chart1", manual({ status: "ended" })))
+    await assertFails(setMembership("admin", "paid1", manual({ status: "ended" })))
+    await assertFails(setMembership("super", "paid1", manual()))
+  })
+  test("a chart whose Stripe membership ended can be marked by hand", async () => {
+    await env.withSecurityRulesDisabled((c) => updateDoc(doc(c.firestore(), "patients", "paid1"), { "membership.status": "ended" }))
+    await assertSucceeds(setMembership("admin", "paid1", manual()))
+  })
+  test("billing records are server-only", async () => {
+    await env.withSecurityRulesDisabled((c) => setDoc(doc(c.firestore(), "billing", "chart1"), { customerId: "cus_1" }))
+    for (const uid of ["admin", "super", "patient1"]) {
+      await assertFails(getDoc(doc(as(uid), "billing", "chart1")))
+      await assertFails(setDoc(doc(as(uid), "billing", "chart1"), { customerId: "cus_2" }))
+    }
+  })
+  test("only a paying patient's chart is bookable; an applicant still is", async () => {
+    await assertFails(setDoc(doc(as("provider"), "appointments", "b1"), booking("chart1")))
+    await assertSucceeds(setDoc(doc(as("provider"), "appointments", "b2"), booking("paid1")))
+    await assertSucceeds(setDoc(doc(as("provider"), "appointments", "b3"), booking("pending1")))
+  })
+  test("a past-due membership is still bookable", async () => {
+    await env.withSecurityRulesDisabled((c) => updateDoc(doc(c.firestore(), "patients", "chart1"), { membership: { plan: "Core", status: "pastDue", source: "stripe" } }))
+    await assertSucceeds(setDoc(doc(as("provider"), "appointments", "b1"), booking("chart1")))
   })
 })

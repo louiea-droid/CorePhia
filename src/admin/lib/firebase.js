@@ -74,6 +74,8 @@ export const AUDIT_ACTIONS = {
   changePassword: "change_password",
   enableTwoStep: "enable_two_step",
   disableTwoStep: "disable_two_step",
+  setMembership: "set_membership_manually",
+  endMembership: "end_membership_manually",
 }
 
 // A record with no status field yet (every one submitted before this feature

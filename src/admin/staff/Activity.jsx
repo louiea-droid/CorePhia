@@ -36,6 +36,8 @@ const ACTION_LABELS = {
   [AUDIT_ACTIONS.changePassword]: "Changed their password",
   [AUDIT_ACTIONS.enableTwoStep]: "Turned on two-step sign-in",
   [AUDIT_ACTIONS.disableTwoStep]: "Turned off two-step sign-in",
+  [AUDIT_ACTIONS.setMembership]: "Marked as member",
+  [AUDIT_ACTIONS.endMembership]: "Ended membership",
 }
 
 const DESTRUCTIVE_ACTIONS = new Set([AUDIT_ACTIONS.deleteIntake, AUDIT_ACTIONS.deleteMessage, AUDIT_ACTIONS.deleteStaff])
