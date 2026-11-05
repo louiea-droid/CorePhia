@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs"
 import {
   priceForPlan, planForPrice, membershipFromSubscription, checkoutDecision, cancelOnDischarge,
   subscriptionIdFromEvent, subscriptionConflict, isTransientStripeError, cancelForInactiveChart,
+  dischargeCancelAction,
 } from "./billing.js"
 
 assert.equal(priceForPlan("Core"), "price_1UYAmdGfYKc3UVG5MLvaqCfg")
@@ -76,6 +77,19 @@ assert.equal(subscriptionConflict({ status: "active" }, onFile, "sub_old", "sub_
 assert.equal(subscriptionConflict({ status: "active" }, { source: "stripe", status: "ended" }, "sub_old", "sub_new"), null)
 assert.equal(subscriptionConflict({ status: "active" }, { source: "manual", status: "active" }, "sub_old", "sub_new"), null)
 assert.equal(subscriptionConflict({ status: "active" }, undefined, "sub_old", "sub_new"), null)
+// an ending notice never overwrites a live manual membership, whatever the ids
+const manual = { source: "manual", status: "active" }
+assert.equal(subscriptionConflict({ status: "ended" }, manual, "sub_1", "sub_1"), "stale")
+assert.equal(subscriptionConflict({ status: "ended" }, manual, null, "sub_1"), "stale")
+assert.equal(subscriptionConflict({ status: "ended" }, { source: "manual", status: "ended" }, "sub_1", "sub_1"), null)
+assert.equal(subscriptionConflict({ status: "active" }, manual, "sub_1", "sub_1"), null)
+
+assert.equal(dischargeCancelAction({ status: "past_due" }), "now")
+assert.equal(dischargeCancelAction({ status: "past_due", cancel_at_period_end: true }), "now")
+assert.equal(dischargeCancelAction({ status: "active" }), "periodEnd")
+assert.equal(dischargeCancelAction({ status: "trialing" }), "periodEnd")
+assert.equal(dischargeCancelAction({ status: "active", cancel_at_period_end: true }), "none")
+assert.equal(dischargeCancelAction({ status: "canceled" }), "none")
 
 assert.equal(isTransientStripeError({ type: "StripeConnectionError" }), true)
 assert.equal(isTransientStripeError({ type: "StripeAPIError", statusCode: 500 }), true)

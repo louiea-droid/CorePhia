@@ -36,5 +36,9 @@ for (const endsOn of ["2026-12-05T15:00:00Z", new Date("2026-12-05T15:00:00Z")])
   assert.ok(cancelled.text.includes("+1 (866) 849-2673"))
   assert.ok(!cancelled.html.includes("<a href"))
 }
+const endedNow = buildEmail({ kind: "membershipCancelled", to: "a@b.com", endsOn: new Date(), endedNow: true })
+assert.ok(endedNow.text.includes("You won't be charged again."))
+assert.ok(endedNow.text.includes("Your membership has ended."))
+assert.ok(!endedNow.text.includes("stays active"), endedNow.text)
 
 console.log("emails: ok")

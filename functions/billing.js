@@ -71,7 +71,10 @@ export const LIVE_STATUSES = ["active", "trialing", "past_due"]
 // "stale": an older subscription ending; skip it, it must not end the newer one.
 // "duplicate": a second live subscription while the one on file is still live;
 //   should never happen (startCheckout guards it), so it is logged loudly.
+// An ending notice never overwrites a live manual membership (staff set it
+// after the Stripe one ended): "stale" too.
 export function subscriptionConflict(membership, existing, currentId, subId) {
+  if (membership.status === "ended" && existing?.source === "manual" && existing.status !== "ended") return "stale"
   if (!currentId || currentId === subId) return null
   if (membership.status === "ended") return "stale"
   if (existing?.source === "stripe" && existing.status !== "ended") return "duplicate"
@@ -83,6 +86,16 @@ export function subscriptionConflict(membership, existing, currentId, subId) {
 export const isTransientStripeError = (error) =>
   ["StripeConnectionError", "StripeAPIError", "StripeRateLimitError"].includes(error?.type) ||
   error?.statusCode >= 500 || error?.statusCode === 429 || error?.statusCode === 409
+
+// How discharge ends a subscription (controller ruling, 2026-11-05):
+// "now": past due, cancelled at once so Stripe stops retrying the card.
+// "periodEnd": active or trialing, runs to the end of the paid month.
+// "none": already cancelled, or already set to end at period end.
+export function dischargeCancelAction(sub) {
+  if (sub?.status === "past_due") return "now"
+  if (sub?.status === "canceled" || sub?.cancel_at_period_end) return "none"
+  return "periodEnd"
+}
 
 // A Stripe notice for a discharged chart whose subscription still charges:
 // the patient paid but was discharged before the first notice landed, so the

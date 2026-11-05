@@ -117,7 +117,10 @@ export function buildEmail(mail) {
           title: "Your membership has been cancelled",
           paragraphs: [
             "Your CorePhia membership has been cancelled. You won't be charged again.",
-            `Your membership stays active until ${new Date(mail.endsOn).toLocaleDateString("en-US", { timeZone: "America/New_York", dateStyle: "long" })}.`,
+            // endedNow: cancelled at once (a past-due card), so no time is left.
+            mail.endedNow
+              ? "Your membership has ended."
+              : `Your membership stays active until ${new Date(mail.endsOn).toLocaleDateString("en-US", { timeZone: "America/New_York", dateStyle: "long" })}.`,
           ],
           after: [`Questions? Call us at ${PHONE} or email info@corephia.com.`],
         }),

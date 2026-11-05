@@ -11,7 +11,7 @@ import Stripe from "stripe"
 import { buildEmail } from "./emails.js"
 import {
   priceForPlan, membershipFromSubscription, checkoutDecision, cancelOnDischarge, subscriptionIdFromEvent,
-  subscriptionConflict, isTransientStripeError, cancelForInactiveChart, LIVE_STATUSES,
+  subscriptionConflict, isTransientStripeError, cancelForInactiveChart, LIVE_STATUSES, dischargeCancelAction,
 } from "./billing.js"
 
 initializeApp()
@@ -92,13 +92,18 @@ async function portalUrl(stripe, customer) {
   return { url: session.url }
 }
 
-// Ends a discharged patient's membership: cancels the subscription at the end
-// of the paid month (if it isn't already) and emails them once per
+// Ends a discharged patient's membership: a past-due subscription is cancelled
+// at once (stops Stripe's card retries), a paid-up one at the end of the paid
+// month (dischargeCancelAction in billing.js), and emails them once per
 // subscription, claimed on billing/{chartId}.cancelEmailedFor. Safe to repeat;
 // throws so the caller's retry runs it again.
 async function endMembership(stripe, chartId, sub) {
-  if (!sub.cancel_at_period_end) sub = await stripe.subscriptions.update(sub.id, { cancel_at_period_end: true })
-  const endsOn = periodEnd(sub)
+  const action = dischargeCancelAction(sub)
+  if (action === "now") sub = await stripe.subscriptions.cancel(sub.id)
+  else if (action === "periodEnd") sub = await stripe.subscriptions.update(sub.id, { cancel_at_period_end: true })
+  // Already over (cancelled now, or on a retry after that): the email says so.
+  const endedNow = sub.status === "canceled"
+  const endsOn = endedNow ? new Date((sub.ended_at ?? sub.canceled_at ?? Date.now() / 1000) * 1000) : periodEnd(sub)
   if (!validDate(endsOn)) return console.error("Membership cancelled, but no valid period end, email skipped, chart", chartId, sub.id)
   const billingRef = db().doc(`billing/${chartId}`)
   const to = await db().runTransaction(async (tx) => {
@@ -111,7 +116,7 @@ async function endMembership(stripe, chartId, sub) {
   if (to === "") return console.error("Membership cancelled, but no email on file, chart", chartId)
   if (!to) return
   try {
-    await send({ kind: "membershipCancelled", to, endsOn })
+    await send({ kind: "membershipCancelled", to, endsOn, endedNow })
   } catch (error) {
     console.error("Membership cancelled email failed, will retry, chart", chartId, error)
     await billingRef.update({ cancelEmailedFor: FieldValue.delete() })
@@ -176,6 +181,8 @@ export const startCheckout = onCall(CALLABLE, async (request) => {
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     customer,
+    // Card only: the Terms, FAQ and llms.txt say "by card".
+    payment_method_types: ["card"],
     line_items: [{ price, quantity: 1 }],
     client_reference_id: chartId,
     subscription_data: { metadata: { chartId } },
@@ -272,7 +279,8 @@ export const stripeWebhook = onRequest(
 )
 
 // Discharge ("Make inactive") ends the membership. A Stripe one is cancelled
-// at the end of the paid month: no further charges, no refund issued by us.
+// at the end of the paid month (a past-due one at once): no further charges,
+// no refund issued by us.
 // That timing is a default until Dr. Antonious decides the refund policy (see
 // "Discharge cancels the membership" in the spec above). The webhook then
 // records the change on the chart. A manual membership just ends, no email.
