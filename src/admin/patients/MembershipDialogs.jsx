@@ -84,9 +84,13 @@ export function MarkMemberDialog({ chart, patientName, onClose, onDone }) {
             maxLength={100}
             value={reason}
             onChange={(event) => setReason(event.target.value)}
-            placeholder="For example, paid by check"
+            placeholder="Paid by check, test account…"
+            aria-describedby="member-reason-hint"
             className={fieldClass}
           />
+          <p id="member-reason-hint" className="mt-1 text-xs text-ink-950/55">
+            Don't include health details.
+          </p>
         </div>
       </form>
     </Modal>

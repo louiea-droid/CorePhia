@@ -124,6 +124,8 @@ export const isMember = (chart) => chart?.membership?.status === "active" || cha
 // The badge text for a chart: what the staff sees next to a patient about their membership.
 export function membershipLabel(chart) {
   const membership = chart?.membership
+  if (membership?.status === "active" && membership.cancelAtPeriodEnd)
+    return { text: `Member: ${membership.plan} (ends ${longDateTampa(membership.currentPeriodEnd)})`, tone: "good" }
   if (membership?.status === "active") return { text: `Member: ${membership.plan}`, tone: "good" }
   if (membership?.status === "pastDue") return { text: "Payment problem", tone: "warn" }
   if (membership?.status === "ended") return { text: "Membership ended", tone: "muted" }
