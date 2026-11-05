@@ -33,7 +33,7 @@ export default function MembershipCard({ membership, Heading = "h2" }) {
         <p className="mt-1 text-sm text-ink-950/70">{membership.cancelAtPeriodEnd ? `Ends on ${date}` : `Next billing date: ${date}`}</p>
       )}
       {membership.status === "pastDue" && (
-        <p role="status" className="mt-3 rounded-2xl border border-amber-700/30 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <p role="status" className="mt-3 rounded-2xl border border-amber-700/30 bg-amber-50 px-4 py-3 text-sm text-amber-900 [.dark_&]:bg-amber-950/40 [.dark_&]:text-amber-200">
           We couldn't take your last payment. Update your card.
         </p>
       )}
@@ -48,7 +48,7 @@ export default function MembershipCard({ membership, Heading = "h2" }) {
             {busy ? "Opening…" : "Manage billing"}
           </button>
           {failed && (
-            <p role="alert" className="mt-3 text-sm text-red-800">
+            <p role="alert" className="mt-3 text-sm text-red-800 [.dark_&]:text-red-300">
               We couldn't open billing. Please try again, or call us.
             </p>
           )}

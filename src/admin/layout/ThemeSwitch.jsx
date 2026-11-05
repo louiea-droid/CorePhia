@@ -1,13 +1,13 @@
 // Light/dark switch, top right, just left of the account menu. A <label> wrapping a
 // real checkbox (index.css's .theme-toggle rules draw the sun→moon morph),
 // since an <input> can't legally nest inside a <button>.
-export default function ThemeSwitch({ theme, onToggle }) {
+export default function ThemeSwitch({ theme, onToggle, id = "admin-theme-toggle" }) {
   return (
-    <label htmlFor="admin-theme-toggle" className="flex cursor-pointer items-center rounded-full p-1">
+    <label htmlFor={id} className="flex cursor-pointer items-center rounded-full p-1">
       <span className="theme-toggle shrink-0" data-mode={theme}>
         <span className="theme-toggle__wrap">
           <input
-            id="admin-theme-toggle"
+            id={id}
             className="theme-toggle__input"
             type="checkbox"
             role="switch"

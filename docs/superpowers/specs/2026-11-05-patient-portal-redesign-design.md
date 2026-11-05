@@ -67,7 +67,7 @@ function `whatsNext(input) → { main, more: [≤2] }` in a plain-JS module (nod
 |---|---|---|---|
 | 1 | "We couldn't take your last payment. Update your card." | `membership.status === "pastDue"` | Manage billing |
 | 2 | "Your visit is today at {time} with {staff}" | a scheduled visit today (Tampa time) | Message us |
-| 3 | "New message from {name}" | a topic `unreadFor(topic, "patient")` | Open it |
+| 3 | (dropped 2026-11-05, Louie: the Messages card below already shows new replies) | | |
 | 4 | "Your next visit: {day, date} at {time} with {staff}" | the soonest future scheduled visit | Message us |
 | 5 | "Your care team posted an update" | newest update newer than the last one opened on this device | Read it |
 | 6 | "Time for a weigh-in. Your last one was {n} days ago." | no weigh-in or visit weight for more than 7 days, and at least one exists | Log weight |

@@ -18,7 +18,7 @@ assert.ok(alert.html.includes("/admin/applicants"))
 
 const receipt = buildEmail({ kind: "intakeReceipt", to: "a@b.com" })
 assert.equal(receipt.to, "a@b.com")
-assert.ok(receipt.text.includes("A member of our staff will contact you shortly."))
+assert.ok(receipt.text.includes("We've received your form"))
 assert.ok(!receipt.html.includes("<a href"))
 
 for (const kind of ["invite", "update", "message", "staff"]) {

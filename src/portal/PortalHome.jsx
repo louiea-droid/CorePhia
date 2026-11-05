@@ -12,7 +12,6 @@ import WhatsNextCard from "./WhatsNextCard"
 
 const ROUTES = {
   billing: "/account/membership",
-  messages: "/account/messages",
   "message-us": "/account/messages",
   updates: "/account/updates",
   "log-weight": "/account/progress",
@@ -26,7 +25,7 @@ function greeting(now) {
 // The portal's Overview (/account): what's next with the progress numbers,
 // then messages and membership, then the latest update.
 export default function PortalHome() {
-  const { link, chart, topics } = useOutletContext()
+  const { link, chart } = useOutletContext()
   const navigate = useNavigate()
   const [visits, setVisits] = useState(null)
   const [progress, setProgress] = useState(null)
@@ -35,8 +34,8 @@ export default function PortalHome() {
 
   const now = new Date()
   const reminders =
-    visits && progress && updates && topics
-      ? whatsNext({ membership: chart.membership, chartStatus: chart.status, visits, topics, updates, lastSeenUpdateId: seenUpdateId(), progress, now })
+    visits && progress && updates
+      ? whatsNext({ membership: chart.membership, chartStatus: chart.status, visits, updates, lastSeenUpdateId: seenUpdateId(), progress, now })
       : null
 
   return (

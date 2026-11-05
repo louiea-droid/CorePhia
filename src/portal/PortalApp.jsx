@@ -267,7 +267,7 @@ export default function PortalApp() {
                 <p className="mt-1.5 text-sm text-ink-950/70">Start with a short health form.</p>
                 <Link
                   to="/intake"
-                  className="mt-4 inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-ink-950 transition-colors duration-200 ease-out-smooth hover:bg-accent-dark hover:text-paper-50"
+                  className="mt-4 inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-ink-950 [.dark_&]:text-paper-50 transition-colors duration-200 ease-out-smooth hover:bg-accent-dark hover:text-paper-50"
                 >
                   Get started
                   <ChevronRightIcon className="size-4" />

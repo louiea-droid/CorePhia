@@ -89,11 +89,13 @@ export function buildEmail(mail) {
     case "intakeReceipt":
       return {
         to: mail.to,
-        subject: "We received your CorePhia form",
+        subject: "Welcome to CorePhia, we received your form",
         ...layout({
-          title: "We received your form",
+          title: "Welcome to CorePhia!",
           paragraphs: [
-            "Thank you for completing your CorePhia form. A member of our staff will contact you shortly.",
+            "We're glad you're here! We've received your form, and taking that first step matters.",
+            "Our care team is reviewing your answers. If the program looks like a good fit, we'll reach out to set up your first visit and send you an invite to your patient portal.",
+            "For your privacy, this email doesn't include any of your answers.",
             `Questions? Call us at ${PHONE} or email info@corephia.com.`,
           ],
         }),

@@ -151,7 +151,7 @@ export default function ConversationView({ intakeId, uid, topic, canWrite }) {
         </p>
       ) : null}
 
-      <dialog ref={dialogRef} aria-labelledby="close-conversation-title" className="animate-sheet-in m-auto w-[calc(100%-2rem)] max-w-sm rounded-3xl bg-white p-6 shadow-2xl backdrop:bg-ink-950/50">
+      <dialog ref={dialogRef} aria-labelledby="close-conversation-title" className="animate-sheet-in m-auto w-[calc(100%-2rem)] max-w-sm rounded-3xl bg-white p-6 shadow-2xl backdrop:bg-scrim/50">
         <p id="close-conversation-title" className="font-serif text-xl text-ink-950">
           Close this conversation?
         </p>

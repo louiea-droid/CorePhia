@@ -4,7 +4,6 @@ import { Loading, Skeleton } from "./Skeleton"
 const PILLS = {
   pastDue: "Payment",
   visitToday: "Today: your visit",
-  newReply: "New message",
   nextVisit: "Next: your visit",
   newUpdate: "New update",
   weighIn: "Weigh-in",
@@ -23,7 +22,6 @@ const SUBS = {
 
 const ACTION_LABELS = {
   billing: "Manage billing",
-  messages: "Open messages",
   "message-us": "Message us",
   updates: "Read the update",
   "log-weight": "Log your weight",
@@ -59,7 +57,7 @@ export default function WhatsNextCard({ reminders, onAction, children }) {
               <div className="min-w-0">
                 <p
                   className={`inline-flex items-center gap-[7px] rounded-full px-[11px] py-[5px] text-[12.5px] font-semibold ${
-                    main.kind === "pastDue" ? "bg-amber-100 text-amber-900" : "bg-good-soft text-good"
+                    main.kind === "pastDue" ? "bg-amber-100 text-amber-900 [.dark_&]:bg-amber-900/50 [.dark_&]:text-amber-200" : "bg-good-soft text-good"
                   }`}
                 >
                   <span aria-hidden="true" className="size-[7px] rounded-full bg-current" />

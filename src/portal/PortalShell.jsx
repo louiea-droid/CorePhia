@@ -1,4 +1,6 @@
 import { Link, NavLink } from "react-router-dom"
+import ThemeSwitch from "../admin/layout/ThemeSwitch"
+import { useAdminTheme } from "../admin/lib/useAdminTheme"
 import { signOutPatient } from "./lib/patientAuth"
 import { portalDemo } from "./lib/portalDemo"
 
@@ -30,6 +32,8 @@ const ICONS = {
       <path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" />
     </>
   ),
+  back: <path d="M10 6l-6 6 6 6M4 12h16" />,
+  signOut: <path d="M9 4H5a1 1 0 00-1 1v14a1 1 0 001 1h4M16 17l5-5-5-5M21 12H9" />,
 }
 
 function Icon({ name, className }) {
@@ -61,20 +65,14 @@ const SIDE_ITEMS = [
 const TAB_ITEMS = [...SIDE_ITEMS.slice(0, 4), ["/account/account", "Account", "account"]]
 
 const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-dark"
-const footLink = `block rounded-lg px-2 py-1.5 text-sm text-ink-950/75 transition-colors duration-200 hover:bg-paper-100 hover:text-ink-950 ${focusRing}`
+const footAction = `flex w-full cursor-pointer items-center gap-[11px] rounded-xl px-3 py-2 text-left text-[14.5px] text-ink-950/75 transition-colors duration-200 hover:bg-paper-50 hover:text-ink-950 ${focusRing}`
+const legalLink = `rounded text-xs text-ink-950/65 underline-offset-2 transition-colors duration-200 hover:text-ink-950 hover:underline ${focusRing}`
 
 function Logo() {
   return (
-    <p className="flex items-center gap-2 text-[17px] font-semibold text-ink-950">
-      <svg width="26" height="16" viewBox="0 0 26 16" aria-hidden="true" className="shrink-0 text-brand">
-        <path
-          d="M7 8c0-3 2-5 4.5-5S16 8 16 8s2 5 4.5 5S25 11 25 8s-2-5-4.5-5S16 8 16 8s-2 5-4.5 5S7 11 7 8z"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.2"
-        />
-      </svg>
-      CorePhia <span className="font-medium text-brand">Portal</span>
+    <p className="flex items-center gap-2.5">
+      <img src="/cp-health-header.webp" width="336" height="112" alt="CorePhia" className="h-10 w-auto [.dark_&]:brightness-0 [.dark_&]:invert" />
+      <span className="border-l border-ink-950/15 pl-2.5 text-sm font-medium text-ink-950/70">Portal</span>
     </p>
   )
 }
@@ -85,21 +83,22 @@ function initialOf(user, link) {
 
 function Avatar({ user, link, className = "size-[34px] text-[13px]" }) {
   return (
-    <span aria-hidden="true" className={`grid shrink-0 place-items-center rounded-full bg-paper-100 font-semibold text-brand ${className}`}>
+    <span aria-hidden="true" className={`grid shrink-0 place-items-center rounded-full bg-paper-100 font-semibold text-accent-text ${className}`}>
       {initialOf(user, link)}
     </span>
   )
 }
 
+// The sidebar copy also carries the dark mode switch (phones have it in the top bar).
 // Who is signed in, the way back to the website, the legal pages and
 // Sign out: the sidebar's foot, and below the page on phones when there is
 // no tab bar (and so no Account tab).
-function Foot({ user, link }) {
+function Foot({ user, link, theme, onToggleTheme, switchId }) {
   return (
     <div className="border-t border-ink-950/10 pt-4">
       {user && (
-        <div className="flex items-center gap-2.5 px-2 pb-3.5">
-          <Avatar user={user} link={link} />
+        <div className="mb-2 flex items-center gap-2.5 rounded-xl bg-paper-50 px-3 py-2.5">
+          <Avatar user={user} link={link} className="size-[34px] text-[13px] ring-1 ring-ink-950/10" />
           <div className="min-w-0">
             {link?.firstName && <p className="truncate text-sm font-semibold text-ink-950">{link.firstName}</p>}
             <p className="truncate text-xs text-ink-950/65" title={user.email}>
@@ -108,20 +107,30 @@ function Foot({ user, link }) {
           </div>
         </div>
       )}
-      <Link to="/" className={footLink}>
+      {onToggleTheme && (
+        <div className="flex items-center justify-between gap-3 py-1 pr-1 pl-3 text-[14.5px] text-ink-950/75">
+          <span aria-hidden="true">Dark mode</span>
+          <ThemeSwitch theme={theme} onToggle={onToggleTheme} id={switchId} />
+        </div>
+      )}
+      <Link to="/" className={footAction}>
+        <Icon name="back" className="size-[19px]" />
         Back to corephia.com
       </Link>
-      <Link to="/privacy" className={footLink}>
-        Privacy policy
-      </Link>
-      <Link to="/terms" className={footLink}>
-        Terms
-      </Link>
       {user && (
-        <button type="button" onClick={() => signOutPatient()} className={`w-full cursor-pointer text-left ${footLink}`}>
+        <button type="button" onClick={() => signOutPatient()} className={footAction}>
+          <Icon name="signOut" className="size-[19px]" />
           Sign out
         </button>
       )}
+      <p className="mt-3 flex gap-4 px-3">
+        <Link to="/privacy" className={legalLink}>
+          Privacy policy
+        </Link>
+        <Link to="/terms" className={legalLink}>
+          Terms
+        </Link>
+      </p>
     </div>
   )
 }
@@ -130,8 +139,10 @@ function Foot({ user, link }) {
 // banner). nav=false is for screens before the portal opens (signed out,
 // setup, reset, before payment, closed, errors): no section links.
 export default function PortalShell({ user, link, nav = true, newReplies = 0, children }) {
+  const [theme, toggleTheme] = useAdminTheme("corephia-portal-theme")
+  const themeProps = { theme, onToggleTheme: toggleTheme }
   return (
-    <div className="min-h-dvh bg-paper-50 lg:grid lg:grid-cols-[236px_minmax(0,1fr)]">
+    <div id="patient-portal-root" className={`min-h-dvh bg-paper-50 text-ink-950 lg:grid lg:grid-cols-[236px_minmax(0,1fr)] ${theme === "dark" ? "dark" : ""}`}>
       <aside className="hidden border-r border-ink-950/10 bg-white px-4 py-[22px] lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col lg:overflow-y-auto">
         <div className="px-2 pb-[26px]">
           <Logo />
@@ -165,20 +176,23 @@ export default function PortalShell({ user, link, nav = true, newReplies = 0, ch
           </nav>
         )}
         <div className="mt-auto pt-6">
-          <Foot user={user} link={link} />
+          <Foot user={user} link={link} {...themeProps} switchId="portal-theme-side" />
         </div>
       </aside>
 
       <header className="flex items-center justify-between gap-3 px-[18px] pt-[18px] pb-1.5 lg:hidden">
         <Logo />
-        {user &&
-          (nav ? (
-            <Link to="/account/account" aria-label="Account" className={`rounded-full ${focusRing}`}>
+        <div className="flex items-center gap-2">
+          <ThemeSwitch theme={theme} onToggle={toggleTheme} id="portal-theme-top" />
+          {user &&
+            (nav ? (
+              <Link to="/account/account" aria-label="Account" className={`rounded-full ${focusRing}`}>
+                <Avatar user={user} link={link} className="size-[30px] text-xs" />
+              </Link>
+            ) : (
               <Avatar user={user} link={link} className="size-[30px] text-xs" />
-            </Link>
-          ) : (
-            <Avatar user={user} link={link} className="size-[30px] text-xs" />
-          ))}
+            ))}
+        </div>
       </header>
 
       <main

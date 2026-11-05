@@ -517,6 +517,12 @@ Dr. Antonious's asks, the four sections, constraints and the notification email 
   - **What's next card** (Overview): one card chosen by `portal/lib/whatsNext.js` in priority
     order (rules and order in that file; `whatsNext.check.js` is in `npm run check`). A
     "seen update" is remembered per device in localStorage (`corephia-portal-seen-update`).
+    No new-reply reminder (Louie, 2026-11-05): the Messages card below already shows new replies.
+  - **Dark mode** (2026-11-05): the admin switch and `.dark` scope, on `#patient-portal-root`
+    (`PortalShell`), choice in localStorage `corephia-portal-theme` (named in the privacy policy).
+    Portal-only overrides in `index.css` (`#patient-portal-root.dark`: accent-dark, good,
+    good-soft, wash); red and amber boxes use `[.dark_&]:` variants. Sidebar foot on computers,
+    top bar on phones. The sign-in panel (`LoginPanel`, portalled to body) stays light.
   - **Visits:** patients see booked visits, never the staff note. Functions `mirrorVisit` and
     `copyVisitsOnChartCreate` (`functions/index.js`; pure copy in `functions/visits.js`,
     `visits.check.js` in `npm run check`) copy only `{ start, minutes, discipline, staffRole,
@@ -550,8 +556,8 @@ rejected: Google shuts Extensions down on 2027-03-31.
 - **`notifyNewIntake`** fires on each new `intakeRecords` doc: an alert to `INTAKE_ALERT_TO`
   (`providermd@corephia.com`, which the website no longer shows: taken off Contact and the
   footer 2026-11-04; add `dr.dan@corephia.com` once that mailbox exists) and a receipt
-  to the patient's intake email ("Thank you for completing your CorePhia form. A member of our
-  staff will contact you shortly."). Neither carries anything from the answers.
+  to the patient's intake email ("Welcome to CorePhia!": the form was received, the care team is reviewing it, and if
+  it is a good fit we will reach out to book the first visit and send the portal invite). Neither carries anything from the answers.
 - **Wording** of all six emails (invite, update, message, staff notice, new-form alert,
   receipt) is in `functions/emails.js`. Visitor-facing text says "form", not "intake" (Louie).
   No sign-off line of our own: Google Workspace's "Append footer" (Gmail admin, Compliance)

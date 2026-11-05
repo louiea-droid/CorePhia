@@ -64,7 +64,7 @@ export default function PlanChoice({ chart, link }) {
       </ul>
 
       {failed && (
-        <p role="alert" className="mt-6 rounded-2xl border border-red-700/30 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <p role="alert" className="mt-6 rounded-2xl border border-red-700/30 bg-red-50 px-4 py-3 text-sm text-red-800 [.dark_&]:bg-red-950/40 [.dark_&]:text-red-300">
           We couldn't open checkout. Please try again, or call us.
         </p>
       )}

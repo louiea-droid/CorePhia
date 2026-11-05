@@ -1,6 +1,6 @@
 // The portal Overview's "What's next" card: the most useful reminder first, then up to two more.
+// New replies are not a reminder: the Messages card just below already marks them (Louie, 2026-11-05).
 import { tampaParts, TIME_ZONE } from "../../admin/calendar/calendarMath.js"
-import { unreadFor } from "../../lib/messageMath.js"
 
 const DAY = 86400000
 const WEIGH_IN_AFTER_DAYS = 7
@@ -15,7 +15,7 @@ const fmt = (date, options) => new Intl.DateTimeFormat("en-US", { timeZone: TIME
 const clock = (d) => fmt(d, { hour: "numeric", minute: "2-digit" })
 const dayUtc = (day) => Date.UTC(...day.split("-").map((n, i) => (i === 1 ? n - 1 : +n)))
 
-export function whatsNext({ membership, chartStatus, visits = [], topics = [], updates = [], lastSeenUpdateId, progress = [], now }) {
+export function whatsNext({ membership, chartStatus, visits = [], updates = [], lastSeenUpdateId, progress = [], now }) {
   const closed = chartStatus === "inactive"
   const today = tampaParts(now).day
   const live = visits.filter((v) => !OVER.includes(v.status) && v.start.getTime() + v.minutes * 60000 > now.getTime())
@@ -30,7 +30,6 @@ export function whatsNext({ membership, chartStatus, visits = [], topics = [], u
   const add = (applies, reminder) => applies && list.push(reminder())
   add(membership?.status === "pastDue", () => ({ kind: "pastDue", title: "We couldn't take your last payment. Update your card.", action: "billing" }))
   add(isToday, () => ({ kind: "visitToday", title: `Your visit is today at ${clock(next.start)} with your ${role(next.staffRole)}`, action: "message-us" }))
-  add(topics.some((t) => unreadFor(t, "patient")), () => ({ kind: "newReply", title: "New reply from your care team", action: "messages" }))
   add(next && !isToday, () => ({
     kind: "nextVisit",
     title: `Your next visit: ${fmt(next.start, { weekday: "long", month: "long", day: "numeric" })} at ${clock(next.start)} with your ${role(next.staffRole)}`,

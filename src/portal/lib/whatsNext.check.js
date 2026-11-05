@@ -18,7 +18,7 @@ const busy = run({
   progress: [{ date: "2026-10-01", weightLb: 200 }],
 })
 assert.equal(busy.main.kind, "pastDue")
-assert.deepEqual(busy.more.map((r) => r.kind), ["visitToday", "newReply"])
+assert.deepEqual(busy.more.map((r) => r.kind), ["visitToday", "newUpdate"])
 
 // Visit today at 10:30 for 30 minutes.
 assert.equal(kind({ visits: [visit()] }), "visitToday")
@@ -33,12 +33,9 @@ assert.equal(future.kind, "nextVisit")
 assert.equal(future.title, "Your next visit: Thursday, November 12 at 10:30 AM with your dietitian")
 assert.match(run({ visits: [visit({ start: at("2026-11-12", "10:30"), staffRole: "x" })] }).main.title, /with your care team$/)
 
-// Replies: two topics, one unread, one reminder.
-const read = { lastFrom: "staff", lastMessageAt: new Date(1000), patientReadAt: new Date(2000) }
+// An unread reply is no reminder: the Messages card shows it.
 const unread = { lastFrom: "staff", lastMessageAt: new Date(2000), patientReadAt: new Date(1000) }
-const replies = run({ topics: [read, unread], updates: [{ id: "u" }], lastSeenUpdateId: "u" })
-assert.equal(replies.main.kind, "newReply")
-assert.equal(replies.more.length, 0)
+assert.equal(kind({ topics: [unread] }), "nextVisitUnbooked")
 
 // Updates.
 assert.equal(kind({ updates: [{ id: "u2" }, { id: "u1" }], lastSeenUpdateId: "u1" }), "newUpdate")
@@ -61,7 +58,7 @@ assert.equal(kind({ membership: { ...ends, status: "ended" } }), "nextVisitUnboo
 // Actions.
 assert.equal(busy.main.action, "billing")
 assert.equal(busy.more[0].action, "message-us")
-assert.equal(busy.more[1].action, "messages")
+assert.equal(busy.more[1].action, "updates")
 assert.equal(run({ visits: [visit({ start: at("2026-11-12", "10:30") })] }).main.action, "message-us")
 assert.equal(run({ membership: ends }).main.action, "billing")
 assert.equal(run({ visits: [] }).main.action, "message-us")

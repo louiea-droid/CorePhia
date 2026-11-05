@@ -114,6 +114,16 @@
   color-scheme: dark;
 }
 
+/* Patient portal dark mode: the .dark scope above, plus the portal's own
+   colours. accent-dark lightens here (unlike the admin) because the portal
+   uses it as text and as fills under paper-50 text, which is dark here. */
+#patient-portal-root.dark {
+  --color-accent-dark: #60a5fa;
+  --color-good: #6fd3a8;
+  --color-good-soft: #143a2e;
+  --color-wash: #18244a;
+}
+
 /* Browser autofill paints its own light fill over a saved password or email,
    which ignores the dark theme (a pale box among dark ones). Painting the
    field colour back on with an inset shadow is the one override Chrome and
