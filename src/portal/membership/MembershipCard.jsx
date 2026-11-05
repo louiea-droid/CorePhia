@@ -1,8 +1,6 @@
 import { useState } from "react"
-import { asDate } from "../../admin/patients/chartMath"
+import { longDateTampa } from "../../admin/patients/chartMath"
 import { openBillingPortal } from "../lib/billing"
-
-const longDate = (value) => asDate(value)?.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
 
 // First card on the Overview: the plan, the next billing date (or the end
 // date once cancelled), and Stripe's hosted page for card changes and
@@ -10,7 +8,7 @@ const longDate = (value) => asDate(value)?.toLocaleDateString("en-US", { year: "
 export default function MembershipCard({ membership }) {
   const [busy, setBusy] = useState(false)
   const [failed, setFailed] = useState(false)
-  const date = longDate(membership.currentPeriodEnd)
+  const date = longDateTampa(membership.currentPeriodEnd)
   const stripe = membership.source === "stripe"
 
   async function manage() {

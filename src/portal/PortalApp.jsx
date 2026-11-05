@@ -7,7 +7,7 @@ import LoginPanel from "../components/LoginPanel"
 import { ChevronRightIcon } from "../components/icons"
 import { Loading, Skeleton } from "./Skeleton"
 import { isMember } from "../admin/patients/chartMath"
-import { SUPPORT_PHONE } from "../lib/siteContact"
+import { SUPPORT_PHONE, SUPPORT_PHONE_HREF } from "../lib/siteContact"
 import { getMyPortalLink, signOutPatient, watchPatientUser } from "./lib/patientAuth"
 import { listenMyChart } from "./lib/messageStore"
 import PlanChoice from "./membership/PlanChoice"
@@ -43,7 +43,7 @@ function Confirming() {
       {slow && (
         <p className="mt-3 max-w-prose text-ink-950/70">
           This is taking longer than usual. Refresh in a minute, or call us at{" "}
-          <a href={`tel:${SUPPORT_PHONE.replace(/D/g, "")}`} className={inlineLink}>
+          <a href={SUPPORT_PHONE_HREF} className={inlineLink}>
             {SUPPORT_PHONE}
           </a>
           .
@@ -58,6 +58,19 @@ export function LinkedPortal({ user, link, chart }) {
   const [params, setParams] = useSearchParams()
   const returning = params.get("checkout") === "done"
   if (chart === undefined) return <Loading label="Opening your portal…" className={cardClass} />
+  if (chart === null)
+    return (
+      <div className={cardClass} role="alert">
+        <h1 className="font-serif text-3xl text-ink-950">We couldn't load your portal.</h1>
+        <p className="mt-3 max-w-prose text-ink-950/70">
+          Refresh the page, or call us at{" "}
+          <a href={SUPPORT_PHONE_HREF} className={inlineLink}>
+            {SUPPORT_PHONE}
+          </a>
+          .
+        </p>
+      </div>
+    )
   if (!isMember(chart)) return returning ? <Confirming /> : <PlanChoice chart={chart} link={link} />
   if (returning)
     return (
@@ -113,12 +126,17 @@ export default function PortalApp() {
     }
   }, [key, user])
 
-  // The chart, live: undefined until the first snapshot (a payment lands here).
+  // The chart, live: undefined until the first snapshot (a payment lands here),
+  // null when it can't be read (an error or a missing doc, never "unpaid").
   const [chartState, setChartState] = useState({ id: null, chart: undefined })
   const intakeId = link?.intakeId
   useEffect(() => {
     if (!intakeId) return
-    return listenMyChart(intakeId, (chart) => setChartState({ id: intakeId, chart }))
+    return listenMyChart(
+      intakeId,
+      (chart) => setChartState({ id: intakeId, chart }),
+      () => setChartState({ id: intakeId, chart: null }),
+    )
   }, [intakeId])
   const chart = chartState.id === intakeId ? chartState.chart : undefined
 
@@ -209,7 +227,7 @@ export default function PortalApp() {
           <h1 className="font-serif text-3xl text-ink-950">Your portal isn't set up yet</h1>
           <p className="mt-3 max-w-prose text-ink-950/70">
             If you're a CorePhia patient, contact us and we'll send you an invite. Call{" "}
-            <a href={`tel:${SUPPORT_PHONE.replace(/\D/g, "")}`} className={inlineLink}>
+            <a href={SUPPORT_PHONE_HREF} className={inlineLink}>
               {SUPPORT_PHONE}
             </a>{" "}
             or email{" "}

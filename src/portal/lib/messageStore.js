@@ -45,12 +45,12 @@ export function listenMyMessages(intakeId, topicId, onChange, onError) {
   )
 }
 
-// The chart doc, live ({ id, ...data }, or null when missing or unreadable):
-// staff can make it inactive mid-conversation, and a payment lands as a
-// membership field.
-export function listenMyChart(intakeId, onChange) {
+// The chart doc, live: onChange gets { id, ...data }, or null when the doc is
+// missing. A failed read goes to onError instead, so callers never mistake it
+// for a chart with no membership.
+export function listenMyChart(intakeId, onChange, onError) {
   if (!db) {
-    onChange(null)
+    onError()
     return () => {}
   }
   return onSnapshot(
@@ -58,14 +58,19 @@ export function listenMyChart(intakeId, onChange) {
     (snap) => onChange(snap.exists() ? { id: snap.id, ...snap.data() } : null),
     (cause) => {
       console.error("Could not load the chart:", cause.code ?? cause.message)
-      onChange(null)
+      onError(cause)
     },
   )
 }
 
 // "active" or "inactive", live: the reply box has to close with the chart.
+// Missing or unreadable reads as inactive.
 export const listenMyChartStatus = (intakeId, onChange) =>
-  listenMyChart(intakeId, (chart) => onChange(chart?.status === "active" ? "active" : "inactive"))
+  listenMyChart(
+    intakeId,
+    (chart) => onChange(chart?.status === "active" ? "active" : "inactive"),
+    () => onChange("inactive"),
+  )
 
 export async function startConversation(intakeId, uid, { subject, body }) {
   const topicRef = doc(topicsOf(intakeId))

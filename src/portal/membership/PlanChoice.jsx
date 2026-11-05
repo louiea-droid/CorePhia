@@ -1,12 +1,11 @@
 import { useState } from "react"
-import { asDate } from "../../admin/patients/chartMath"
+import { longDateTampa } from "../../admin/patients/chartMath"
 import { BadgeCheckIcon } from "../../components/icons"
 import { PLANS_SHOWN, PRICES_ANNOUNCED, tiers } from "../../data/pricingTiers"
-import { SUPPORT_PHONE } from "../../lib/siteContact"
+import { SUPPORT_PHONE, SUPPORT_PHONE_HREF } from "../../lib/siteContact"
 import { startCheckout } from "../lib/billing"
 
 const inlineLink = "font-medium text-ink-950 underline underline-offset-2"
-const longDate = (value) => asDate(value)?.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
 
 // A patient who hasn't paid (or whose membership ended) sees only this: the
 // plans, same features and prices as /membership, each with a button into
@@ -15,7 +14,7 @@ export default function PlanChoice({ chart, link }) {
   const [busy, setBusy] = useState(null) // plan name while the checkout URL is fetched
   const [failed, setFailed] = useState(false)
   const ended = chart?.membership?.status === "ended"
-  const endedOn = ended ? longDate(chart.membership.currentPeriodEnd) : null
+  const endedOn = ended ? longDateTampa(chart.membership.currentPeriodEnd) : null
   const shown = PLANS_SHOWN ? tiers : []
 
   async function choose(name) {
@@ -93,7 +92,7 @@ export default function PlanChoice({ chart, link }) {
 
       <p className="mt-8 text-sm text-ink-950/70">
         Questions about the plans? Call{" "}
-        <a href={`tel:${SUPPORT_PHONE.replace(/\D/g, "")}`} className={inlineLink}>
+        <a href={SUPPORT_PHONE_HREF} className={inlineLink}>
           {SUPPORT_PHONE}
         </a>{" "}
         or email{" "}

@@ -126,6 +126,10 @@ export function asDate(value) {
   return Number.isNaN(date.getTime()) ? null : date
 }
 
+// "October 19, 2026" in Tampa time, or undefined when there is no date.
+export const longDateTampa = (value) =>
+  asDate(value)?.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", timeZone: "America/New_York" })
+
 // BMI to one decimal, or null when height or weight is missing.
 export function bmi(heightFeet, heightInches, weightLb) {
   const inches = Number(heightFeet || 0) * 12 + Number(heightInches || 0)
