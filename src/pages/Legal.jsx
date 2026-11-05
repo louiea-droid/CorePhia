@@ -69,6 +69,7 @@ const privacy = [
       [
         "Your care team. The licensed providers, dietitian, and staff involved in your care, and only as much as each needs.",
         "Service providers that help us run the program. They handle information for us and not for their own purposes. Today these are Google Firebase (our database, sign-in, and site hosting), Google Workspace (which delivers our notification emails), and, if you accept, Google Analytics on our public pages. The notification emails go to your address and say only that something is waiting for you. They never contain health details.",
+        "Stripe, which takes your membership payments. Stripe receives your name, email and plan, and holds your card details, which we never see or store. We send it no health information. Stripe's own privacy policy covers what it does with payment data.",
         "Pharmacies and other health professionals, when a provider sends a prescription or refers you, as your care requires.",
         "People you ask us to share with, and anyone you give written permission to. For example, we publish a patient's story only with their written permission.",
         "Authorities or others when the law requires it, to respond to a valid legal process, or to protect someone from serious harm.",
@@ -187,7 +188,8 @@ const terms = [
     body: [
       [
         "The program is cash pay. We do not bill insurance, and we do not promise that any insurer or plan will reimburse you.",
-        "Memberships are billed monthly. The plans and prices on the Membership page are what we offer now. A price can change, but not for a membership you have already started, unless we tell you first. The price and terms that apply to you are confirmed when you enroll.",
+        "Memberships are billed monthly by card through Stripe. Your membership starts when your first payment goes through, and it renews each month until you cancel. You can cancel from your patient portal.",
+        "The plans and prices on the Membership page are what we offer now. A price can change, but not for a membership you have already started, unless we tell you first. The price and terms that apply to you are confirmed when you enroll.",
         "Cancellation and refund terms are confirmed in writing when you enroll.",
       ],
       "What you pay for is the program. Medication is only one part of it, and it is never sold on its own through this site.",

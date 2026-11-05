@@ -131,6 +131,19 @@ const TOPICS = [
     note: "Every change is kept on the appointment. The calendar doesn't send reminders.",
   },
   {
+    id: "membership",
+    title: "Membership and booking",
+    show: everyone,
+    steps: [
+      "After you admit an applicant and send the portal invite, the patient chooses a plan and pays by card in the portal. Stripe takes the payment. The chart shows a membership badge once it is paid.",
+      "A new appointment, a new message topic and an update to the patient wait until the chart has a membership. Until then those buttons say so. Moving an existing appointment is never blocked.",
+      "Admin and super admin can press Mark as member on a chart to record a membership by hand, for someone who paid another way.",
+      "Needs doing on the to-do list shows \"Paid: book first visit\" for a patient who has just become a member and has no appointment yet.",
+      "If a patient is made inactive, their membership is cancelled at the end of the period they paid for.",
+    ],
+    note: "Staff never see card details. Cancelling and card changes happen in the patient's portal, through Stripe.",
+  },
+  {
     id: "todo",
     title: "Use the to-do list",
     show: everyone,

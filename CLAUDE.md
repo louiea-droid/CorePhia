@@ -79,7 +79,7 @@ roles, calendarMath, todoMath, staffMath, inviteMath, progressMath, messageMath,
 `googleAnalytics.check.js` (only public pages are trackable), `functions/emails.check.js` (every email builds, with the right links and recipients), and
 `auditActions.check.js`, which fails if `AUDIT_ACTIONS` in `admin/lib/firebase.js` and the action
 list in `firestore.rules` drift apart) and `npm run test:rules` (Firestore rules against the
-emulator: all 165 pass as of 2026-11-04). Java 21 and a global `firebase` CLI are installed on
+emulator: all 175 pass as of 2026-11-05). Java 21 and a global `firebase` CLI are installed on
 this machine now (2026-11-04), so `npm run test:rules` runs as is.
 
 ## Architecture
@@ -245,7 +245,7 @@ delete, vitals ranges, copy vs Terms) is planned for 2026-10-22. Strike items th
    See `docs/meeting-analysis.md`. `buildIntakeRecord()` deliberately groups fields to mirror
    standard EMR intake sections (demographics / vitals / medicalHistory /
    familyHistory / socialHistory / nutrition / visit / consent) so a vendor mapping is direct.
-2. **Firestore rules: deploy.** `npm run test:rules` runs now (Java 21 installed) and all 165
+2. **Firestore rules: deploy.** `npm run test:rules` runs now (Java 21 installed) and all 175
    tests pass (2026-11-04). The rules are not deployed: `firebase deploy --only firestore:rules`,
    **together with the site**, since the 2026-10-19 rules expect the new client (a chart's
    `lastNote` names its `noteId`, linking a portal login marks the invite used in the same batch,
@@ -329,7 +329,7 @@ client. The Core tier's "Prescription medication" feature and the "Medication Av
 approved (2026-10-14). Core's "24/7 patient support" became "Patient support through
 your portal" (2026-10-13), to match the Terms (messages are read in working hours).
 
-### Billing: Stripe (started 2026-11-04, nothing built yet)
+### Billing: Stripe (built 2026-11-05 on this branch, not deployed)
 
 Design approved 2026-11-05: `docs/superpowers/specs/2026-11-05-stripe-membership-billing-design.md`;
 plan: `docs/superpowers/plans/2026-11-05-stripe-membership-billing.md`. Monthly only (no enrollment
@@ -337,20 +337,45 @@ or first-visit fee). Patients pay in the portal after admission and before the f
 booked. Discharge cancels the subscription and emails the patient. Refund and cancellation policy
 are still waiting on Dr. Antonious.
 
-Stripe chosen over Hint Health. Account "CorePhia", in the **sandbox** (test mode) so far, set up
-for online payments + subscriptions (no Stripe banking, not a platform). Planned flow: form →
-staff admit → portal invite → patient picks a plan and pays in the portal (Stripe Checkout) →
-a Cloud Function takes Stripe's webhook and marks the chart's membership; card changes, receipts
-and cancelling through Stripe's hosted customer portal. Nobody pays before a clinician has
-accepted them, and every charge is a membership, never medication. Stripe gets name, email and
-plan only, nothing medical (payment processing is outside the BAA requirement only that way).
-The secret key goes in Secret Manager, never in the repo or chat.
+Stripe chosen over Hint Health. Account "CorePhia", in the **sandbox** (test mode). Flow: form →
+staff admit → portal invite → patient picks a plan and pays in the portal (Stripe Checkout) → the
+webhook marks the chart's membership. Card changes, receipts and cancelling go through Stripe's
+hosted customer portal. Nobody pays before a clinician has accepted them, and every charge is a
+membership, never medication. Stripe gets name, email and plan only, nothing medical. The
+secret key goes in Secret Manager, never in the repo or chat.
+
+Where things live:
+- `functions/billing.js`: plan to price mapping, Stripe status mapping, `MODE` and `PRICES`
+  (switch both to go live; the test IDs below are sandbox). Self-check `functions/billing.check.js`,
+  in `npm run check`.
+- `functions/index.js`: `startCheckout`, `openBillingPortal`, `stripeWebhook`, `onChartDischarged`
+  (discharge cancels the subscription at the end of the paid month and emails the patient).
+  Secrets `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` in Secret Manager.
+- Chart field `membership` (plus `formPlan`, the plan chosen on the form); server-only
+  `billing/{chartId}` (no browser access, see `firestore.rules`).
+- Portal: `src/portal/membership/` (plan choice, Checkout, member tabs, Manage billing).
+- Admin: membership badge on the chart; **Mark as member** and **End membership** (manual,
+  admin and super admin only, never over a live Stripe membership); a "Paid: book first visit" group
+  on the to-do list.
+- Paid-only booking: the rules and `AppointmentDialog` refuse a new appointment for a chart with
+  no membership; new message topics and updates to the patient wait too. **Once the rules are live,
+  admitted charts with no membership can't be booked until the patient pays or an admin marks them
+  by hand.**
+- Public copy: Terms "Cost and payment", Privacy (Stripe as a service provider), FAQ "How do I pay?",
+  `public/llms.txt`, admin Help "Membership and booking". Cancellation and refund still read
+  "confirmed in writing at enrollment". Cancel at period end is the default until Dr. Antonious
+  decides the refund policy.
+
+**Not deployed.** The function deploy needs the Cloud Build role fix (see Email) and goes out with
+the rules and hosting together. **Not verified yet** (needs the deployed sandbox): a real Checkout
+payment, the webhook transactions, discharge cancellation and its email, the portal member tabs,
+and the Choose / Manage billing redirects.
 
 Test-mode price IDs (live mode will have new ones):
 - Core $299/month: `price_1UYAmdGfYKc3UVG5MLvaqCfg`
 - Core Complete $349/month: `price_1UYAmIGfYKc3UVG5L161NXEW`
 
-Waiting on the client before building: a first-visit or enrollment fee or monthly only; the
+Still waiting on the client: a first-visit or enrollment fee or monthly only; the
 cancellation and refund policy (also open in the Terms and Stripe's customer-portal settings);
 final plans; the legal entity name for statements; HSA/FSA.
 

@@ -8,6 +8,7 @@
 - Who can join: adults 18 or older.
 - Cost: monthly membership, cash pay. Core is $299 a month, Core Complete is $349 a month.
 - Insurance: not accepted.
+- Payment: after acceptance, the patient chooses a plan and pays by card in the patient portal. Billed monthly through Stripe, cancel from the portal.
 - Getting started: an online intake that takes about ten minutes, then a review by a licensed provider.
 - Medication: prescribed only when a licensed provider decides it is clinically appropriate. Many patients follow the program without it.
 

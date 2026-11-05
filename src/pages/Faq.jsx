@@ -86,6 +86,10 @@ const faqGroups = [
         a: "No. CorePhia is cash pay, so there are no insurance approvals or claims standing between you and your care. Membership is billed monthly, and what each tier includes is listed on our membership page.",
       },
       {
+        q: "How do I pay?",
+        a: "After you're accepted, you choose a plan and pay by card in your patient portal. It's billed monthly, and you can cancel from the portal.",
+      },
+      {
         // Florida only for now (Louie, 2026-10-13). Add states here, in the Terms
         // and in areaServed (index.html, ProgramPage.jsx) as licenses are added.
         q: "Where do you operate?",
