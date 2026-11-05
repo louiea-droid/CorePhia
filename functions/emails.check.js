@@ -27,4 +27,14 @@ for (const kind of ["invite", "update", "message", "staff"]) {
 }
 assert.throws(() => buildEmail({ kind: "other", to: "a@b.com" }))
 
+for (const endsOn of ["2026-12-05T15:00:00Z", new Date("2026-12-05T15:00:00Z")]) {
+  const cancelled = buildEmail({ kind: "membershipCancelled", to: "a@b.com", endsOn })
+  assert.equal(cancelled.to, "a@b.com")
+  assert.equal(cancelled.subject, "Your CorePhia membership has been cancelled")
+  assert.ok(cancelled.text.includes("You won't be charged again."))
+  assert.ok(cancelled.text.includes("December 5, 2026"), cancelled.text)
+  assert.ok(cancelled.text.includes("+1 (866) 849-2673"))
+  assert.ok(!cancelled.html.includes("<a href"))
+}
+
 console.log("emails: ok")

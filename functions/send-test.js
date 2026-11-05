@@ -27,6 +27,7 @@ const samples = [
   { kind: "staff" },
   { kind: "newIntake", receivedAt: new Date().toISOString() },
   { kind: "intakeReceipt" },
+  { kind: "membershipCancelled", endsOn: new Date(Date.now() + 30 * 864e5).toISOString() },
 ]
 for (const sample of samples) {
   // Every email goes to the test address, whoever it would really go to.

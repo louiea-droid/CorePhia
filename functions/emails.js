@@ -108,6 +108,20 @@ export function buildEmail(mail) {
           button: { label: "Open Messages", url: `${SITE}/admin/messages` },
         }),
       }
+    // Sent when staff discharge a patient whose subscription is live.
+    case "membershipCancelled":
+      return {
+        to: mail.to,
+        subject: "Your CorePhia membership has been cancelled",
+        ...layout({
+          title: "Your membership has been cancelled",
+          paragraphs: [
+            "Your CorePhia membership has been cancelled. You won't be charged again.",
+            `Your membership stays active until ${new Date(mail.endsOn).toLocaleDateString("en-US", { timeZone: "America/New_York", dateStyle: "long" })}.`,
+          ],
+          after: [`Questions? Call us at ${PHONE} or email info@corephia.com.`],
+        }),
+      }
     default:
       throw new Error(`Unknown email kind: ${mail.kind}`)
   }
