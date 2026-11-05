@@ -62,3 +62,24 @@ export function subscriptionIdFromEvent(event) {
   if (id && typeof id === "object") id = id.id
   return typeof id === "string" && id ? id : null
 }
+
+// Stripe subscription statuses that still charge the patient.
+export const LIVE_STATUSES = ["active", "trialing", "past_due"]
+
+// Whether a webhook's subscription clashes with the one on file
+// (billing/{chartId}.subscriptionId):
+// "stale": an older subscription ending; skip it, it must not end the newer one.
+// "duplicate": a second live subscription while the one on file is still live;
+//   should never happen (startCheckout guards it), so it is logged loudly.
+export function subscriptionConflict(membership, existing, currentId, subId) {
+  if (!currentId || currentId === subId) return null
+  if (membership.status === "ended") return "stale"
+  if (existing?.source === "stripe" && existing.status !== "ended") return "duplicate"
+  return null
+}
+
+// A Stripe failure worth retrying (network, Stripe outage, rate limit, lock).
+// Anything else (a cancelled subscription, a bad id) won't fix itself.
+export const isTransientStripeError = (error) =>
+  ["StripeConnectionError", "StripeAPIError", "StripeRateLimitError"].includes(error?.type) ||
+  error?.statusCode >= 500 || error?.statusCode === 429 || error?.statusCode === 409

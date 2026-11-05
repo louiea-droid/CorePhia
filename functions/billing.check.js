@@ -3,7 +3,7 @@ import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import {
   priceForPlan, planForPrice, membershipFromSubscription, checkoutDecision, cancelOnDischarge,
-  subscriptionIdFromEvent,
+  subscriptionIdFromEvent, subscriptionConflict, isTransientStripeError,
 } from "./billing.js"
 
 assert.equal(priceForPlan("Core"), "price_1UYAmdGfYKc3UVG5MLvaqCfg")
@@ -67,5 +67,22 @@ assert.equal(subscriptionIdFromEvent(ev("invoice.payment_failed", { subscription
 assert.equal(subscriptionIdFromEvent(ev("invoice.payment_failed", { parent: null })), null)
 assert.equal(subscriptionIdFromEvent(ev("invoice.paid", { subscription: "sub_6" })), null)
 assert.equal(subscriptionIdFromEvent(null), null)
+
+const onFile = { source: "stripe", status: "active" }
+assert.equal(subscriptionConflict({ status: "active" }, onFile, null, "sub_new"), null)
+assert.equal(subscriptionConflict({ status: "ended" }, onFile, "sub_new", "sub_new"), null)
+assert.equal(subscriptionConflict({ status: "ended" }, onFile, "sub_new", "sub_old"), "stale")
+assert.equal(subscriptionConflict({ status: "active" }, onFile, "sub_old", "sub_new"), "duplicate")
+assert.equal(subscriptionConflict({ status: "active" }, { source: "stripe", status: "ended" }, "sub_old", "sub_new"), null)
+assert.equal(subscriptionConflict({ status: "active" }, { source: "manual", status: "active" }, "sub_old", "sub_new"), null)
+assert.equal(subscriptionConflict({ status: "active" }, undefined, "sub_old", "sub_new"), null)
+
+assert.equal(isTransientStripeError({ type: "StripeConnectionError" }), true)
+assert.equal(isTransientStripeError({ type: "StripeAPIError", statusCode: 500 }), true)
+assert.equal(isTransientStripeError({ type: "StripeRateLimitError", statusCode: 429 }), true)
+assert.equal(isTransientStripeError({ type: "StripeInvalidRequestError", statusCode: 409 }), true)
+assert.equal(isTransientStripeError({ type: "StripeInvalidRequestError", statusCode: 400 }), false)
+assert.equal(isTransientStripeError({ type: "StripeInvalidRequestError", statusCode: 404 }), false)
+assert.equal(isTransientStripeError(new Error("x")), false)
 
 console.log("billing: ok")
