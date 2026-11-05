@@ -82,4 +82,13 @@ assert.equal(kind({ visits: [] }), "firstVisit")
 assert.equal(kind({ visits: [visit({ status: "completed" })] }), "nextVisitUnbooked")
 assert.equal(run({ visits: [] }).more.length, 0)
 
+// A discharged chart (still a member until the paid month ends): no weigh-in, a closing line.
+const stale = [{ date: "2026-11-02", weightLb: 1 }]
+const closedRun = run({ chartStatus: "inactive", membership: { status: "active", currentPeriodEnd: at("2026-11-27", "12:00") }, progress: stale }).main
+assert.equal(closedRun.kind, "closed")
+assert.equal(closedRun.title, "Your program with CorePhia is closed. Your membership ends on November 27, 2026.")
+assert.equal(closedRun.action, "message-us")
+assert.equal(run({ chartStatus: "inactive", progress: stale }).main.title, "Your program with CorePhia is closed.")
+assert.equal(kind({ chartStatus: "active", progress: stale }), "weighIn")
+
 console.log("whatsNext: ok")

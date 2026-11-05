@@ -89,7 +89,7 @@ function App() {
 
   // The patient portal has its own frame too (PortalShell): no website menu,
   // footer or cookie banner. Nothing is tracked on these paths.
-  if (/^\/(account(\/|$)|portal\/(setup|reset)\/?$)/.test(pathname)) {
+  if (/^\/(account(\/|$)|portal\/(setup|reset)\/?$)/i.test(pathname)) {
     return (
       <>
         <ScrollManager />

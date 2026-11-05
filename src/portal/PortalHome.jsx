@@ -36,7 +36,7 @@ export default function PortalHome() {
   const now = new Date()
   const reminders =
     visits && progress && updates && topics
-      ? whatsNext({ membership: chart.membership, visits, topics, updates, lastSeenUpdateId: seenUpdateId(), progress, now })
+      ? whatsNext({ membership: chart.membership, chartStatus: chart.status, visits, topics, updates, lastSeenUpdateId: seenUpdateId(), progress, now })
       : null
 
   return (

@@ -15,7 +15,8 @@ const fmt = (date, options) => new Intl.DateTimeFormat("en-US", { timeZone: TIME
 const clock = (d) => fmt(d, { hour: "numeric", minute: "2-digit" })
 const dayUtc = (day) => Date.UTC(...day.split("-").map((n, i) => (i === 1 ? n - 1 : +n)))
 
-export function whatsNext({ membership, visits = [], topics = [], updates = [], lastSeenUpdateId, progress = [], now }) {
+export function whatsNext({ membership, chartStatus, visits = [], topics = [], updates = [], lastSeenUpdateId, progress = [], now }) {
+  const closed = chartStatus === "inactive"
   const today = tampaParts(now).day
   const live = visits.filter((v) => !OVER.includes(v.status) && v.start.getTime() + v.minutes * 60000 > now.getTime())
   live.sort((a, b) => a.start - b.start)
@@ -36,7 +37,7 @@ export function whatsNext({ membership, visits = [], topics = [], updates = [], 
     action: "message-us",
   }))
   add(updates.length > 0 && updates[0].id !== lastSeenUpdateId, () => ({ kind: "newUpdate", title: "Your care team posted an update", action: "updates" }))
-  add(daysSince > WEIGH_IN_AFTER_DAYS, () => ({ kind: "weighIn", title: `Time for a weigh-in. Your last one was ${daysSince} days ago.`, action: "log-weight" }))
+  add(!closed && daysSince > WEIGH_IN_AFTER_DAYS,() => ({ kind: "weighIn", title: `Time for a weigh-in. Your last one was ${daysSince} days ago.`, action: "log-weight" }))
   add(membership?.status === "active" && membership.cancelAtPeriodEnd && periodEnd, () => ({
     kind: "ending",
     title: `Your membership ends on ${fmt(periodEnd, { month: "long", day: "numeric", year: "numeric" })}`,
@@ -44,7 +45,13 @@ export function whatsNext({ membership, visits = [], topics = [], updates = [], 
   }))
 
   const everBooked = visits.some((v) => v.status !== "cancelled" && v.status !== "noShow")
-  const fallback = everBooked
+  const fallback = closed
+    ? {
+        kind: "closed",
+        title: `Your program with CorePhia is closed.${periodEnd ? ` Your membership ends on ${fmt(periodEnd, { month: "long", day: "numeric", year: "numeric" })}.` : ""}`,
+        action: "message-us",
+      }
+    : everBooked
     ? { kind: "nextVisitUnbooked", title: "Our team will contact you when it's time for your next visit.", action: "message-us" }
     : { kind: "firstVisit", title: "Our team will contact you to book your first visit.", action: "message-us" }
 
