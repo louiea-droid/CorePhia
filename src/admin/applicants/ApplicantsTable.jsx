@@ -1,3 +1,4 @@
+import MembershipBadge from "../patients/MembershipBadge"
 import { goalBucket } from "../analytics/analytics"
 import { formatClockTime, formatRelativeTime, useRelativeTimeClock } from "../lib/relativeTime"
 
@@ -17,21 +18,22 @@ const STATUS_BADGE = {
 // came in visibly reads as new. rankOffset is how many rows are ahead of this
 // page in the full sorted list — 0 on page 1, pageSize on page 2, and so on —
 // so the cutoff is correct regardless of which page is showing.
-export default function ApplicantsTable({ records, onSelect, minRows = 0, rankOffset = 0 }) {
+export default function ApplicantsTable({ records, charts, onSelect, minRows = 0, rankOffset = 0 }) {
   const fillerRowCount = Math.max(0, minRows - records.length)
   const anyRecentOnPage = records.some((_, index) => rankOffset + index < 10)
   const now = useRelativeTimeClock(anyRecentOnPage)
 
   return (
     <div className="scrollbar-thin -mx-4 overflow-x-auto px-4">
-      <table className="w-full min-w-2xl table-fixed text-left text-sm">
+      <table className="w-full min-w-3xl table-fixed text-left text-sm">
         <colgroup>
-          <col className="w-[20%]" />
-          <col className="w-[14%]" />
+          <col className="w-[17%]" />
           <col className="w-[12%]" />
-          <col className="w-[14%]" />
+          <col className="w-[11%]" />
+          <col className="w-[12%]" />
           <col className="w-[16%]" />
-          <col className="w-[24%]" />
+          <col className="w-[14%]" />
+          <col className="w-[18%]" />
         </colgroup>
         <thead>
           <tr className="sticky top-0 z-10 border-b border-ink-950/10 bg-white text-xs tracking-wide text-ink-950/45 uppercase">
@@ -46,6 +48,9 @@ export default function ApplicantsTable({ records, onSelect, minRows = 0, rankOf
             </th>
             <th scope="col" className="pb-2 font-medium">
               Status
+            </th>
+            <th scope="col" className="pb-2 font-medium">
+              Membership
             </th>
             <th scope="col" className="pb-2 font-medium">
               Goal
@@ -88,6 +93,9 @@ export default function ApplicantsTable({ records, onSelect, minRows = 0, rankOf
                     {record.status ?? "pending"}
                   </span>
                 </td>
+                <td className="py-4">
+                  {record.status === "admitted" && charts?.has(record.id) ? <MembershipBadge chart={charts.get(record.id)} /> : <span className="text-ink-950/60">—</span>}
+                </td>
                 <td className="truncate py-4 text-ink-950/60">{goalBucket(record).replace("Not sure, I just need to lose weight", "Not sure") || "—"}</td>
                 <td className="truncate py-4 text-ink-950/60">{record.visit?.reason || "—"}</td>
               </tr>
@@ -96,6 +104,7 @@ export default function ApplicantsTable({ records, onSelect, minRows = 0, rankOf
           {Array.from({ length: fillerRowCount }).map((_, index) => (
             <tr key={`filler-${index}`} aria-hidden="true">
               <td className="py-4">&nbsp;</td>
+              <td className="py-4" />
               <td className="py-4" />
               <td className="py-4" />
               <td className="py-4" />

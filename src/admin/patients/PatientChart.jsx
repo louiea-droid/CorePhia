@@ -22,6 +22,8 @@ import {
   signerLine,
 } from "./noteUi"
 import PageHeader from "../layout/PageHeader"
+import MembershipBadge from "./MembershipBadge"
+import { EndMembershipDialog, MarkMemberDialog } from "./MembershipDialogs"
 import PortalAccess from "./PortalAccess"
 import PostUpdateDialog from "./PostUpdateDialog"
 import ProgressCard from "./ProgressCard"
@@ -165,6 +167,7 @@ export default function PatientChart({ actor }) {
   const [posting, setPosting] = useState(null) // null | { body, fromNoteId }
   const [updatesVersion, setUpdatesVersion] = useState(0)
   const [updateEmailFailed, setUpdateEmailFailed] = useState(false)
+  const [membershipDialog, setMembershipDialog] = useState(null) // null | "mark" | "end"
   // This patient's message topics, for the summary's Messages line.
   const { topics: allTopics } = useTopics({ chartId })
 
@@ -338,6 +341,30 @@ export default function PatientChart({ actor }) {
           {chart.status === "inactive" && (
             <span className="rounded-full bg-ink-950/10 px-2.5 py-0.5 text-xs font-medium text-ink-950/60">Inactive</span>
           )}
+          <MembershipBadge chart={chart} />
+          {/* Only admin and super admin write a membership by hand, never over a live Stripe one (firestore.rules). */}
+          {(actor.role === "admin" || actor.role === "superAdmin") && (
+            <>
+              {!(chart.membership?.source === "stripe" && chart.membership.status !== "ended") && (
+                <button
+                  type="button"
+                  onClick={() => setMembershipDialog("mark")}
+                  className="cursor-pointer rounded-lg border border-ink-950/15 px-3 py-1.5 text-xs font-semibold text-ink-950/70 transition-colors duration-200 hover:border-ink-950/40 hover:text-ink-950"
+                >
+                  Mark as member
+                </button>
+              )}
+              {chart.membership?.source === "manual" && chart.membership.status === "active" && (
+                <button
+                  type="button"
+                  onClick={() => setMembershipDialog("end")}
+                  className="cursor-pointer rounded-lg border border-ink-950/15 px-3 py-1.5 text-xs font-semibold text-ink-950/70 transition-colors duration-200 hover:border-brand-dark hover:bg-brand-dark/20 hover:text-brand-dark"
+                >
+                  End membership
+                </button>
+              )}
+            </>
+          )}
         </div>
         <p className="mt-2 text-sm text-ink-950/65">
           {/* No email here: the Patient portal card below shows it. */}
@@ -346,6 +373,7 @@ export default function PatientChart({ actor }) {
         <p className="mt-1 text-sm text-ink-950/50">
           Admitted {asDate(chart.admittedAt)?.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
           {chart.admittedBy?.name ? ` by ${staffDisplayName(chart.admittedBy)}` : ""}
+          {chart.formPlan ? `. Chose ${chart.formPlan} on the form.` : ""}
         </p>
         {chart.status === "inactive" && (
           <p className="mt-3 rounded-lg bg-paper-100 px-3 py-2 text-sm text-ink-950/70">
@@ -397,6 +425,28 @@ export default function PatientChart({ actor }) {
           </div>
         </dl>
       </header>
+
+      {membershipDialog === "mark" && (
+        <MarkMemberDialog
+          chart={chart}
+          patientName={name}
+          onClose={() => setMembershipDialog(null)}
+          onDone={(membership) => {
+            setChart((current) => ({ ...current, membership }))
+            setMembershipDialog(null)
+          }}
+        />
+      )}
+      <EndMembershipDialog
+        chart={chart}
+        patientName={name}
+        open={membershipDialog === "end"}
+        onClose={() => setMembershipDialog(null)}
+        onDone={(membership) => {
+          setChart((current) => ({ ...current, membership: { ...current.membership, ...membership } }))
+          setMembershipDialog(null)
+        }}
+      />
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]">
         {/* Notes first on a phone, where the provider is most likely writing. */}

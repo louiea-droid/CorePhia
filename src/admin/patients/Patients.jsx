@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { ageFrom, asDate } from "./chartMath"
+import { ageFrom, asDate, isMember } from "./chartMath"
+import MembershipBadge from "./MembershipBadge"
 import { loadCharts, setApplicantStatus } from "./chartStore"
 import ConfirmDialog from "../ui/ConfirmDialog"
 import { AUDIT_ACTIONS, INTAKE_COLLECTION, recordAuditEvent } from "../lib/firebase"
@@ -150,7 +151,7 @@ export default function Patients({ actor, role }) {
       <ConfirmDialog
         open={Boolean(pendingInactive)}
         title="Make this patient inactive?"
-        description={`${pendingInactive?.firstName ?? ""} ${pendingInactive?.lastName ?? ""}'s chart stays as a record, but notes and messaging close and they show as discharged on Applicants. Nothing is deleted. You can reactivate them any time.`}
+        description={`${pendingInactive?.firstName ?? ""} ${pendingInactive?.lastName ?? ""}'s chart stays as a record, but notes and messaging close and they show as discharged on Applicants. Nothing is deleted. You can reactivate them any time.${isMember(pendingInactive) ? " Their membership will be cancelled." : ""}`}
         confirmLabel={changing ? "Saving…" : "Make inactive"}
         confirmDisabled={changing}
         onConfirm={() => changeStatus(pendingInactive, false)}
@@ -218,13 +219,14 @@ export default function Patients({ actor, role }) {
           ) : (
             <div className="scrollbar-thin flex-1 overflow-y-auto px-4 pt-3">
               <div className="scrollbar-thin -mx-4 overflow-x-auto px-4">
-                <table className="w-full min-w-xl table-fixed text-left text-sm">
+                <table className="w-full min-w-2xl table-fixed text-left text-sm">
                   <colgroup>
-                    <col className="w-[26%]" />
-                    <col className="w-[9%]" />
-                    <col className="w-[18%]" />
-                    <col className="w-[24%]" />
-                    <col className="w-[23%]" />
+                    <col className="w-[20%]" />
+                    <col className="w-[7%]" />
+                    <col className="w-[14%]" />
+                    <col className="w-[20%]" />
+                    <col className="w-[17%]" />
+                    <col className="w-[22%]" />
                   </colgroup>
                   <thead>
                     <tr className="sticky top-0 z-10 border-b border-ink-950/10 bg-white text-xs tracking-wide text-ink-950/45 uppercase">
@@ -239,6 +241,9 @@ export default function Patients({ actor, role }) {
                       </th>
                       <th scope="col" className="pb-2 font-medium">
                         Last note
+                      </th>
+                      <th scope="col" className="pb-2 font-medium">
+                        Membership
                       </th>
                       <th scope="col" className="pb-2 font-medium">
                         Status
@@ -272,6 +277,9 @@ export default function Patients({ actor, role }) {
                             {chart.lastNote
                               ? `${NOTE_TYPE_LABELS[chart.lastNote.type] ?? "Note"}, ${formatDate(chart.lastNote.signedAt)}`
                               : "No notes yet"}
+                          </td>
+                          <td className="py-3">
+                            <MembershipBadge chart={chart} />
                           </td>
                           <td className="py-3">
                             <div className="flex items-center gap-2">

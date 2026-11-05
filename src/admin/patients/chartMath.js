@@ -119,6 +119,15 @@ export function dueTasks(notes, today, windowDays = 7) {
 // Paid up: a membership that is active or past due (still covered while the card is fixed).
 export const isMember = (chart) => chart?.membership?.status === "active" || chart?.membership?.status === "pastDue"
 
+// The badge text for a chart: what the staff sees next to a patient about their membership.
+export function membershipLabel(chart) {
+  const membership = chart?.membership
+  if (membership?.status === "active") return { text: `Member: ${membership.plan}`, tone: "good" }
+  if (membership?.status === "pastDue") return { text: "Payment problem", tone: "warn" }
+  if (membership?.status === "ended") return { text: "Membership ended", tone: "muted" }
+  return { text: "Awaiting payment", tone: "muted" }
+}
+
 // A Date from a Firestore Timestamp, a Date or an ISO string; null otherwise.
 export function asDate(value) {
   if (!value) return null

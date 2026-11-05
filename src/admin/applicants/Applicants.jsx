@@ -10,7 +10,7 @@ import ApplicantsTable from "./ApplicantsTable"
 import AppointmentDialog from "../calendar/AppointmentDialog"
 import { loadAppointmentsFor } from "../calendar/appointmentStore"
 import { asDate } from "../patients/chartMath"
-import { setApplicantStatus } from "../patients/chartStore"
+import { loadCharts, setApplicantStatus } from "../patients/chartStore"
 import { ApplicantsSkeleton } from "../ui/Skeleton"
 import { canAdmit } from "../staff/roles"
 import { useIntakeRecords } from "./useIntakeRecords"
@@ -53,6 +53,18 @@ export default function Applicants({ role, actor }) {
   // Admitting/declining isn't destructive, so every clinical role but the
   // dietitian can do it (roles.canAdmit; firestore.rules isAdmitter).
   const canReview = canAdmit(role)
+
+  // Charts by id, for the membership badge on admitted rows. Best effort: without them the cell shows a dash.
+  const [charts, setCharts] = useState(null)
+  useEffect(() => {
+    let active = true
+    loadCharts()
+      .then((list) => active && setCharts(new Map(list.map((chart) => [chart.id, chart]))))
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [])
 
   const selectedId = selectedRecord?.id
   useEffect(() => {
@@ -245,6 +257,7 @@ export default function Applicants({ role, actor }) {
                   actually renders instead of padding to 100 blank rows. */}
               <ApplicantsTable
                 records={pageRecords}
+                charts={charts}
                 onSelect={setSelectedRecord}
                 minRows={pageSize === 10 ? 10 : 0}
                 rankOffset={(currentPage - 1) * pageSize}

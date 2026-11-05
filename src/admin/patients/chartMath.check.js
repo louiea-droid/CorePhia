@@ -9,6 +9,7 @@ import {
   currentPrescriptions,
   daysFrom,
   isMember,
+  membershipLabel,
   disciplineOf,
   dueTasks,
   latestSignedByDiscipline,
@@ -256,5 +257,14 @@ assert.equal(isMember({ membership: { status: "pastDue" } }), true)
 assert.equal(isMember({ membership: { status: "ended" } }), false)
 assert.equal(isMember({}), false)
 assert.equal(isMember(null), false)
+
+const label = (membership) => membershipLabel({ membership })
+assert.deepEqual(label(undefined), { text: "Awaiting payment", tone: "muted" })
+assert.deepEqual(label({ status: "active", plan: "Core" }), { text: "Member: Core", tone: "good" })
+assert.deepEqual(label({ status: "active", plan: "Core Complete" }), { text: "Member: Core Complete", tone: "good" })
+assert.deepEqual(label({ status: "pastDue", plan: "Core" }), { text: "Payment problem", tone: "warn" })
+assert.deepEqual(label({ status: "ended", plan: "Core" }), { text: "Membership ended", tone: "muted" })
+assert.deepEqual(label({ status: "active", plan: "Core", source: "manual" }), { text: "Member: Core", tone: "good" })
+assert.equal(membershipLabel(null).text, "Awaiting payment")
 
 console.log("chartMath: all checks passed")
