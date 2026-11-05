@@ -8,6 +8,7 @@ import {
   currentExercisePlan,
   currentPrescriptions,
   daysFrom,
+  isMember,
   disciplineOf,
   dueTasks,
   latestSignedByDiscipline,
@@ -249,5 +250,11 @@ assert.equal(
 assert.equal(updatePrefill(shared("exercise", { goals: "Run a 5k" }, null)), "")
 assert.equal(updatePrefill(shared("progress", {})), "")
 assert.equal(updatePrefill(null), "")
+
+assert.equal(isMember({ membership: { status: "active" } }), true)
+assert.equal(isMember({ membership: { status: "pastDue" } }), true)
+assert.equal(isMember({ membership: { status: "ended" } }), false)
+assert.equal(isMember({}), false)
+assert.equal(isMember(null), false)
 
 console.log("chartMath: all checks passed")

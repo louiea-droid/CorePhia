@@ -30,7 +30,7 @@ export const isConfigured = Boolean(config.apiKey && config.projectId)
 // named app, so the patient login is a separate session from the staff one:
 // signing out of (or idling out of) the admin no longer signs a patient out of
 // the portal in the same browser, and the reverse.
-const app = isConfigured ? (getApps().find((existing) => existing.name === "portal") ?? initializeApp(config, "portal")) : null
+export const app = isConfigured ? (getApps().find((existing) => existing.name === "portal") ?? initializeApp(config, "portal")) : null
 const auth = app ? getAuth(app) : null
 export const db = app ? getFirestore(app) : null
 

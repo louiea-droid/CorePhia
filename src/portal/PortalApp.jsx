@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react"
 import { Helmet } from "react-helmet-async"
-import { Link, Route, Routes } from "react-router-dom"
+import { Link, Route, Routes, useSearchParams } from "react-router-dom"
 import IdleWarningModal from "../admin/layout/IdleWarningModal"
 import { PORTAL_ACTIVITY_KEY, useIdleTimeout } from "../admin/lib/useIdleTimeout"
 import LoginPanel from "../components/LoginPanel"
 import { ChevronRightIcon } from "../components/icons"
 import { Loading, Skeleton } from "./Skeleton"
+import { isMember } from "../admin/patients/chartMath"
 import { SUPPORT_PHONE } from "../lib/siteContact"
 import { getMyPortalLink, signOutPatient, watchPatientUser } from "./lib/patientAuth"
+import { listenMyChart } from "./lib/messageStore"
+import PlanChoice from "./membership/PlanChoice"
 import MessagesPage from "./messages/MessagesPage"
 import PortalHome from "./PortalHome"
 import PortalLayout from "./PortalLayout"
@@ -25,6 +28,59 @@ const inlineLink = "font-medium text-ink-950 underline underline-offset-2"
 const IDLE_TIMEOUT_MS = 15 * 60 * 1000
 const IDLE_WARNING_MS = 60 * 1000
 const signOut = () => signOutPatient()
+
+// Back from Stripe Checkout (?checkout=done) the webhook may not have marked
+// the membership yet: wait for it, and past 30 seconds say how to get help.
+function Confirming() {
+  const [slow, setSlow] = useState(false)
+  useEffect(() => {
+    const timer = setTimeout(() => setSlow(true), 30_000)
+    return () => clearTimeout(timer)
+  }, [])
+  return (
+    <div className={cardClass} role="status">
+      <h1 className="font-serif text-3xl text-ink-950">Confirming your payment…</h1>
+      {slow && (
+        <p className="mt-3 max-w-prose text-ink-950/70">
+          This is taking longer than usual. Refresh in a minute, or call us at{" "}
+          <a href={`tel:${SUPPORT_PHONE.replace(/D/g, "")}`} className={inlineLink}>
+            {SUPPORT_PHONE}
+          </a>
+          .
+        </p>
+      )}
+    </div>
+  )
+}
+
+// A linked patient: unpaid ones see only the plan choice; members get the portal.
+export function LinkedPortal({ user, link, chart }) {
+  const [params, setParams] = useSearchParams()
+  const returning = params.get("checkout") === "done"
+  if (chart === undefined) return <Loading label="Opening your portal…" className={cardClass} />
+  if (!isMember(chart)) return returning ? <Confirming /> : <PlanChoice chart={chart} link={link} />
+  if (returning)
+    return (
+      <div className={cardClass} role="status">
+        <h1 className="font-serif text-3xl text-ink-950">You're all set.</h1>
+        <p className="mt-3 max-w-prose text-ink-950/70">Our staff will contact you to book your first visit.</p>
+        <button type="button" onClick={() => setParams({}, { replace: true })} className={`mt-6 ${primaryButton}`}>
+          Go to your portal
+        </button>
+      </div>
+    )
+  return (
+    <Routes>
+      <Route element={<PortalLayout user={user} link={link} chart={chart} />}>
+        <Route index element={<PortalHome />} />
+        <Route path="progress" element={<ProgressPage />} />
+        <Route path="messages" element={<MessagesPage />} />
+        <Route path="messages/:topicId" element={<MessagesPage />} />
+        <Route path="updates" element={<UpdatesPage />} />
+      </Route>
+    </Routes>
+  )
+}
 
 // The patient portal (/account/*). Invite-only (Louie, 2026-10-02): a login
 // only opens the portal once patientAccounts/{uid} links it to an intake
@@ -56,6 +112,15 @@ export default function PortalApp() {
       live = false
     }
   }, [key, user])
+
+  // The chart, live: undefined until the first snapshot (a payment lands here).
+  const [chartState, setChartState] = useState({ id: null, chart: undefined })
+  const intakeId = link?.intakeId
+  useEffect(() => {
+    if (!intakeId) return
+    return listenMyChart(intakeId, (chart) => setChartState({ id: intakeId, chart }))
+  }, [intakeId])
+  const chart = chartState.id === intakeId ? chartState.chart : undefined
 
   const current = result?.key === key ? result : null
   const link = current?.link
@@ -159,15 +224,7 @@ export default function PortalApp() {
       )}
 
       {state === "linked" && (
-        <Routes>
-          <Route element={<PortalLayout user={user} link={link} />}>
-            <Route index element={<PortalHome />} />
-            <Route path="progress" element={<ProgressPage />} />
-            <Route path="messages" element={<MessagesPage />} />
-            <Route path="messages/:topicId" element={<MessagesPage />} />
-            <Route path="updates" element={<UpdatesPage />} />
-          </Route>
-        </Routes>
+        <LinkedPortal user={user} link={link} chart={chart} />
       )}
 
       <LoginPanel open={loginOpen} onClose={() => setLoginOpen(false)} />

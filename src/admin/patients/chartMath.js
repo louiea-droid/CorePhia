@@ -116,6 +116,9 @@ export function dueTasks(notes, today, windowDays = 7) {
   return [...renewals, ...followUps, ...firstConsult]
 }
 
+// Paid up: a membership that is active or past due (still covered while the card is fixed).
+export const isMember = (chart) => chart?.membership?.status === "active" || chart?.membership?.status === "pastDue"
+
 // A Date from a Firestore Timestamp, a Date or an ISO string; null otherwise.
 export function asDate(value) {
   if (!value) return null

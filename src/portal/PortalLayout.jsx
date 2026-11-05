@@ -1,14 +1,10 @@
 import { useLayoutEffect, useRef, useState } from "react"
 import { NavLink, Outlet, useLocation } from "react-router-dom"
-import { BadgeCheckIcon, MailIcon, PhoneIcon } from "../components/icons"
+import { MailIcon, PhoneIcon } from "../components/icons"
 import { unreadFor } from "../lib/messageMath"
 import { SUPPORT_PHONE } from "../lib/siteContact"
 import { signOutPatient } from "./lib/patientAuth"
 import { useMyTopics } from "./messages/useMyTopics"
-
-// Sections still being built, one by one (Louie, 2026-10-06). When one ships,
-// take it off this list and give it a tab.
-const COMING_SOON = [{ Icon: BadgeCheckIcon, title: "Membership", line: "Your plan and what it includes." }]
 
 const TABS = [
   ["/account", "Overview"],
@@ -20,10 +16,10 @@ const TABS = [
 const sideCard = "rounded-3xl border border-ink-950/10 bg-white p-6"
 
 // Every portal page for a linked patient: the welcome, the tabs, the page
-// itself, and the side column (account, care team, coming soon), which stays
+// itself, and the side column (account, care team), which stays
 // in view while the page scrolls on desktop. Pages read { user, link } from
 // the outlet context.
-export default function PortalLayout({ user, link }) {
+export default function PortalLayout({ user, link, chart }) {
   const { topics } = useMyTopics(link.intakeId)
   const newReplies = topics?.filter((topic) => unreadFor(topic, "patient")).length ?? 0
   const { pathname } = useLocation()
@@ -91,7 +87,7 @@ export default function PortalLayout({ user, link }) {
       <div className="mt-8 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <div data-portal-main className="min-w-0">
           <div key={pathname} data-portal-page className="animate-page-in space-y-6">
-            <Outlet context={{ user, link }} />
+            <Outlet context={{ user, link, chart }} />
           </div>
         </div>
 
@@ -137,22 +133,6 @@ export default function PortalLayout({ user, link }) {
             </ul>
           </section>
 
-          <section aria-labelledby="coming-heading" className={sideCard}>
-            <h2 id="coming-heading" className="font-serif text-xl text-ink-950">
-              Coming to your portal
-            </h2>
-            <ul className="mt-4 space-y-4">
-              {COMING_SOON.map(({ Icon, title, line }) => (
-                <li key={title} className="flex gap-3">
-                  <Icon className="mt-0.5 size-5 shrink-0 text-ink-950/40" aria-hidden="true" />
-                  <div>
-                    <p className="text-sm font-medium text-ink-950/80">{title}</p>
-                    <p className="text-sm leading-relaxed text-ink-950/60">{line}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </section>
         </aside>
       </div>
     </div>

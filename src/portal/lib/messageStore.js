@@ -45,22 +45,27 @@ export function listenMyMessages(intakeId, topicId, onChange, onError) {
   )
 }
 
-// "active" or "inactive", live: staff can make a chart inactive while the
-// patient has a conversation open, and the reply box has to close with it.
-export function listenMyChartStatus(intakeId, onChange) {
+// The chart doc, live ({ id, ...data }, or null when missing or unreadable):
+// staff can make it inactive mid-conversation, and a payment lands as a
+// membership field.
+export function listenMyChart(intakeId, onChange) {
   if (!db) {
-    onChange("inactive")
+    onChange(null)
     return () => {}
   }
   return onSnapshot(
     doc(db, "patients", intakeId),
-    (snap) => onChange(snap.data()?.status === "active" ? "active" : "inactive"),
+    (snap) => onChange(snap.exists() ? { id: snap.id, ...snap.data() } : null),
     (cause) => {
-      console.error("Could not load the chart status:", cause.code ?? cause.message)
-      onChange("inactive")
+      console.error("Could not load the chart:", cause.code ?? cause.message)
+      onChange(null)
     },
   )
 }
+
+// "active" or "inactive", live: the reply box has to close with the chart.
+export const listenMyChartStatus = (intakeId, onChange) =>
+  listenMyChart(intakeId, (chart) => onChange(chart?.status === "active" ? "active" : "inactive"))
 
 export async function startConversation(intakeId, uid, { subject, body }) {
   const topicRef = doc(topicsOf(intakeId))

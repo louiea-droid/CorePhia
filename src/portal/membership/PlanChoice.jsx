@@ -1,0 +1,107 @@
+import { useState } from "react"
+import { asDate } from "../../admin/patients/chartMath"
+import { BadgeCheckIcon } from "../../components/icons"
+import { PLANS_SHOWN, PRICES_ANNOUNCED, tiers } from "../../data/pricingTiers"
+import { SUPPORT_PHONE } from "../../lib/siteContact"
+import { startCheckout } from "../lib/billing"
+
+const inlineLink = "font-medium text-ink-950 underline underline-offset-2"
+const longDate = (value) => asDate(value)?.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+
+// A patient who hasn't paid (or whose membership ended) sees only this: the
+// plans, same features and prices as /membership, each with a button into
+// Stripe Checkout. Nothing is charged until Checkout is confirmed there.
+export default function PlanChoice({ chart, link }) {
+  const [busy, setBusy] = useState(null) // plan name while the checkout URL is fetched
+  const [failed, setFailed] = useState(false)
+  const ended = chart?.membership?.status === "ended"
+  const endedOn = ended ? longDate(chart.membership.currentPeriodEnd) : null
+  const shown = PLANS_SHOWN ? tiers : []
+
+  async function choose(name) {
+    setBusy(name)
+    setFailed(false)
+    try {
+      window.location.assign(await startCheckout(name))
+    } catch (cause) {
+      console.error("Could not open checkout:", cause.code ?? cause.message)
+      setFailed(true)
+      setBusy(null)
+    }
+  }
+
+  return (
+    <div>
+      <h1 className="font-serif text-3xl text-ink-950 sm:text-4xl">
+        {link.firstName ? `Welcome, ${link.firstName}. ` : "Welcome. "}Choose your plan to start your program.
+      </h1>
+      {ended && <p className="mt-3 text-ink-950/70">Your membership ended{endedOn ? ` on ${endedOn}` : ""}.</p>}
+
+      <ul className="mt-8 grid gap-6 lg:grid-cols-2">
+        {shown.map((tier) => (
+          <li key={tier.name} className="flex">
+            <article className="flex w-full flex-col gap-6 rounded-3xl border border-ink-950/10 bg-white p-6 shadow-md sm:p-8">
+              <header>
+                <span className="flex size-11 items-center justify-center rounded-2xl bg-accent/12 text-accent-dark">
+                  <tier.icon className="size-5" />
+                </span>
+                <h2 className="mt-5 font-serif text-2xl text-ink-950">{tier.name}</h2>
+                <p className="mt-1 text-sm font-medium text-accent-dark">{tier.tagline}</p>
+                <p className="mt-3 text-sm leading-relaxed text-ink-950/70">{tier.description}</p>
+                {chart?.formPlan === tier.name && (
+                  <p className="mt-3 inline-flex rounded-full bg-accent/12 px-3 py-1 text-xs font-semibold text-accent-dark">
+                    You picked this on your form
+                  </p>
+                )}
+              </header>
+
+              {PRICES_ANNOUNCED && (
+                <p className="border-y border-ink-950/10 py-5 font-serif text-4xl text-ink-950">
+                  <span className="align-top text-xl">$</span>
+                  {tier.price}
+                  <span className="ml-1 font-sans text-sm font-medium text-ink-950/60">per month</span>
+                </p>
+              )}
+
+              <ul className="space-y-3">
+                {tier.features.map((feature) => (
+                  <li key={feature} className="flex items-start gap-2.5 text-sm text-ink-950/75">
+                    <BadgeCheckIcon className="mt-0.5 size-5 shrink-0 text-accent-dark" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+
+              <button
+                type="button"
+                disabled={busy !== null}
+                onClick={() => choose(tier.name)}
+                className="mt-auto cursor-pointer rounded-full bg-ink-950 px-6 py-3 text-sm font-semibold text-paper-50 transition-colors duration-200 ease-out-smooth hover:bg-ink-900 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {busy === tier.name ? "Opening checkout…" : `Choose ${tier.name}`}
+              </button>
+            </article>
+          </li>
+        ))}
+      </ul>
+
+      {failed && (
+        <p role="alert" className="mt-6 rounded-2xl border border-red-700/30 bg-red-50 px-4 py-3 text-sm text-red-800">
+          We couldn't open checkout. Please try again, or call us.
+        </p>
+      )}
+
+      <p className="mt-8 text-sm text-ink-950/70">
+        Questions about the plans? Call{" "}
+        <a href={`tel:${SUPPORT_PHONE.replace(/\D/g, "")}`} className={inlineLink}>
+          {SUPPORT_PHONE}
+        </a>{" "}
+        or email{" "}
+        <a href="mailto:info@corephia.com" className={inlineLink}>
+          info@corephia.com
+        </a>
+        .
+      </p>
+    </div>
+  )
+}
