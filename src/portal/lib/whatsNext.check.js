@@ -57,6 +57,22 @@ assert.equal(run({ membership: ends }).main.title, "Your membership ends on Nove
 assert.equal(kind({ membership: { ...ends, cancelAtPeriodEnd: false } }), "nextVisitUnbooked")
 assert.equal(kind({ membership: { ...ends, status: "ended" } }), "nextVisitUnbooked")
 
+
+// Actions.
+assert.equal(busy.main.action, "billing")
+assert.equal(busy.more[0].action, "message-us")
+assert.equal(busy.more[1].action, "messages")
+assert.equal(run({ visits: [visit({ start: at("2026-11-12", "10:30") })] }).main.action, "message-us")
+assert.equal(run({ membership: ends }).main.action, "billing")
+assert.equal(run({ visits: [] }).main.action, "message-us")
+assert.equal(run().main.action, "message-us")
+
+// currentPeriodEnd: required, and a Date, Timestamp-like or ISO string.
+assert.equal(kind({ membership: { ...ends, currentPeriodEnd: undefined } }), "nextVisitUnbooked")
+const endTitle = "Your membership ends on November 27, 2026"
+assert.equal(run({ membership: { ...ends, currentPeriodEnd: { toDate: () => at("2026-11-27", "12:00") } } }).main.title, endTitle)
+assert.equal(run({ membership: { ...ends, currentPeriodEnd: "2026-11-27T17:00:00Z" } }).main.title, endTitle)
+
 // Fallbacks.
 assert.equal(kind({ visits: [] }), "firstVisit")
 assert.equal(kind({ visits: [visit({ status: "completed" })] }), "nextVisitUnbooked")

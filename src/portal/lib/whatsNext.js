@@ -6,6 +6,7 @@ const DAY = 86400000
 const WEIGH_IN_AFTER_DAYS = 7
 const OVER = ["cancelled", "completed", "noShow"]
 
+const asDate = (v) => (v?.toDate ? v.toDate() : new Date(v))
 const role = (staffRole) => (staffRole === "provider" || staffRole === "admin" ? "provider" : staffRole === "dietitian" ? "dietitian" : "care team")
 const fmt = (date, options) => new Intl.DateTimeFormat("en-US", { timeZone: TIME_ZONE, ...options }).format(date)
 const clock = (d) => fmt(d, { hour: "numeric", minute: "2-digit" })
@@ -23,18 +24,18 @@ export function whatsNext({ membership, visits = [], topics = [], updates = [], 
   const list = []
   const add = (applies, reminder) => applies && list.push(reminder())
   add(membership?.status === "pastDue", () => ({ kind: "pastDue", title: "We couldn't take your last payment. Update your card.", action: "billing" }))
-  add(isToday, () => ({ kind: "visitToday", title: `Your visit is today at ${clock(next.start)} with your ${role(next.staffRole)}`, action: "messages" }))
+  add(isToday, () => ({ kind: "visitToday", title: `Your visit is today at ${clock(next.start)} with your ${role(next.staffRole)}`, action: "message-us" }))
   add(topics.some((t) => unreadFor(t, "patient")), () => ({ kind: "newReply", title: "New reply from your care team", action: "messages" }))
   add(next && !isToday, () => ({
     kind: "nextVisit",
     title: `Your next visit: ${fmt(next.start, { weekday: "long", month: "long", day: "numeric" })} at ${clock(next.start)} with your ${role(next.staffRole)}`,
-    action: "messages",
+    action: "message-us",
   }))
   add(updates.length > 0 && updates[0].id !== lastSeenUpdateId, () => ({ kind: "newUpdate", title: "Your care team posted an update", action: "updates" }))
   add(daysSince > WEIGH_IN_AFTER_DAYS, () => ({ kind: "weighIn", title: `Time for a weigh-in. Your last one was ${daysSince} days ago.`, action: "log-weight" }))
-  add(membership?.status === "active" && membership.cancelAtPeriodEnd, () => ({
+  add(membership?.status === "active" && membership.cancelAtPeriodEnd && membership.currentPeriodEnd, () => ({
     kind: "ending",
-    title: `Your membership ends on ${fmt(membership.currentPeriodEnd, { month: "long", day: "numeric", year: "numeric" })}`,
+    title: `Your membership ends on ${fmt(asDate(membership.currentPeriodEnd), { month: "long", day: "numeric", year: "numeric" })}`,
     action: "billing",
   }))
 
