@@ -65,11 +65,11 @@ npm run preview  # serve the built dist/
 ```
 
 Deployed via Firebase Hosting (`firebase.json` → `public: "dist"`, `cleanUrls: true`, SPA
-rewrite to `/app.html`). **The next hosting deploy must include the 2026-10-13 build**, since the
-rewrite target and `cleanUrls` changed with prerendering.
-Firebase project is `corephia-health`. Hosting was last deployed around 2026-10-01 (the
-`.firebase/` hosting cache changed in the 2026-09-30 and 2026-10-01 commits). Whether the
-Firestore rules were deployed with it is not recorded; ask Louie.
+rewrite to `/app.html`).
+Firebase project is `corephia-health`. **Last deploy 2026-11-06: hosting + `firestore.rules`
+from `main` at 592b5d8** (checked live: titles, `/pricing` 301, security headers). Functions live:
+`sendMail`, `notifyNewIntake` only. **Any functions deploy fails until the Stripe secrets exist**:
+the CLI checks every `defineSecret` in the codebase, even with `--only functions:<name>`.
 
 ## Stack
 
@@ -246,9 +246,8 @@ delete, vitals ranges, copy vs Terms) is planned for 2026-10-22. Strike items th
    See `docs/meeting-analysis.md`. `buildIntakeRecord()` deliberately groups fields to mirror
    standard EMR intake sections (demographics / vitals / medicalHistory /
    familyHistory / socialHistory / nutrition / visit / consent) so a vendor mapping is direct.
-2. **Firestore rules: deploy.** `npm run test:rules` runs now (Java 21 installed) and all 179
-   tests pass (2026-11-04). The rules are not deployed: `firebase deploy --only firestore:rules`,
-   **together with the site**, since the 2026-10-19 rules expect the new client (a chart's
+2. **Firestore rules: deployed 2026-11-06** with the site (179/179 tests pass). Always deploy
+   them **together with the site**, since the 2026-10-19 rules expect the new client (a chart's
    `lastNote` names its `noteId`, linking a portal login marks the invite used in the same batch,
    the intake sections are checked key by key). Keep `firestore.rules` free of a byte-order mark
    (PowerShell's `Set-Content -Encoding utf8` adds one). When editing it from a script, never put
@@ -528,8 +527,8 @@ Dr. Antonious's asks, the four sections, constraints and the notification email 
     `visits.check.js` in `npm run check`) copy only `{ start, minutes, discipline, staffRole,
     status, updatedAt }` to `patients/{id}/visits/{id}`. Visits and reminders show the staff
     role only; Messages and Updates still show "Name (Role)". A staff member's role change does
-    not refresh existing copies until the appointment is next written. **Not deployed**: it goes
-    out with the Stripe functions (same Cloud Build role blocker).
+    not refresh existing copies until the appointment is next written. **Not deployed**: the
+    functions deploy needs the Stripe secrets to exist first (see Commands).
   - **Portal demo** (dev only): `/account?demoPortal=<scenario>` with Firebase unconfigured
     (scenarios: unpaid, member, nothingBooked, ending, pastDue, manual, ended, closed).
 - Idea to check before relying on it: Firebase email-link sign-in sent from the admin, with
@@ -572,10 +571,8 @@ rejected: Google shuts Extensions down on 2027-03-31.
   one address, `[TEST]` subjects; not deployed).
 - **Setup state (2026-11-04):** Blaze plan and the Workspace BAA, app password, DKIM/SPF/DMARC
   records at Namecheap (DNS is Namecheap BasicDNS; DKIM host `google._domainkey`) were in
-  progress with Louie. The first function deploy failed on the Cloud Build permission: grant
-  `437796283271-compute@developer.gserviceaccount.com` the "Cloud Build Service Account" role.
-  Deploy: `firebase deploy --only functions,firestore:rules` **together with hosting** (the
-  rules expect the new client). Keep EmailJS live until then; remove its `VITE_EMAILJS_*` keys,
+  progress with Louie. The Cloud Build role is granted and `sendMail` and `notifyNewIntake`
+  are live (seen 2026-11-06). Remove EmailJS now: its `VITE_EMAILJS_*` keys,
   the always-true `*Configured` flags in `lib/mail.js` and the account afterwards.
 
 ## Site analytics (2026-09-30)
