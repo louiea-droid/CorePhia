@@ -67,9 +67,10 @@ npm run preview  # serve the built dist/
 Deployed via Firebase Hosting (`firebase.json` → `public: "dist"`, `cleanUrls: true`, SPA
 rewrite to `/app.html`).
 Firebase project is `corephia-health`. **Last deploy 2026-11-06: hosting + `firestore.rules`
-from `main` at 592b5d8** (checked live: titles, `/pricing` 301, security headers). Functions live:
-`sendMail`, `notifyNewIntake` only. **Any functions deploy fails until the Stripe secrets exist**:
-the CLI checks every `defineSecret` in the codebase, even with `--only functions:<name>`.
+from `main` at 592b5d8** (checked live: titles, `/pricing` 301, security headers). **All 8 functions deployed by 2026-11-10** (Stripe secrets set; `STRIPE_WEBHOOK_SECRET` is a
+placeholder until the Stripe webhook exists). **Open: `stripeWebhook`, `startCheckout` and
+`openBillingPortal` return Google's 403** (no public invoker; allow unauthenticated on those three
+Cloud Run services). The CLI checks every `defineSecret` in the codebase on any functions deploy.
 
 ## Stack
 
@@ -185,8 +186,8 @@ Messages, Updates) · compliance copy fixes · accessibility and visual pass.
 - **SEO (2026-10-13):** `index.html` has one JSON-LD `@graph` (`WebSite` + `MedicalBusiness` with
   logo, image, phone and a Tampa, FL address, `@id` `https://corephia.com/#business`). Program
   pages add `Service` (provider = that `@id`) and `BreadcrumbList` next to their FAQPage.
-  `public/llms.txt` summarizes the site for AI crawlers. Sitemap `lastmod` is 2026-10-13. Left
-  for the console: redirect `www.corephia.com` to `corephia.com` in Hosting, and submit the
+  `public/llms.txt` summarizes the site for AI crawlers. Sitemap `lastmod` is 2026-10-13. `www` 301s to
+  `corephia.com` (seen 2026-11-10). Left for the console: submit the
   sitemap in Google Search Console. Not yet: `sameAs` (no real social links). `areaServed` is
   Florida (`index.html` and `ProgramPage.jsx`).
 - **Florida only** (Louie, 2026-10-13): the provider is licensed in Florida, so the FAQ, the
@@ -366,8 +367,9 @@ Where things live:
   "confirmed in writing at enrollment". Cancel at period end is the default until Dr. Antonious
   decides the refund policy.
 
-**Not deployed.** The function deploy needs the Cloud Build role fix (see Email) and goes out with
-the rules and hosting together. **Not verified yet** (needs the deployed sandbox): a real Checkout
+**Deployed 2026-11-10, not working yet:** the three HTTP functions need public access (see
+Commands), and Stripe still needs the webhook endpoint (5 events) and its `whsec_` in the secret,
+and the customer portal settings saved in the sandbox. **Not verified yet** (needs the deployed sandbox): a real Checkout
 payment, the webhook transactions, discharge cancellation and its email, the portal member tabs,
 and the Choose / Manage billing redirects.
 
@@ -527,8 +529,7 @@ Dr. Antonious's asks, the four sections, constraints and the notification email 
     `visits.check.js` in `npm run check`) copy only `{ start, minutes, discipline, staffRole,
     status, updatedAt }` to `patients/{id}/visits/{id}`. Visits and reminders show the staff
     role only; Messages and Updates still show "Name (Role)". A staff member's role change does
-    not refresh existing copies until the appointment is next written. **Not deployed**: the
-    functions deploy needs the Stripe secrets to exist first (see Commands).
+    not refresh existing copies until the appointment is next written. Deployed 2026-11-10.
   - **Portal demo** (dev only): `/account?demoPortal=<scenario>` with Firebase unconfigured
     (scenarios: unpaid, member, nothingBooked, ending, pastDue, manual, ended, closed).
 - Idea to check before relying on it: Firebase email-link sign-in sent from the admin, with
