@@ -56,7 +56,7 @@ const privacy = [
         "To review your intake, decide with you whether the program fits, and arrange your first visit.",
         "To provide and document your care, including prescriptions when a provider decides they are appropriate.",
         "To run your patient portal, schedule visits, and answer your messages and questions.",
-        "To send you notification emails that something is waiting for you in your portal.",
+        "To send you emails about your care and your account.",
         "To understand, in anonymous counts, which pages people use, so we can improve the site.",
         "To keep the site and patient records secure, to prevent misuse, and to meet legal and professional obligations.",
       ],
@@ -204,7 +204,7 @@ const terms = [
   {
     h: "Messages and notifications",
     body: [
-      "You agree that we may contact you electronically, by email and through the portal, and by phone about scheduling and your care. Notification emails only tell you that something is waiting for you, and the details stay in the portal.",
+      "You agree that we may contact you electronically, by email and through the portal, and by phone about scheduling and your care. Emails we send from info@corephia.com never contain health details.",
       "We read portal messages during working hours and reply as soon as we reasonably can. Messages are not monitored around the clock, so do not use them for anything urgent. For an emergency, call 911.",
     ],
   },
@@ -287,7 +287,7 @@ const privacyPractices = [
       "For treatment. Your providers, dietitian, and care staff use your information to evaluate you, build your plan, prescribe when appropriate, and follow up. We may share it with a pharmacy that fills a prescription or with another health professional who treats you.",
       "For payment. CorePhia is cash pay. We use the information needed to bill you for your membership. We do not send your information to a health insurer.",
       "For health care operations. We use information to run the program, for example to check the quality of care, train staff, keep records, and keep our systems secure. We may share it with companies that provide services to us, such as our database and hosting provider.",
-      "To contact you. We may contact you about appointments, follow-ups, and your care by phone, email, or the patient portal. Notification emails do not contain health details.",
+      "To contact you. We may contact you about appointments, follow-ups, and your care by phone, email, or the patient portal.",
     ],
   },
   {

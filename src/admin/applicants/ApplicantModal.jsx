@@ -16,6 +16,8 @@ const STATUS_OPTIONS = [
   { value: "admitted", label: "Admit", activeClass: "bg-accent-dark text-oncolor" },
   { value: "pending", label: "Pending", activeClass: "bg-slate-200 text-ink-800" },
   { value: "declined", label: "Decline", activeClass: "bg-red-600 text-oncolor" },
+  // A patient who has left the practice. Offered only once someone is admitted.
+  { value: "discharged", label: "Discharge", activeClass: "bg-slate-200 text-ink-800" },
 ]
 
 const STATUS_BADGE = {
@@ -237,7 +239,9 @@ export default function ApplicantModal({
               <div className="mt-4">
                 <div className="flex flex-wrap items-center gap-1.5">
                   <div role="group" aria-label="Admission status" className="flex items-center gap-1.5">
-                    {STATUS_OPTIONS.map((option) => (
+                    {STATUS_OPTIONS.filter(
+                      (option) => option.value !== "discharged" || status === "admitted" || status === "discharged",
+                    ).map((option) => (
                       <button
                         key={option.value}
                         type="button"

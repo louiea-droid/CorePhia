@@ -136,7 +136,7 @@ export default function About() {
             </p>
             <p className="mt-4 leading-relaxed text-ink-950/70">
               From there it's structure: regular follow-ups, documented recommendations from your dietitian, and
-              the ability to track your weight and results over time.
+              follow-ups that track your results over time.
             </p>
             <Link
               to="/intake"
