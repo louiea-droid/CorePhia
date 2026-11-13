@@ -3,7 +3,7 @@ import { flushSync } from "react-dom"
 import Select from "../../components/Select"
 import PageHeader from "../layout/PageHeader"
 import { SearchIcon } from "../ui/icons"
-import { canAdmit, canOpen, canWriteNote } from "../staff/roles"
+import { canAdmit, canOpen } from "../staff/roles"
 
 // Short how-tos, one per task. `show` takes the signed-in role so a person only
 // sees guidance for what their role can do (the same predicates the sidebar and
@@ -21,77 +21,29 @@ const TOPICS = [
       "After 15 minutes with no activity, a \"Still there?\" box appears. If you don't answer, you're signed out a minute later. Activity in any of your admin tabs counts, and closing the tab doesn't keep you signed in: come back after 15 minutes and you'll need to sign in again.",
       "Open your account menu, top right, and choose Profile to change your password, set up two-step sign-in or set your display name.",
     ],
-    note: "Your display name only labels your account menu. The name stamped on signed notes comes from the Staff list.",
+    note: "Your display name only labels your account menu. The name on the Staff list is the one others see.",
   },
   {
     id: "applicants",
     title: "Review an applicant",
     show: (role) => canOpen("applicants", role),
     steps: [
-      "Open Applicants. New intake submissions show as Pending. Search by name, or filter by status.",
-      "Click a row to read the whole intake.",
-      "Press Admit or Decline. Admitting creates the patient's chart. Declining someone who was already admitted marks their chart Inactive. Nothing is deleted, and pressing Admit again reactivates it.",
-      "Use Note to save a private team note. Use Book appointment to open the calendar.",
+      "Open Applicants. New form submissions show as Pending. Search by name, or filter by status.",
+      "Click a row to read the whole form.",
+      "Press Admit or Decline. Then add an admitted patient in Elation, where their chart, visits, messages and billing live.",
+      "Use Note to save a private team note.",
     ],
-    note: "Admitting doesn't email the patient. Portal invites are sent from the chart. Dietitians can read intakes but can't admit or decline.",
+    note: "Admitting doesn't email the patient. Dietitians can read forms but can't admit or decline.",
   },
   {
-    id: "chart",
-    title: "Find your way around a chart",
+    id: "elation",
+    title: "Where patient care happens",
     show: everyone,
+    lead: "Since November 2026 the practice runs in Elation, our electronic medical record.",
     steps: [
-      "The top of the chart shows what you need before you write: the patient's allergies from the intake, their current prescriptions, and the next follow-up for each kind of care.",
-      "The Notes card is on the right (first on a phone). New note starts one. Medical, Dietitian and Exercise filter the list. Click any note to read it, or to carry on with a draft.",
-      "Your drafts sit at the top of the Notes card, and only you can see them. Each shows a short preview, and a draft with nothing in it says \"Nothing written yet\", so a stray copy is easy to spot and discard. Signed notes are listed below, with a count of any addenda.",
-      "On the left: Updates (what the patient sees in their portal), Messages (how many conversations are waiting for a reply, and the latest subject), the Progress chart, the exercise plan and upcoming appointments.",
-      "Patient portal, further down, is where you send the portal invite. From the intake summarises what they told us, with View full intake for the rest.",
-    ],
-    note: "Prescriptions and follow-ups at the top only change when a note that sets them is signed.",
-  },
-  {
-    id: "notes",
-    title: "Write and sign a note",
-    show: everyone,
-    steps: [
-      "Open Patients, click a name, then press New note and pick Consultation, Progress note, Dietitian note or Exercise note. The menu only lists the types your role may write. Dietitian notes are written by the dietitian, the admin and the super admin.",
-      "Fill in the visit date, weight, next follow-up and the sections. Consultation and progress notes also take blood pressure and heart rate. A consultation's pertinent history is filled in from the intake.",
-      "Your note saves itself as a draft that only you can see. Close keeps it, and it waits under Your drafts at the top of the Notes card. Discard draft removes it.",
-      "Press Sign note. Signing locks the note for good, stamped with your name, role and the time. Any later change is added as a dated addendum, and the original never changes.",
-      "If the note has weight, blood pressure or heart rate, those numbers also go to the patient's progress chart. Tick \"Then share an update with the patient\" to post an update right away.",
-    ],
-    note: "A chart for someone who is no longer admitted is inactive. You can read it, but you can't add notes until they are admitted again, and a draft left on it can only be discarded. On the Patients page, the Status column has Make inactive and Reactivate for providers and above. Someone made inactive shows as Discharged on Applicants.",
-  },
-  {
-    id: "prescriptions",
-    title: "Add, renew or stop a prescription",
-    show: (role) => canWriteNote("consultation", role),
-    lead: "Prescriptions are part of a consultation or progress note, written by a licensed provider when clinically appropriate.",
-    steps: [
-      "In a consultation or progress note, press Add prescription. Enter the medication, the instructions, the start date and when it is next due for renewal (30, 60 or 90 days, or a date).",
-      "To renew or stop one that is already current, press Renew or Stop beside it in the note.",
-      "Sign the note. Current prescriptions at the top of the chart then shows what is started or renewed and not stopped.",
-    ],
-  },
-  {
-    id: "invite",
-    title: "Invite a patient to the portal",
-    show: (role) => canAdmit(role),
-    steps: [
-      "Open the patient's chart. On the Patient portal card, press Send portal invite.",
-      "The email goes to the address on their intake. Its wording is fixed, and the link works for 7 days.",
-      "The card shows the status: not invited, sent, expired, or \"Portal active since\" a date once they have joined. Once they join, the invite link stops working.",
-      "A returning patient who already has a portal login can use the new chart's invite. Their login moves to the new chart.",
-    ],
-    note: "The wording can't be changed here, so nobody can use the invite to send their own text or link. To change it, ask whoever set up the email service.",
-  },
-  {
-    id: "updates",
-    title: "Post an update to a patient",
-    show: everyone,
-    steps: [
-      "On the chart's Updates card, press Post an update and write up to 2,000 characters.",
-      "Leave \"Email the patient\" ticked if they should be told to check their portal. The email never contains the update.",
-      "The patient sees your name and role. An update can be removed but not edited. A removed update disappears from the patient's view. On the chart it stays as a single greyed line saying who removed it and when.",
+      "Charts, notes, prescriptions, appointments, tasks and billing are all in Elation.",
+      "Patients use Elation's patient portal (Patient Passport) for messages, visits and booking.",
+      "This admin is for new applicants, website queries, analytics and staff accounts.",
     ],
   },
   {
@@ -99,58 +51,8 @@ const TOPICS = [
     title: "Read the dashboard",
     show: everyone,
     steps: [
-      "The four cards across the top are what needs attention now. Click one to open its page.",
-      "Visits today counts scheduled appointments for today, and names the next one. Due this week counts prescription renewals and follow-ups due within 7 days or already overdue. The caption says how many are overdue.",
-      "Needs a reply is the same number as the badge beside Messages. Pending applicants are intakes waiting for an admit or decline decision.",
-      "Below that, six totals and the charts show what applicants told us on the intake. Click a bar or a row to see the applicants behind it, and click a name to read their intake. Most recent intakes is at the bottom.",
-    ],
-    note: "The cards count the whole practice, not just you. Dietitians see the same numbers but can't admit or decline. First consultations still waiting are on the To-do page, not in Due this week.",
-  },
-  {
-    id: "messages",
-    title: "Answer patient messages",
-    show: everyone,
-    steps: [
-      "Open Messages. The number beside it is how many conversations are waiting for a reply.",
-      "Filter by Needs a reply, Open, Closed or All, or search by patient.",
-      "Open a conversation, write in \"Write a reply\" and press Send. The email box tells the patient there is a new message, without the message itself.",
-      "Press Close topic to file a conversation away. A new message from either side reopens it. Press New message to start one with any active patient.",
-      "Sent something to the wrong patient? Press Remove under your message. The patient stops seeing it, and it stays in the conversation as a greyed line saying who removed it and when. Co-admins and up can remove any staff message.",
-    ],
-    note: "Messages are patient messages. Queries are the website contact form.",
-  },
-  {
-    id: "calendar",
-    title: "Book and change appointments",
-    show: everyone,
-    steps: [
-      "Open Calendar. Switch between Week, Month and Agenda, and between your own schedule, everyone's, or one person's. Times are Tampa time.",
-      "Press New appointment, click an empty slot, or click a \"Follow-up due\" marker (a follow-up from a signed note that isn't booked yet). Choose the patient, who it is with, the kind of visit, the date, time and length. A clash shows a warning but can still be booked.",
-      "To change one, click it, edit it and save. You can mark it Completed or No-show, or cancel it with an optional reason.",
-    ],
-    note: "Every change is kept on the appointment. The calendar doesn't send reminders. Patients see their booked visits (date, time, your role) in the portal, never your note.",
-  },
-  {
-    id: "membership",
-    title: "Membership and booking",
-    show: everyone,
-    steps: [
-      "After you admit an applicant and send the portal invite, the patient chooses a plan and pays by card in the portal. Stripe takes the payment. The chart shows a membership badge once it is paid.",
-      "A new appointment, a new message topic and an update to the patient wait until the chart has a membership. Until then those buttons say so. Moving an existing appointment is never blocked.",
-      "Admin and super admin can press Mark as member on a chart to record a membership by hand, for someone who paid another way.",
-      "Needs doing on the to-do list shows \"Paid: book first visit\" for a patient who has just become a member and has no appointment yet.",
-      "If a patient is made inactive, their membership is cancelled at the end of the period they paid for.",
-    ],
-    note: "Staff never see card details. Cancelling and card changes happen in the patient's portal, through Stripe.",
-  },
-  {
-    id: "todo",
-    title: "Use the to-do list",
-    show: everyone,
-    steps: [
-      "Needs doing fills itself from the charts: prescriptions due for renewal in 7 days or overdue, follow-ups due or overdue, and patients with no signed consultation yet.",
-      "Nothing in Needs doing is ticked by hand. Signing the note that handles an item clears it. Overdue items have a blue bar down the side of their group.",
-      "Your list holds your own items. Press + Add a to-do, optionally link a patient and a date, and choose just you or everyone.",
+      "The totals and charts show what applicants told us on the form. Click a bar or a row to see the applicants behind it, and click a name to read their form.",
+      "Most recent forms are at the bottom.",
     ],
   },
   {
@@ -168,7 +70,7 @@ const TOPICS = [
     show: (role) => canOpen("analytics", role),
     steps: [
       "Open Analytics and choose 7, 30 or 90 days, or press Custom to enter any number of days, weeks or months (up to a year).",
-      "You'll see page views, \"Get started\" clicks, intakes opened and submitted, top pages and most-clicked links.",
+      "You'll see page views, \"Get started\" clicks, forms opened and submitted, top pages and most-clicked links.",
     ],
     note: "Counts are anonymous, use no cookies and only include visitors who accepted the privacy banner, so real traffic is higher.",
   },
@@ -177,36 +79,22 @@ const TOPICS = [
     title: "Add and manage staff",
     show: (role) => canOpen("staff", role),
     steps: [
-      "Open Staff and press + Add user. Enter an email and a role, plus a name if you're the admin. They get an email to set their own password. Someone a co-admin adds signs notes with their email until the admin gives them a name with Edit name.",
+      "Open Staff and press + Add user. Enter an email and a role, plus a name if you're the admin. They get an email to set their own password. Someone a co-admin adds shows by their email until the admin gives them a name with Edit name.",
       "Use the pencil to change a role. Choosing No access removes their ability to sign in.",
-      "The three-dot menu has Edit name, Remove access and Delete account. Deleting takes the person off the list, and notes they signed keep their name.",
+      "The three-dot menu has Edit name, Remove access and Delete account. Deleting takes the person off the list.",
     ],
-    note: "Edit name is for the admin. You can't change, remove or rename your own account here. Use Profile for your own details.",
-  },
-  {
-    id: "portal",
-    title: "What patients see in the portal",
-    show: everyone,
-    lead: "Patients join by invite only. They choose their own password from the invite link, then use Patient portal in the site header.",
-    steps: [
-      "Overview: a short progress summary, their latest messages and the latest update.",
-      "Progress: their weight chart and numbers from each visit. They can log their own weight and delete their own entries. You still see that an entry was deleted. If a signed note had a mistyped number, the note's signer or a co-admin presses Remove from portal on that entry in the chart's Progress card (Show all entries), then adds an addendum with the right numbers.",
-      "Messages: they can start a message, reply and close a conversation.",
-      "Updates: a dated list of what the care team has posted, each from Provider, Dietitian or Care team.",
-    ],
-    note: "Patients can't see notes, prescriptions, appointments, to-dos or team notes. If a chart is inactive, messaging and weigh-ins close and the portal says so. Patients are signed out after 15 minutes with no activity.",
+    note: "Edit name is for the admin. You can't change, remove or rename your own account here. Use Profile for your own details. Elation logins are set up in Elation.",
   },
   {
     id: "emails",
     title: "What emails go out",
     show: everyone,
     steps: [
-      "Portal invite: when you press Send portal invite. It has fixed wording and a Set up your portal button.",
-      "New update or new message: only when the email box is ticked. It says something is waiting and never includes the content.",
-      "Team notice to info@corephia.com: when a patient message means a conversation needs a reply. One email per waiting conversation.",
+      "New form alert: to the practice when someone sends the form. It never includes their answers.",
+      "Form receipt: to the person who sent it, saying we received it and will be in touch.",
       "Password reset and new staff set-up: a secure link to choose a password.",
     ],
-    note: "No email goes out for new intake submissions, appointments, admit or decline, or to-dos.",
+    note: "No email goes out on admit or decline. Patient emails after that come from Elation.",
   },
   // One page of short answers. A question's `show` defaults to everyone, and
   // `see` names the how-to topic its answer links to.
@@ -216,46 +104,15 @@ const TOPICS = [
     show: everyone,
     questions: [
       {
-        q: "Why can't I change a signed note?",
-        a: "Signing locks a note so the record always shows what was written at the time. To correct or add something, open the note and press Add addendum. The addendum is dated and carries your name, and the original stays as it was.",
-        see: "notes",
-      },
-      {
-        q: "What happens if I close a note without signing it?",
-        a: "Nothing is lost. It stays as a draft that only you can see, under Your drafts at the top of the chart's Notes card. Open it to carry on, or press Discard draft.",
-        see: "notes",
-      },
-      {
-        q: "Why can't I add a note to this chart?",
-        a: "The chart is inactive: the patient was made inactive, or declined after being admitted. A provider, co-admin or admin can press Reactivate in the Status column on Patients, or Admit on Applicants. Then notes can be added again.",
-        see: "chart",
-      },
-      {
-        q: "Why won't an item leave the to-do list?",
-        a: "Items under Needs doing clear when you sign the note that handles them, such as a note that renews the prescription or sets the next follow-up. A draft doesn't count until it's signed.",
-        see: "todo",
-      },
-      {
         q: "Does the patient get an email when I admit them?",
-        a: "No. Admitting only creates their chart. To give them portal access, open the chart and press Send portal invite on the Patient portal card.",
-        see: "invite",
+        a: "No. Admitting only marks them admitted. Add them in Elation, which handles their portal invite.",
+        see: "applicants",
         show: (role) => canAdmit(role),
       },
       {
-        q: "A patient says their invite link doesn't work",
-        a: "Invite links stop working after 7 days, once the patient has joined, when a newer invite is sent, and when their chart is made inactive. Check the Patient portal card on their chart. If the invite has expired, press Resend invite. If their portal is already active, point them to Patient portal in the site header, where they can reset a forgotten password.",
-        see: "invite",
-        show: (role) => canAdmit(role),
-      },
-      {
-        q: "Can patients read my notes?",
-        a: "No. Patients never see notes, prescriptions, appointments or to-dos. They see the updates you post, their own progress and their messages.",
-        see: "portal",
-      },
-      {
-        q: "Does the calendar send appointment reminders?",
-        a: "No. Booking, changing or cancelling an appointment doesn't email anyone. Tell the patient yourself, for example with a portal message.",
-        see: "calendar",
+        q: "Where did Patients, Calendar, To-do and Messages go?",
+        a: "They moved to Elation in November 2026. Older entries for them still show on Activity.",
+        see: "elation",
       },
       {
         q: "Why was I signed out?",
@@ -271,11 +128,6 @@ const TOPICS = [
         q: "Why don't I see a page someone else has?",
         a: "The sidebar only shows the pages your role can open. Queries, Analytics and Staff are for co-admins and up, and Activity is for the super admin. Ask the admin if you need a different role.",
       },
-      {
-        q: "Why does a signed note show an email instead of a name?",
-        a: "That person was added by a co-admin, so their staff record had no name yet. The admin can give them one with Edit name on Staff. Notes they signed before that keep the email.",
-        see: "staff",
-      },
     ],
   },
 ]
@@ -284,11 +136,9 @@ const TOPICS = [
 // How the list is grouped on the left, in order. A topic's group is looked up
 // by id so the topic data above stays plain.
 const GROUPS = [
-  ["Getting started", ["signing-in", "questions"]],
-  ["Patients and charts", ["applicants", "chart", "notes", "prescriptions", "invite", "updates"]],
-  ["Day to day", ["dashboard", "messages", "calendar", "todo"]],
+  ["Getting started", ["signing-in", "questions", "elation"]],
+  ["Applicants", ["applicants", "dashboard", "emails"]],
   ["Practice", ["queries", "analytics", "staff"]],
-  ["The patient portal", ["portal", "emails"]],
 ]
 
 const includes = (texts, query) => texts.filter(Boolean).join(" ").toLowerCase().includes(query)

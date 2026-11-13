@@ -35,10 +35,6 @@ function writeStoredActivity(key, time) {
 // Called just before a real sign-in (lib/firebase.js), so a fresh sign-in
 // isn't mistaken for a session left open since the last visit.
 export const markAdminActivity = () => writeStoredActivity(STORAGE_KEY, Date.now())
-// The portal keeps its own clock (portal/lib/patientAuth.js), since its login
-// is separate from the admin one.
-export const PORTAL_ACTIVITY_KEY = "corephia-portal-last-activity"
-export const markPortalActivity = () => writeStoredActivity(PORTAL_ACTIVITY_KEY, Date.now())
 
 // Returns the number of whole seconds left before onIdle fires, once that's
 // within warningMs, or null the rest of the time. Any tracked activity —

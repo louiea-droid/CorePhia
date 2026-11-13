@@ -8,10 +8,9 @@ import ApplicantListModal from "../applicants/ApplicantListModal"
 import ApplicantModal from "../applicants/ApplicantModal"
 import ApplicantsTable from "../applicants/ApplicantsTable"
 import { DashboardSkeleton } from "../ui/Skeleton"
-import TodayStrip from "./TodayStrip"
 import { useIntakeRecords } from "../applicants/useIntakeRecords"
 
-export default function Dashboard({ actor }) {
+export default function Dashboard() {
   const { records, error } = useIntakeRecords()
   const [selectedRecord, setSelectedRecord] = useState(null)
   // Which BarList row a patient list is currently drilled into: title/
@@ -36,13 +35,6 @@ export default function Dashboard({ actor }) {
       <PageHeader
         title="Dashboard"
       />
-
-      <div className="mb-4">
-        <TodayStrip
-          actor={actor}
-          pending={error ? "error" : records ? records.filter((record) => (record.status ?? "pending") === "pending").length : null}
-        />
-      </div>
 
       {error ? (
         <div className="rounded-2xl border border-ink-950/10 bg-white p-6">

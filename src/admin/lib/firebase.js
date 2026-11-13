@@ -1,5 +1,6 @@
 import { getApps, initializeApp } from "firebase/app"
 import {
+  confirmPasswordReset,
   EmailAuthProvider,
   getAuth,
   getMultiFactorResolver,
@@ -12,6 +13,7 @@ import {
   TotpMultiFactorGenerator,
   updatePassword,
   updateProfile,
+  verifyPasswordResetCode,
 } from "firebase/auth"
 import {
   addDoc,
@@ -55,18 +57,10 @@ export const AUDIT_ACTIONS = {
   updateIntakeStatus: "update_intake_status",
   viewMessage: "view_contact_message",
   deleteMessage: "delete_contact_message",
-  viewChart: "view_patient_chart",
-  signNote: "sign_note",
-  addAmendment: "add_note_amendment",
   addStaff: "add_staff",
   changeStaffRole: "change_staff_role",
   renameStaff: "rename_staff_account",
   deleteStaff: "delete_staff_account",
-  bookAppointment: "book_appointment",
-  moveAppointment: "move_appointment",
-  cancelAppointment: "cancel_appointment",
-  updateAppointmentStatus: "update_appointment_status",
-  sendPortalInvite: "send_portal_invite",
   listIntakes: "list_intake_records",
   signIn: "sign_in",
   signOut: "sign_out",
@@ -74,13 +68,11 @@ export const AUDIT_ACTIONS = {
   changePassword: "change_password",
   enableTwoStep: "enable_two_step",
   disableTwoStep: "disable_two_step",
-  setMembership: "set_membership_manually",
-  endMembership: "end_membership_manually",
 }
 
 // A record with no status field yet (every one submitted before this feature
 // existed) reads as pending rather than needing a backfill migration.
-// discharged = was a patient, chart made inactive from Patients (not declined).
+// discharged = was a patient (set before Elation, 2026-11-13; still shown and filterable).
 export const INTAKE_STATUSES = ["pending", "admitted", "declined", "discharged"]
 
 export const isConfigured = Boolean(config.apiKey && config.projectId)
@@ -156,6 +148,17 @@ export async function signOutAdmin({ idle = false } = {}) {
     })
   }
   await signOut(auth)
+}
+
+// The /portal/reset page (PasswordReset.jsx), where Firebase's reset email
+// lands when its action URL points there: check the code, then save.
+export async function checkResetCode(code) {
+  if (!auth) throw new Error("Firebase is not configured.")
+  return verifyPasswordResetCode(auth, code)
+}
+export async function saveNewPassword(code, password) {
+  if (!auth) throw new Error("Firebase is not configured.")
+  await confirmPasswordReset(auth, code, password)
 }
 
 // Firebase's reset email, coming back to the admin after the CorePhia

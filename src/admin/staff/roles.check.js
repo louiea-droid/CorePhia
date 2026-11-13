@@ -1,50 +1,28 @@
-// Self-check for roles.js: `npm run check`. Plain node:assert, like
-// chartMath.check.js.
+// Self-check for roles.js: `npm run check`. Plain node:assert, like the other checks.
 import assert from "node:assert/strict"
 import {
   canAdmit,
-  canRemoveUpdate,
-  canRemoveVisitEntry,
-  canAmend,
   canManageMember,
   canNameStaff,
   canOpen,
   canRenameMember,
-  canSeeAppointmentHistory,
-  canWriteNote,
   grantableRoles,
   isClinicalRole,
   staffDisplayName,
 } from "./roles.js"
 
-// The dietitian is clinical: opens charts, To-do, Calendar; not Messages or Staff.
+// The dietitian is clinical: opens Dashboard and Applicants; not Messages or Staff.
 assert.equal(isClinicalRole("dietitian"), true)
-for (const page of ["dashboard", "applicants", "patients", "todo", "calendar", "security"]) assert.equal(canOpen(page, "dietitian"), true, page)
+for (const page of ["dashboard", "applicants", "security"]) assert.equal(canOpen(page, "dietitian"), true, page)
 for (const page of ["messages", "analytics", "staff", "activity"]) assert.equal(canOpen(page, "dietitian"), false, page)
 
-// Naming a staff account (what their signed notes carry): admin tiers only.
+// Naming a staff account: admin tiers only.
 for (const role of ["admin", "superAdmin"]) assert.equal(canNameStaff(role), true, role)
 for (const role of ["coAdmin", "provider", "dietitian", ""]) assert.equal(canNameStaff(role), false, role)
-
-// Who writes which note type.
-assert.equal(canWriteNote("dietitian", "dietitian"), true)
-for (const role of ["admin", "superAdmin"]) assert.equal(canWriteNote("dietitian", role), true, role)
-for (const role of ["provider", "coAdmin"]) assert.equal(canWriteNote("dietitian", role), false, role)
-for (const type of ["consultation", "progress", "exercise"]) {
-  assert.equal(canWriteNote(type, "dietitian"), false, type)
-  for (const role of ["provider", "coAdmin", "admin", "superAdmin"]) assert.equal(canWriteNote(type, role), true, `${type} ${role}`)
-}
-assert.equal(canWriteNote("unknown", "admin"), false)
 
 // Admitting and declining: everyone clinical except the dietitian.
 assert.equal(canAdmit("dietitian"), false)
 assert.equal(canAdmit("provider"), true)
-
-// Addenda: a dietitian only on dietitian notes; others on anything.
-assert.equal(canAmend("dietitian", "dietitian"), true)
-assert.equal(canAmend("progress", "dietitian"), false)
-assert.equal(canAmend("dietitian", "provider"), true)
-assert.equal(canAmend("progress", ""), false)
 
 // Granting: admin and co-admin can hand out dietitian; and manage dietitians.
 assert.ok(grantableRoles("admin").includes("dietitian"))
@@ -64,10 +42,6 @@ assert.equal(canRenameMember({ uid: "s", role: "superAdmin" }, target("admin")),
 assert.equal(canRenameMember({ uid: "s", role: "superAdmin" }, target("superAdmin", "s")), false)
 for (const role of ["coAdmin", "provider", "dietitian"]) assert.equal(canRenameMember({ uid: "a", role }, target("provider")), false, role)
 
-// Appointment history: co-admin, admin, super admin.
-for (const role of ["coAdmin", "admin", "superAdmin"]) assert.equal(canSeeAppointmentHistory(role), true, role)
-for (const role of ["provider", "dietitian", ""]) assert.equal(canSeeAppointmentHistory(role), false, role)
-
 // Staff are shown by name only; with no name set, the part of the email before @.
 assert.equal(staffDisplayName({ name: "Sam Rivera, RD", email: "sam@corephia.com" }), "Sam Rivera, RD")
 assert.equal(staffDisplayName({ name: "", email: "ProviderMD@CorePhia.com" }), "ProviderMD")
@@ -75,32 +49,12 @@ assert.equal(staffDisplayName({ email: "test@gmail.com" }), "test")
 assert.equal(staffDisplayName({ name: "ProviderMD@CorePhia.com" }), "ProviderMD")
 assert.equal(staffDisplayName({}), "")
 
-// The author or co-admin and up take an update out of the portal, once.
-const posted = { author: { uid: "p1" }, removed: false }
-assert.equal(canRemoveUpdate(posted, { uid: "p1", role: "provider" }), true)
-assert.equal(canRemoveUpdate(posted, { uid: "d1", role: "dietitian" }), false)
-assert.equal(canRemoveUpdate(posted, { uid: "p2", role: "provider" }), false)
-assert.equal(canRemoveUpdate(posted, { uid: "c1", role: "coAdmin" }), true)
-assert.equal(canRemoveUpdate({ ...posted, removed: { by: { uid: "p1" } } }, { uid: "p1", role: "provider" }), false)
-
-// A visit entry (a signed note's vitals in the portal): the note's signer or
-// co-admin and up, once; never a home weigh-in.
-const visit = { source: "visit", removed: false }
-const signer = { signedBy: { uid: "p1" } }
-assert.equal(canRemoveVisitEntry(visit, signer, { uid: "p1", role: "provider" }), true)
-assert.equal(canRemoveVisitEntry(visit, signer, { uid: "p2", role: "provider" }), false)
-assert.equal(canRemoveVisitEntry(visit, signer, { uid: "c1", role: "coAdmin" }), true)
-assert.equal(canRemoveVisitEntry(visit, undefined, { uid: "p1", role: "provider" }), false)
-assert.equal(canRemoveVisitEntry({ ...visit, removed: { by: { uid: "p1" } } }, signer, { uid: "c1", role: "coAdmin" }), false)
-assert.equal(canRemoveVisitEntry({ source: "home", removed: false }, signer, { uid: "c1", role: "coAdmin" }), false)
-
 // Help is open to every clinical role, and to nobody without one.
 for (const role of ["dietitian", "provider", "coAdmin", "admin", "superAdmin"]) assert.equal(canOpen("help", role), true, role)
 assert.equal(canOpen("help", ""), false)
 
-// The patient Messages inbox is for every clinical role.
-assert.equal(canOpen("inbox", "dietitian"), true)
-assert.equal(canOpen("inbox", "provider"), true)
-assert.equal(canOpen("inbox", ""), false)
+// Charts, To-do, Calendar and the patient inbox moved to Elation (2026-11-13): nobody opens them.
+for (const page of ["patients", "todo", "calendar", "inbox"])
+  for (const role of ["dietitian", "provider", "coAdmin", "admin", "superAdmin"]) assert.equal(canOpen(page, role), false, `${page} ${role}`)
 
 console.log("roles: all checks passed")

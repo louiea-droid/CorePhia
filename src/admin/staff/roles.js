@@ -15,20 +15,14 @@ export const ROLE_LABELS = {
 
 export const CLINICAL_ROLES = ["dietitian", "provider", "coAdmin", "admin", "superAdmin"]
 const STAFF_ROLES = ["coAdmin", "admin", "superAdmin"]
-// Everyone clinical except the dietitian: admits applicants, writes medical
-// and exercise notes. Exercise notes are theirs until an exercise role exists
-// (Louie, 2026-10-02).
-const PRESCRIBERS = ["provider", "coAdmin", "admin", "superAdmin"]
+// Everyone clinical except the dietitian admits and declines applicants.
+const ADMITTERS = ["provider", "coAdmin", "admin", "superAdmin"]
 
 export const isClinicalRole = (role) => CLINICAL_ROLES.includes(role)
 
 const PAGE_ROLES = {
   dashboard: CLINICAL_ROLES,
   applicants: CLINICAL_ROLES,
-  patients: CLINICAL_ROLES,
-  todo: CLINICAL_ROLES,
-  calendar: CLINICAL_ROLES,
-  inbox: CLINICAL_ROLES,
   messages: STAFF_ROLES,
   analytics: STAFF_ROLES,
   staff: STAFF_ROLES,
@@ -39,46 +33,13 @@ const PAGE_ROLES = {
 
 export const canOpen = (page, role) => PAGE_ROLES[page]?.includes(role) ?? false
 
-// Which note types a role may write and sign. Mirrors canWriteType in
-// firestore.rules. The admin (Dr. Antonious) and the super admin also write
-// dietitian notes (Louie, 2026-10-08).
-const NOTE_WRITERS = {
-  consultation: PRESCRIBERS,
-  progress: PRESCRIBERS,
-  exercise: PRESCRIBERS,
-  dietitian: ["dietitian", "admin", "superAdmin"],
-}
-
-export const canWriteNote = (type, role) => NOTE_WRITERS[type]?.includes(role) ?? false
-export const canAdmit = (role) => PRESCRIBERS.includes(role)
-// Who takes a portal update out of the patient's view: its author, or
-// co-admin and up, and only once. Mirrors isRemoval in firestore.rules.
-export const canRemoveUpdate = (update, actor) =>
-  !update.removed && (update.author?.uid === actor.uid || STAFF_ROLES.includes(actor.role))
-// A signed note's vitals in the portal (a visit entry): the note's signer, or
-// co-admin and up, once. Mirrors isStaffRemoval in firestore.rules.
-export const canRemoveVisitEntry = (entry, note, actor) =>
-  entry.source === "visit" && !entry.removed && (note?.signedBy?.uid === actor.uid || STAFF_ROLES.includes(actor.role))
-// The same for a staff message (a patient's own messages can't be removed).
-// Mirrors isMessageRemoval in firestore.rules.
-export const canRemoveMessage = (message, actor) =>
-  message.from?.kind === "staff" && !message.removed && (message.from.uid === actor.uid || STAFF_ROLES.includes(actor.role))
-
-// A dietitian adds addenda only to dietitian notes, so they can't add text
-// to a medical record. Everyone else clinical: any signed note.
-export const canAmend = (noteType, role) => isClinicalRole(role) && (role !== "dietitian" || noteType === "dietitian")
-
-// Who sees an appointment's move and cancel history (Louie, 2026-10-02).
-// Mirrors the changes read rule (isStaff) in firestore.rules.
-export const canSeeAppointmentHistory = (role) => STAFF_ROLES.includes(role)
-
+export const canAdmit = (role) => ADMITTERS.includes(role)
 // Renaming someone else's staff record: admin and super admin only, and only
 // accounts they can already manage. Mirrors the name check in isRoleChange.
 export const canRenameMember = (viewer, member) => canNameStaff(viewer.role) && canManageMember(viewer, member)
 
-// Setting the name a staff account signs notes with, including when adding
-// it: admin and super admin only, so nobody else can create an account that
-// signs as someone else. Mirrors the name check in isRoleChange.
+// Setting a staff account's name, including when adding it: admin and super
+// admin only, so nobody else can create an account named as someone else. Mirrors the name check in isRoleChange.
 export function canNameStaff(role) {
   return ["admin", "superAdmin"].includes(role)
 }
@@ -102,8 +63,7 @@ export const canManageMember = (viewer, member) =>
   member.uid !== viewer.uid &&
   (viewer.role === "superAdmin" || (ACTS_ON[viewer.role]?.includes(member.role ?? "") ?? false))
 
-// How a staff member is shown in lists (the calendar's "With" and staff
-// filter): their name, or with none set, the part of their email before @.
+// How a staff member is shown in lists: their name, or with none set, the part of their email before @.
 export function staffDisplayName(member) {
   const raw = member?.name?.trim() || member?.email || ""
   return raw.includes("@") ? raw.split("@")[0] : raw

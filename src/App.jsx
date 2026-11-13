@@ -20,17 +20,13 @@ import SuccessStories from "./pages/SuccessStories"
 // Lazily loaded so the admin bundle — and the Firebase SDK it pulls in — is
 // never downloaded by visitors to the public site.
 const AdminApp = lazy(() => import("./admin/AdminApp"))
+// Staff password reset (Firebase's reset email lands on /portal/reset).
+const PasswordReset = lazy(() => import("./admin/layout/PasswordReset"))
 
-// Same reasoning as AdminApp: the portal pulls in the Firebase Auth SDK via
-// portal/lib/patientAuth, so it stays out of the bundle until someone actually
-// navigates to /account.
 // The intake (and its date picker and selects) is only needed on /intake, so
 // homepage visitors do not download it.
 const PatientIntakeForm = lazy(() => import("./components/PatientIntakeForm"))
 
-const PortalApp = lazy(() => import("./portal/PortalApp"))
-const PortalSetup = lazy(() => import("./portal/PortalSetup"))
-const PortalReset = lazy(() => import("./portal/PortalReset"))
 
 function ScrollManager() {
   const { pathname, hash } = useLocation()
@@ -73,6 +69,14 @@ function App() {
     )
   }
 
+  if (pathname.replace(/\/$/, "").toLowerCase() === "/portal/reset") {
+    return (
+      <Suspense fallback={null}>
+        <PasswordReset />
+      </Suspense>
+    )
+  }
+
   // The intake is locked in (client meeting, docs/meeting-analysis.md): no
   // header, footer or nav, so the only ways out are finishing it or closing
   // the tab. PatientIntakeForm draws its own minimal top bar.
@@ -82,23 +86,6 @@ function App() {
         <ScrollManager />
         <Suspense fallback={null}>
           <PatientIntakeForm />
-        </Suspense>
-      </>
-    )
-  }
-
-  // The patient portal has its own frame too (PortalShell): no website menu,
-  // footer or cookie banner. Nothing is tracked on these paths.
-  if (/^\/(account(\/|$)|portal\/(setup|reset)\/?$)/i.test(pathname)) {
-    return (
-      <>
-        <ScrollManager />
-        <Suspense fallback={null}>
-          <Routes>
-            <Route path="/account/*" element={<PortalApp />} />
-            <Route path="/portal/setup" element={<PortalSetup />} />
-            <Route path="/portal/reset" element={<PortalReset />} />
-          </Routes>
         </Suspense>
       </>
     )

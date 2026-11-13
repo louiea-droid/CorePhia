@@ -3,23 +3,17 @@ import { Link, useLocation } from "react-router-dom"
 import {
   ActivityIcon,
   ApplicantsIcon,
-  CalendarIcon,
-  ChatIcon,
   ChevronLeftIcon,
   CloseIcon,
   DashboardIcon,
   HelpIcon,
   MailIcon,
-  PatientsIcon,
   StaffIcon,
-  TodoIcon,
   TrafficIcon,
 } from "../ui/icons"
 import { canOpen } from "../staff/roles"
 import { isNewMessage } from "../messages/recentMessages"
 import { useContactMessages } from "../messages/useContactMessages"
-import { useTopics } from "../inbox/useTopics"
-import { needsReply } from "../../lib/messageMath"
 
 // `page` keys into roles.js, which mirrors firestore.rules rather than adding
 // a second source of truth: someone following a URL directly is still refused
@@ -32,13 +26,9 @@ import { needsReply } from "../../lib/messageMath"
 const NAV_GROUPS = [
   [
     { label: "Dashboard", icon: DashboardIcon, to: "/admin", page: "dashboard" },
-    { label: "To-do", icon: TodoIcon, to: "/admin/todo", page: "todo" },
-    { label: "Calendar", icon: CalendarIcon, to: "/admin/calendar", page: "calendar" },
-    // Intake submissions awaiting admit/decline. Admitting one starts their
-    // chart under Patients.
+    // Form submissions awaiting admit/decline. Admitted patients are then
+    // cared for in Elation.
     { label: "Applicants", icon: ApplicantsIcon, to: "/admin/applicants", page: "applicants" },
-    { label: "Patients", icon: PatientsIcon, to: "/admin/patients", page: "patients" },
-    { label: "Messages", icon: ChatIcon, to: "/admin/messages", page: "inbox" },
   ],
   [
     { label: "Queries", icon: MailIcon, to: "/admin/queries", page: "messages" },
@@ -86,15 +76,11 @@ export default function Sidebar({
   const { messages } = useContactMessages({ enabled: canOpen("messages", role) })
   const [now] = useState(() => Date.now())
   const newMessageCount = messages?.filter((message) => isNewMessage(message, now, messagesViewedAt)).length ?? 0
-  // Patient topics waiting on the care team, live.
-  const { topics } = useTopics({ enabled: canOpen("inbox", role) })
-  const needsReplyCount = topics?.filter(needsReply).length ?? 0
   const groups = NAV_GROUPS.map((items) => items.filter((item) => canOpen(item.page, role))).filter((items) => items.length)
 
   const renderItem = (item) => {
-    // A chart (/admin/patients/:id) keeps Patients highlighted.
     const current = location.pathname === item.to || (item.to !== "/admin" && location.pathname.startsWith(`${item.to}/`))
-    const count = item.to === "/admin/queries" ? newMessageCount : item.to === "/admin/messages" ? needsReplyCount : 0
+    const count = item.to === "/admin/queries" ? newMessageCount : 0
     return (
       <li key={item.label}>
         <Link

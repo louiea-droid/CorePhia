@@ -3,7 +3,6 @@ import { Helmet } from "react-helmet-async"
 import { Navigate, Route, Routes } from "react-router-dom"
 import AccountMenu from "./layout/AccountMenu"
 import Activity from "./staff/Activity"
-import Calendar from "./calendar/Calendar"
 import Dashboard from "./dashboard/Dashboard"
 import Help from "./help/Help"
 import {
@@ -25,18 +24,14 @@ import Loader from "./ui/Loader"
 import Login from "./layout/Login"
 import Messages from "./messages/Messages"
 import Applicants from "./applicants/Applicants"
-import PatientChart from "./patients/PatientChart"
-import Patients from "./patients/Patients"
 import { ROLE_LABELS, canOpen } from "./staff/roles"
 import Staff from "./staff/Staff"
 import ThemeSwitch from "./layout/ThemeSwitch"
-import Todo from "./patients/Todo"
 import { readLastViewedMessagesAt, writeLastViewedMessagesAt } from "./messages/recentMessages"
 import Security from "./staff/Security"
 import Sidebar from "./layout/Sidebar"
 import SiteTraffic from "./analytics/SiteTraffic"
 import { useAdminTheme } from "./lib/useAdminTheme"
-import PatientMessages from "./inbox/MessagesPage"
 import { useIdleTimeout } from "./lib/useIdleTimeout"
 
 // Chart access sits behind these two on top of the password: idle staff get
@@ -60,11 +55,9 @@ function Guard({ page, role, children }) {
 }
 
 function AdminRoutes({ role, signerName, user, displayName, onDisplayNameChange, messagesViewedAt, onMessagesViewed }) {
-  // Who is acting, for chart admission, note signing and staff changes.
-  // name is the staff record's (getAdminAccess), not the editable display
-  // name: it is what gets stamped on signed notes, and the rules check it.
-  // In demo mode (no user) each role acts as its seeded staff member
-  // (seedCharts.js), so "My schedule" and authorship line up with the demo data.
+  // Who is acting, for staff changes. name is the staff record's
+  // (getAdminAccess), not the editable display name; the rules check it.
+  // In demo mode (no user) each role acts as its demo staff member (staffStore.js).
   const demo = DEMO_ACTORS[role] ?? { uid: "demo", name: "Demo admin" }
   const actor = { uid: user?.uid ?? demo.uid, name: signerName || demo.name, role }
   const guard = (page, element) => (
@@ -74,12 +67,8 @@ function AdminRoutes({ role, signerName, user, displayName, onDisplayNameChange,
   )
   return (
     <Routes>
-      <Route path="/admin" element={guard("dashboard", <Dashboard actor={actor} />)} />
-      <Route path="/admin/applicants" element={guard("applicants", <Applicants role={role} actor={actor} />)} />
-      <Route path="/admin/patients" element={guard("patients", <Patients actor={actor} role={role} />)} />
-      <Route path="/admin/patients/:chartId" element={guard("patients", <PatientChart actor={actor} />)} />
-      <Route path="/admin/todo" element={guard("todo", <Todo actor={actor} />)} />
-      <Route path="/admin/calendar" element={guard("calendar", <Calendar actor={actor} />)} />
+      <Route path="/admin" element={guard("dashboard", <Dashboard />)} />
+      <Route path="/admin/applicants" element={guard("applicants", <Applicants role={role} />)} />
       <Route
         path="/admin/queries"
         element={guard(
@@ -89,7 +78,6 @@ function AdminRoutes({ role, signerName, user, displayName, onDisplayNameChange,
       />
       <Route path="/admin/analytics" element={guard("analytics", <SiteTraffic />)} />
       <Route path="/admin/traffic" element={<Navigate to="/admin/analytics" replace />} />
-      <Route path="/admin/messages" element={guard("inbox", <PatientMessages actor={actor} />)} />
       <Route path="/admin/help" element={guard("help", <Help role={role} />)} />
       <Route path="/admin/staff" element={guard("staff", <Staff actor={actor} />)} />
       <Route path="/admin/activity" element={guard("activity", <Activity role={role} />)} />

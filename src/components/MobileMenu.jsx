@@ -3,6 +3,7 @@ import { createPortal } from "react-dom"
 import { Link, useLocation } from "react-router-dom"
 import { ActivityArt, CareShieldArt, HealthCheckArt, MealPlateArt } from "./Artwork"
 import { ArrowRightIcon, ChevronRightIcon, CloseIcon, PersonIcon } from "./icons"
+import { PATIENT_PORTAL_URL } from "../lib/siteContact"
 
 const exploreLinks = [
   { label: "Home", to: "/" },
@@ -86,7 +87,7 @@ function StartHereCard({ onClick }) {
   )
 }
 
-export default function MobileMenu({ open, onClose, onAccountClick }) {
+export default function MobileMenu({ open, onClose }) {
   const closeButtonRef = useRef(null)
   // "Home" is only offered away from the homepage; on it, the link goes nowhere.
   const onHome = useLocation().pathname === "/"
@@ -128,18 +129,12 @@ export default function MobileMenu({ open, onClose, onAccountClick }) {
     if (view.dir === "back") weightLossRowRef.current?.focus()
   }, [view])
 
-  const accountButton = (
-    <button
-      type="button"
-      aria-label="Patient portal"
-      onClick={() => {
-        onClose()
-        onAccountClick?.()
-      }}
-    >
+  // Elation's patient portal, once its address is known (siteContact.js).
+  const accountButton = PATIENT_PORTAL_URL ? (
+    <a href={PATIENT_PORTAL_URL} target="_blank" rel="noopener" aria-label="Patient portal (opens in a new tab)">
       <PersonIcon className="size-6" />
-    </button>
-  )
+    </a>
+  ) : null
 
   const closeButton = (
     <button ref={closeButtonRef} type="button" onClick={onClose} aria-label="Close menu">

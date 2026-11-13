@@ -7,4 +7,8 @@ export const SUPPORT_PHONE_HREF = `tel:${SUPPORT_PHONE.replace(/\D/g, "")}`
 
 // Tampa, Florida is the final address (no street address), so the map shows the city.
 export const LOCATION = "Tampa, Florida"
+// Elation's patient portal (Patient Passport) login address, from Dr. Antonious.
+// Empty hides the header and menu link until it is known.
+export const PATIENT_PORTAL_URL = ""
+
 export const LOCATION_MAP_URL = "https://www.google.com/maps/search/?api=1&query=Tampa,+Florida"

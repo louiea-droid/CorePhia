@@ -248,13 +248,10 @@ service cloud.firestore {
         && data.actorEmail == request.auth.token.get('email', '')
         && data.action in [
              'view_intake_record', 'delete_intake_record', 'update_intake_status',
-             'view_contact_message', 'delete_contact_message', 'view_patient_chart',
-             'sign_note', 'add_note_amendment', 'add_staff', 'change_staff_role',
-             'rename_staff_account', 'delete_staff_account', 'book_appointment',
-             'move_appointment', 'cancel_appointment', 'update_appointment_status',
-             'send_portal_invite', 'list_intake_records', 'sign_in', 'sign_out',
-             'idle_sign_out', 'change_password', 'enable_two_step', 'disable_two_step',
-             'set_membership_manually', 'end_membership_manually'
+             'view_contact_message', 'delete_contact_message', 'add_staff',
+             'change_staff_role', 'rename_staff_account', 'delete_staff_account',
+             'list_intake_records', 'sign_in', 'sign_out', 'idle_sign_out',
+             'change_password', 'enable_two_step', 'disable_two_step'
            ]
         && data.targetCollection is string && data.targetCollection.size() <= 60
         && data.targetId is string && data.targetId.size() > 0 && data.targetId.size() <= 200

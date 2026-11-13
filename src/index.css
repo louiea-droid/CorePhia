@@ -45,12 +45,6 @@
   --color-brand: #3b5bdb;
   --color-brand-dark: #1e3a8a;
 
-  /* Patient portal: a good-news tone (a weight going down, the What's next
-     pill) and the pale blue the What's next card fades to. */
-  --color-good: #1f6b4f;
-  --color-good-soft: #e7f3ee;
-  --color-wash: #f2f6fd;
-
   /* Label/icon color for text sitting on a solid colored surface (a badge,
      an active pill) that must stay light whether the page is in light or
      dark mode — unlike paper-50, this one is never redefined under .dark. */
@@ -112,16 +106,6 @@
      the closed control follows the theme fine but the opened list stays a
      plain white box. */
   color-scheme: dark;
-}
-
-/* Patient portal dark mode: the .dark scope above, plus the portal's own
-   colours. accent-dark lightens here (unlike the admin) because the portal
-   uses it as text and as fills under paper-50 text, which is dark here. */
-#patient-portal-root.dark {
-  --color-accent-dark: #60a5fa;
-  --color-good: #6fd3a8;
-  --color-good-soft: #143a2e;
-  --color-wash: #18244a;
 }
 
 /* Browser autofill paints its own light fill over a saved password or email,
@@ -411,22 +395,7 @@ body {
   }
 }
 
-/* Patient portal (src/portal): a page opened from a tab fades in with a short
-   rise (it answers a tap; the no-movement rule is for hover). Messages and
-   loaded content only fade. Loading placeholders shimmer gently. */
-@keyframes page-in {
-  from {
-    opacity: 0;
-    translate: 0 0.5rem;
-  }
-}
-
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-}
-
+/* Loading placeholders (admin skeletons) shimmer gently. */
 @keyframes shimmer {
   from {
     background-position: 100% 0;
@@ -436,36 +405,6 @@ body {
   }
 }
 
-.animate-page-in {
-  animation: page-in 300ms var(--ease-out-smooth) both;
-}
-
-/* Weight chart (WeightChart.jsx, portal only): the line draws itself left to
-   right once (pathLength="1", so 1 = the whole line), the dots fade in as it
-   finishes, and the hover card fades in. */
-@keyframes draw {
-  from {
-    stroke-dashoffset: 1;
-  }
-}
-
-.animate-draw {
-  stroke-dasharray: 1;
-  animation: draw 800ms var(--ease-out-smooth) both;
-}
-
-.animate-dots-in {
-  animation: fade-in 300ms var(--ease-out-smooth) 600ms both;
-}
-
-.animate-tip-in {
-  animation: fade-in 150ms var(--ease-out-smooth) both;
-}
-
-.animate-fade-in {
-  animation: fade-in 250ms var(--ease-out-smooth) both;
-}
-
 .skeleton {
   background: linear-gradient(90deg, var(--color-paper-100) 25%, var(--color-paper-50) 50%, var(--color-paper-100) 75%);
   background-size: 200% 100%;
@@ -473,17 +412,8 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-page-in,
-  .animate-fade-in,
-  .animate-dots-in,
-  .animate-tip-in,
   .skeleton {
     animation: none;
-  }
-
-  .animate-draw {
-    animation: none;
-    stroke-dasharray: none;
   }
 }
 

@@ -1,42 +1,18 @@
-import { Suspense, lazy, useEffect, useRef, useState } from "react"
-import { Link, useLocation, useNavigate } from "react-router-dom"
+import { useEffect, useRef, useState } from "react"
+import { Link, useLocation } from "react-router-dom"
 import { useIntro } from "../hooks/useIntro"
-import { hasPatientSessionHint, onPatientSessionHintChange } from "../lib/patientSessionHint"
+import { PATIENT_PORTAL_URL } from "../lib/siteContact"
 import { MenuIcon } from "./icons"
 import MobileMenu from "./MobileMenu"
 
-// Lazy, and only mounted once someone actually opens it (see loginTouched
-// below) — otherwise every visitor to the public site would download the
-// Firebase Auth SDK this pulls in, the same reason AdminApp is lazy.
-const LoginPanel = lazy(() => import("./LoginPanel"))
-
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
-  const [loginOpen, setLoginOpen] = useState(false)
-  const [loginTouched, setLoginTouched] = useState(false)
-  const [patientSignedIn, setPatientSignedIn] = useState(() => hasPatientSessionHint())
   const [dark, setDark] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const headerRef = useRef(null)
   const location = useLocation()
-  const navigate = useNavigate()
   const barIn = useIntro(0)
   const navIn = useIntro(150)
-
-  useEffect(() => onPatientSessionHintChange(setPatientSignedIn), [])
-
-  const openLogin = () => {
-    setLoginTouched(true)
-    setLoginOpen(true)
-  }
-
-  // Shared by the header's account control and the mobile menu's account
-  // icon: a signed-in patient goes straight to their account, everyone else
-  // gets the login panel.
-  const handleAccountClick = () => {
-    if (patientSignedIn) navigate("/account")
-    else openLogin()
-  }
 
   useEffect(() => {
     let frame = null
@@ -115,27 +91,18 @@ export default function Header() {
           </Link>
 
           <div className="flex items-center gap-2 sm:gap-4">
-            {patientSignedIn ? (
-              <Link
-                to="/account"
+            {/* Elation's patient portal, once its address is known (siteContact.js). */}
+            {PATIENT_PORTAL_URL && (
+              <a
+                href={PATIENT_PORTAL_URL}
+                target="_blank"
+                rel="noopener"
                 className={`hidden text-sm font-medium underline-offset-4 transition-colors duration-200 ease-out-smooth hover:underline sm:inline-block ${
                   dark ? "text-paper-100/80 hover:text-paper-100" : "text-ink-950/70 hover:text-ink-950"
                 }`}
               >
                 Patient portal
-              </Link>
-            ) : (
-              <button
-                type="button"
-                aria-haspopup="dialog"
-                aria-expanded={loginOpen}
-                onClick={openLogin}
-                className={`hidden text-sm font-medium underline-offset-4 transition-colors duration-200 ease-out-smooth hover:underline sm:inline-block ${
-                  dark ? "text-paper-100/80 hover:text-paper-100" : "text-ink-950/70 hover:text-ink-950"
-                }`}
-              >
-                Log in
-              </button>
+              </a>
             )}
             <button
               type="button"
@@ -154,14 +121,8 @@ export default function Header() {
           </div>
         </nav>
 
-        <MobileMenu open={menuOpen} onClose={() => setMenuOpen(false)} onAccountClick={handleAccountClick} />
+        <MobileMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
       </header>
-
-      {loginTouched && (
-        <Suspense fallback={null}>
-          <LoginPanel open={loginOpen} onClose={() => setLoginOpen(false)} />
-        </Suspense>
-      )}
     </>
   )
 }

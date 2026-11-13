@@ -11,24 +11,26 @@ const PAGE_SIZE_KEY = "corephia-admin-activity-page-size"
 
 // Stored actions are machine-readable strings; these are what a person
 // reviewing the trail actually reads.
+// Unquoted keys are actions retired with the charts, calendar and portal
+// (Elation, 2026-11-13): kept so older entries still read.
 const ACTION_LABELS = {
   [AUDIT_ACTIONS.viewIntake]: "Opened intake record",
   [AUDIT_ACTIONS.deleteIntake]: "Deleted intake record",
   [AUDIT_ACTIONS.updateIntakeStatus]: "Changed applicant status",
   [AUDIT_ACTIONS.viewMessage]: "Opened query",
   [AUDIT_ACTIONS.deleteMessage]: "Deleted query",
-  [AUDIT_ACTIONS.viewChart]: "Opened patient chart",
-  [AUDIT_ACTIONS.signNote]: "Signed a note",
-  [AUDIT_ACTIONS.addAmendment]: "Added an addendum",
+  view_patient_chart: "Opened patient chart",
+  sign_note: "Signed a note",
+  add_note_amendment: "Added an addendum",
   [AUDIT_ACTIONS.addStaff]: "Added staff",
   [AUDIT_ACTIONS.changeStaffRole]: "Changed a staff role",
   [AUDIT_ACTIONS.renameStaff]: "Renamed a staff account",
   [AUDIT_ACTIONS.deleteStaff]: "Deleted a staff account",
-  [AUDIT_ACTIONS.bookAppointment]: "Booked an appointment",
-  [AUDIT_ACTIONS.moveAppointment]: "Changed an appointment",
-  [AUDIT_ACTIONS.cancelAppointment]: "Cancelled an appointment",
-  [AUDIT_ACTIONS.updateAppointmentStatus]: "Marked an appointment",
-  [AUDIT_ACTIONS.sendPortalInvite]: "Sent a portal invite",
+  book_appointment: "Booked an appointment",
+  move_appointment: "Changed an appointment",
+  cancel_appointment: "Cancelled an appointment",
+  update_appointment_status: "Marked an appointment",
+  send_portal_invite: "Sent a portal invite",
   [AUDIT_ACTIONS.listIntakes]: "Opened the applicant list",
   [AUDIT_ACTIONS.signIn]: "Signed in",
   [AUDIT_ACTIONS.signOut]: "Signed out",
@@ -36,8 +38,8 @@ const ACTION_LABELS = {
   [AUDIT_ACTIONS.changePassword]: "Changed their password",
   [AUDIT_ACTIONS.enableTwoStep]: "Turned on two-step sign-in",
   [AUDIT_ACTIONS.disableTwoStep]: "Turned off two-step sign-in",
-  [AUDIT_ACTIONS.setMembership]: "Marked as member",
-  [AUDIT_ACTIONS.endMembership]: "Ended membership",
+  set_membership_manually: "Marked as member",
+  end_membership_manually: "Ended membership",
 }
 
 const DESTRUCTIVE_ACTIONS = new Set([AUDIT_ACTIONS.deleteIntake, AUDIT_ACTIONS.deleteMessage, AUDIT_ACTIONS.deleteStaff])
