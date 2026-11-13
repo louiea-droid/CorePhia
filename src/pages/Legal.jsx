@@ -2,7 +2,7 @@ import { Helmet } from "react-helmet-async"
 import { Link } from "react-router-dom"
 import { SUPPORT_PHONE } from "../lib/siteContact"
 
-const UPDATED = "October 13, 2026"
+const UPDATED = "November 13, 2026"
 const EMAIL = "info@corephia.com"
 
 // Each section is a heading plus a body. A string in the body is a paragraph and
@@ -25,7 +25,7 @@ const privacy = [
   {
     h: "Who this covers",
     body: [
-      "This policy is from CorePhia, a weight loss program based in Tampa, Florida. It covers this website, the patient intake, the contact form, and the patient portal. It applies to visitors, people who apply, and patients.",
+      "This policy is from CorePhia, a weight loss program based in Tampa, Florida. It covers this website, the patient intake, the contact form, and the patient portal we provide through Elation Health. It applies to visitors, people who apply, and patients.",
       "Information you give us as a patient is also covered by our Notice of Privacy Practices (linked at the end of this page), which explains your rights over your health records. If anything in that notice is more protective than this page, the notice controls for your health information.",
     ],
   },
@@ -36,7 +36,7 @@ const privacy = [
       [
         "On the intake: your name, date of birth, sex assigned at birth, phone, email, and home address; your height, current and goal weight, and highest adult weight; your medical conditions, medications, allergies, surgeries, past weight loss treatment, and interest in medication; your family medical history; your tobacco and alcohol use and how often you exercise; what and how much you eat and drink; the plan you are interested in and when you would like a visit; any notes you add; and your agreement to the telehealth consent and privacy acknowledgement with your typed signature and the date.",
         "On the contact form: your name, phone, email, what you are interested in, and your message.",
-        "In the patient portal: your login email, the weights you log, and the messages you send. Your password is handled by our sign-in service. Our staff cannot see it.",
+        "In the patient portal: your login email and the messages you send. Elation Health runs the portal and handles your password. Our staff cannot see it.",
         "When you call or email us: what you tell us and your contact details.",
       ],
       "Information our care team creates about you once you are a patient: appointment records, visit notes, plans, prescriptions and vitals, and the updates and messages they send you through the portal.",
@@ -68,8 +68,8 @@ const privacy = [
     body: [
       [
         "Your care team. The licensed providers, dietitian, and staff involved in your care, and only as much as each needs.",
-        "Service providers that help us run the program. They handle information for us and not for their own purposes. Today these are Google Firebase (our database, sign-in, and site hosting), Google Workspace (which delivers our notification emails), and, if you accept, Google Analytics on our public pages. The notification emails go to your address and say only that something is waiting for you. They never contain health details.",
-        "Stripe, which takes your membership payments. Stripe receives your name, email and plan, and holds your card details, which we never see or store. We send it no health information. Stripe's own privacy policy covers what it does with payment data.",
+        "Service providers that help us run the program. They handle information for us and not for their own purposes. Today these are Elation Health (our electronic medical record, which holds your chart, runs the patient portal, and handles membership billing), Google Firebase (the database behind our website and intake, staff sign-in, and site hosting), Google Workspace (which sends our emails, such as the receipt for your form), and, if you accept, Google Analytics on our public pages. Our emails never contain health details.",
+        "Membership payments go through Elation Health's billing, which holds your card details. Our staff never see or store them.",
         "Pharmacies and other health professionals, when a provider sends a prescription or refers you, as your care requires.",
         "People you ask us to share with, and anyone you give written permission to. For example, we publish a patient's story only with their written permission.",
         "Authorities or others when the law requires it, to respond to a valid legal process, or to protect someone from serious harm.",
@@ -89,7 +89,7 @@ const privacy = [
     h: "Browser storage and tracking",
     id: "browser-storage", // the cookie banner links here
     body: [
-      "We set no advertising cookies. If you accept on the privacy banner, Google Analytics sets its cookies (named _ga) on our public pages. Otherwise the site stores a few small items in your browser so it can work: your answer on the privacy banner, whether you are signed in to the patient portal on this device, the sign-in your portal login needs, and, in the patient portal, which update from your care team you last opened and whether you chose light or dark mode. The intake keeps a note that you have seen its intro screen for the length of your visit.",
+      "We set no advertising cookies. If you accept on the privacy banner, Google Analytics sets its cookies (named _ga) on our public pages. Otherwise the site stores a few small items in your browser so it can work, such as your answer on the privacy banner. The intake keeps a note that you have seen its intro screen for the length of your visit.",
       "We do not track you across other websites, so we do not respond to \"Do Not Track\" signals. You can clear stored items in your browser settings at any time. Use \"Privacy choices\" in the footer to change your answer about visit counts.",
     ],
   },
@@ -188,7 +188,7 @@ const terms = [
     body: [
       [
         "The program is cash pay. We do not bill insurance, and we do not promise that any insurer or plan will reimburse you.",
-        "Memberships are billed monthly by card through Stripe. Your membership starts when your first payment goes through, and it renews each month until you cancel. You can cancel from your patient portal.",
+        "Memberships are billed monthly by card. Your membership starts when your first payment goes through, and it renews each month until you cancel. To cancel, call or email us.",
         "The plans and prices on the Membership page are what we offer now. A price can change, but not for a membership you have already started, unless we tell you first. The price and terms that apply to you are confirmed when you enroll.",
         "Cancellation and refund terms are confirmed in writing when you enroll.",
       ],

@@ -20,7 +20,7 @@ const STEPS = [
   },
   {
     title: "Check in and adjust",
-    body: "At regular follow-ups your care team reviews your progress and changes what isn't working. Between visits you can log your weight and message your care team in the patient portal.",
+    body: "At regular follow-ups your care team reviews your progress and changes what isn't working. Between visits you can message your care team in the patient portal.",
   },
 ]
 

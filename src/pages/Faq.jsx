@@ -87,7 +87,7 @@ const faqGroups = [
       },
       {
         q: "How do I pay?",
-        a: "After you're accepted, you choose a plan and pay by card in your patient portal. It's billed monthly, and you can cancel from the portal.",
+        a: "After you're accepted, we set up your membership and you pay by card. It's billed monthly. To cancel, call or email us.",
       },
       {
         // Florida only for now (Louie, 2026-10-13). Add states here, in the Terms

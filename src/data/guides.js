@@ -49,7 +49,7 @@ export const guides = [
       {
         h: "Why do follow-ups matter?",
         body: [
-          "Bodies and routines change, so a plan that works in the first month may need to change by the third. At each follow-up you and your care team look at your progress and how the plan fits your life, then change what is not working. You can also log your weight and send messages in your patient portal between visits.",
+          "Bodies and routines change, so a plan that works in the first month may need to change by the third. At each follow-up you and your care team look at your progress and how the plan fits your life, then change what is not working. Between visits you can send messages to your care team in your patient portal.",
         ],
       },
       {
@@ -279,7 +279,7 @@ export const guides = [
       {
         h: "What happens between visits?",
         body: [
-          "In your patient portal you can log your weight and send messages to your care team. Messages are read during working hours, so the portal is not for urgent problems. In an emergency, call 911.",
+          "In your patient portal you can send messages to your care team. Messages are read during working hours, so the portal is not for urgent problems. In an emergency, call 911.",
         ],
       },
       {
@@ -377,7 +377,7 @@ export const guides = [
       {
         h: "When should you talk to your provider?",
         body: [
-          "If your weight has not moved for several weeks while you are following the plan, bring it to your care team. In the CorePhia portal you can log your weight and message them between visits, and your plan can be adjusted at your next follow-up. If you feel unwell or have a new symptom, contact your provider instead of waiting. In an emergency, call 911.",
+          "If your weight has not moved for several weeks while you are following the plan, bring it to your care team. In your patient portal you can message them between visits, and your plan can be adjusted at your next follow-up. If you feel unwell or have a new symptom, contact your provider instead of waiting. In an emergency, call 911.",
         ],
       },
     ],
