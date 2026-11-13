@@ -22,7 +22,7 @@ const labelClass = "mb-1.5 block text-sm font-medium text-ink-950/80"
 
 const contactDetails = [
   { icon: PhoneIcon, label: "Phone", value: SUPPORT_PHONE, href: SUPPORT_PHONE_HREF },
-  { icon: MailIcon, label: "Email", value: "info@corephia.com", href: "mailto:info@corephia.com" },
+  { icon: MailIcon, label: "Email", value: "care@corephia.com", href: "mailto:care@corephia.com" },
   { icon: MapPinIcon, label: "Location", value: LOCATION, href: LOCATION_MAP_URL },
 ]
 

@@ -183,7 +183,9 @@ staff, activity, help; charts, calendar, to-do and the patient portal were retir
   `firestore.rules` is the only gatekeeper (exact shape + consents on create, no client reads).
   The confirmation screen only shows after the write succeeds.
 - **Domain is settled on `corephia.com`**: canonicals, OG tags, sitemap, footer and email
-  (`info@corephia.com`) all agree. The Firebase project name `corephia-health` is just the project.
+  (`care@corephia.com`, the patient-facing address since 2026-11-13, Louie: Contact, footer, legal
+  pages, error screen, `llms.txt`, the receipt email) all agree. info@ stays the sending mailbox.
+  The Firebase project name `corephia-health` is just the project.
 - **SEO (2026-10-13):** `index.html` has one JSON-LD `@graph` (`WebSite` + `MedicalBusiness` with
   logo, image, phone and a Tampa, FL address, `@id` `https://corephia.com/#business`). Program
   pages add `Service` (provider = that `@id`) and `BreadcrumbList` next to their FAQPage.

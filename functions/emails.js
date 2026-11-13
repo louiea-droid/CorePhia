@@ -62,7 +62,7 @@ export function buildEmail(mail) {
             "We're glad you're here! We've received your form, and taking that first step matters.",
             "Our care team is reviewing your answers. If the program looks like a good fit, we'll reach out to set up your first visit and send you an invite to your patient portal.",
             "For your privacy, this email doesn't include any of your answers.",
-            `Questions? Call us at ${PHONE} or email info@corephia.com.`,
+            `Questions? Call us at ${PHONE} or email care@corephia.com.`,
           ],
         }),
       }

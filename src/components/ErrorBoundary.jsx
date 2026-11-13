@@ -23,8 +23,8 @@ export default class ErrorBoundary extends Component {
           <p className="font-serif text-3xl text-ink-950">Something went wrong</p>
           <p className="mt-3 text-base leading-relaxed text-ink-950/70">
             This page didn't load properly. Reloading usually fixes it. If it keeps happening, email{" "}
-            <a href="mailto:info@corephia.com" className="font-medium text-accent-dark underline">
-              info@corephia.com
+            <a href="mailto:care@corephia.com" className="font-medium text-accent-dark underline">
+              care@corephia.com
             </a>
             .
           </p>

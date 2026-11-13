@@ -3,7 +3,7 @@ import { Link } from "react-router-dom"
 import { SUPPORT_PHONE } from "../lib/siteContact"
 
 const UPDATED = "November 13, 2026"
-const EMAIL = "info@corephia.com"
+const EMAIL = "care@corephia.com"
 
 // Each section is a heading plus a body. A string in the body is a paragraph and
 // an array is a bullet list, in the order written. Everything stated here has to

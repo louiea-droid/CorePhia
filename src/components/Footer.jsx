@@ -12,7 +12,7 @@ import {
 import { LOCATION, LOCATION_MAP_URL, SUPPORT_PHONE, SUPPORT_PHONE_HREF } from "../lib/siteContact"
 
 const contactDetails = [
-  { icon: MailIcon, text: "info@corephia.com", href: "mailto:info@corephia.com" },
+  { icon: MailIcon, text: "care@corephia.com", href: "mailto:care@corephia.com" },
   { icon: PhoneIcon, text: SUPPORT_PHONE, href: SUPPORT_PHONE_HREF },
   { icon: MapPinIcon, text: LOCATION, href: LOCATION_MAP_URL },
 ]
