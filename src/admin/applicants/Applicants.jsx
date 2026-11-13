@@ -83,13 +83,7 @@ export default function Applicants({ role }) {
       setPendingDelete(null)
       setSelectedRecord(null)
     } catch (cause) {
-      // A declined applicant who was admitted once still has a chart, and the
-      // rules keep the intake of anyone with a chart.
-      setDeleteError(
-        cause.code === "permission-denied"
-          ? "This applicant has a patient chart, so their intake is part of the medical record and can't be deleted."
-          : (cause.code ?? cause.message ?? "Something went wrong deleting this record."),
-      )
+      setDeleteError(cause.code ?? cause.message ?? "Something went wrong deleting this record.")
     } finally {
       setDeleting(false)
     }
