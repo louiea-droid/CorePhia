@@ -67,21 +67,24 @@ npm run preview  # serve the built dist/
 Deployed via Firebase Hosting (`firebase.json` → `public: "dist"`, `cleanUrls: true`, SPA
 rewrite to `/app.html`).
 Firebase project is `corephia-health`. **Last deploy 2026-11-06: hosting + `firestore.rules`
-from `main` at 592b5d8** (checked live: titles, `/pricing` 301, security headers). **All 8 functions deployed by 2026-11-10** (Stripe secrets set; `STRIPE_WEBHOOK_SECRET` is a
-placeholder until the Stripe webhook exists). **Open: `stripeWebhook`, `startCheckout` and
-`openBillingPortal` return Google's 403** (no public invoker; allow unauthenticated on those three
-Cloud Run services). The CLI checks every `defineSecret` in the codebase on any functions deploy.
+from `main` at 592b5d8** (checked live: titles, `/pricing` 301, security headers). All 8
+functions were deployed by 2026-11-10; the Elation branch (`elation-emr`, 2026-11-13) removes 7
+of them (only `notifyNewIntake` stays), so its deploy follows the checklist in
+`docs/superpowers/specs/2026-11-13-elation-emr-design.md`. The CLI checks every
+`defineSecret` in the codebase on any functions deploy.
 
 ## Stack
 
 React 19 · Vite 8 · Tailwind CSS v4 · react-router-dom v7 · react-helmet-async · oxlint.
-Firebase (Auth + Firestore). No TypeScript. Tests: `npm run check` (the self-checks: chartMath,
-roles, calendarMath, todoMath, staffMath, inviteMath, progressMath, messageMath,
-`googleAnalytics.check.js` (only public pages are trackable), `functions/emails.check.js` (every email builds, with the right links and recipients), and
+Firebase (Auth + Firestore). No TypeScript. Tests: `npm run check` (the self-checks: roles,
+calendarMath, staffMath, `googleAnalytics.check.js` (only public pages are trackable),
+`functions/emails.check.js` (the two emails build, retired kinds throw), and
 `auditActions.check.js`, which fails if `AUDIT_ACTIONS` in `admin/lib/firebase.js` and the action
 list in `firestore.rules` drift apart) and `npm run test:rules` (Firestore rules against the
-emulator: all 179 pass as of 2026-11-05). Java 21 and a global `firebase` CLI are installed on
-this machine now (2026-11-04), so `npm run test:rules` runs as is.
+emulator: all 47 pass as of 2026-11-13). Java 21 and a global `firebase` CLI are installed on
+this machine (2026-11-04). If port 8080 is taken (another project's emulator), run the tests
+with a config that moves the Firestore emulator to another port (`--config` file at the
+project root with `emulators.firestore.port`).
 
 ## Architecture
 
@@ -100,12 +103,12 @@ the guides (both read from their data files). Add a page there when you add a pu
   script moves them into `<head>` tagged `data-prerender`, and `main.jsx` deletes those before
   `createRoot` so React's own tags are the only ones (otherwise titles and canonicals go stale on
   navigation). The browser does not hydrate; `createRoot` replaces the prerendered markup.
-- Every other address (admin, portal, intake, 404s) is rewritten to `dist/app.html`, the plain
+- Every other address (admin, intake, password reset, 404s) is rewritten to `dist/app.html`, the plain
   shell, so none of them shows the prerendered home page to crawlers.
 - The script fails the build if a page lacks a title, its exact canonical, or exactly one `<h1>`.
 - Anything that renders on a public page must not touch `window`/`document`/`localStorage` while
-  rendering (effects are fine). `MobileMenu` and `LoginPanel` return `null` when there is no
-  `document`, because they portal into `document.body`.
+  rendering (effects are fine). `MobileMenu` returns `null` when there is no `document`,
+  because it portals into `document.body`.
 - To test it, use the Firebase hosting emulator (`firebase emulators:start --only hosting`),
   not `vite preview`, which falls back to `index.html` for every path. The emulator ignores
   `firebase.json`'s `headers` and `redirects`: check those with `curl -I` after deploying.
@@ -122,10 +125,8 @@ src/pages/            Home, About, Contact, Faq, Membership, ProgramPage, Succes
 src/entry-server.jsx  build-time render for scripts/prerender.mjs
 src/components/       PatientIntakeForm + intakeScreens (the /intake route) + all homepage sections,
                       ErrorBoundary (a plain "Something went wrong" screen instead of a blank page)
-src/portal/           the patient portal (/account/*, /portal/setup, /portal/reset),
-                      outside the website frame in its own PortalShell (sidebar / phone tab bar)
-src/admin/            the staff admin (/admin/*)
-src/lib/              Firebase submission, patient auth, analytics consent/tracking, siteContact
+src/admin/            the staff admin (/admin/*) and the staff password page (/portal/reset)
+src/lib/              Firebase submission, analytics consent/tracking, siteContact
 src/data/             programs.js, pricingTiers.js, guides.js
 src/hooks/            useIntro (timed reveal), useReveal (IntersectionObserver reveal)
 ```
@@ -133,8 +134,8 @@ src/hooks/            useIntro (timed reveal), useReveal (IntersectionObserver r
 Routes: `/` · `/about` · `/contact` · `/faq` · `/membership` (`/pricing` redirects: a 301 in
 `firebase.json`, plus `<Navigate>` in the app) ·
 `/programs/:slug` (medical-care, dietitian-services, exercise-plan, follow-ups; an unknown slug
-shows NotFound) · `/guides/:slug` (the 8 guides in `data/guides.js`) · `/success-stories` · `/privacy` · `/terms` · `/privacy-practices` · `/intake` · `/account/*` · `/portal/setup` ·
-`/portal/reset` · `/admin/*` · anything else shows `NotFound` (marked `noindex`, because hosting
+shows NotFound) · `/guides/:slug` (the 8 guides in `data/guides.js`) · `/success-stories` · `/privacy` · `/terms` · `/privacy-practices` · `/intake` ·
+`/portal/reset` (staff password page) · `/admin/*` · anything else shows `NotFound` (marked `noindex`, because hosting
 serves the app with a 200 for every path).
 
 `ScrollManager` in `App.jsx` handles scroll on navigation: scrolls to top on a new route, honours a
@@ -173,9 +174,9 @@ Checked against the code 2026-10-08 (a whole-system audit: admin, public site, i
 Done: pivot from a multi-vertical Rx marketplace to a weight-loss-program site · blue/navy re-theme ·
 all routes above · per-route SEO metadata, JSON-LD, sitemap, OG image · Hims-style one-question
 intake (`docs/superpowers/specs/2026-09-30-intake-flow-design.md`) · program pages · Membership ·
-FAQ · success stories page · cookie banner + analytics · admin (dashboard, applicants, charts, staff,
-to-do, calendar, messages, activity, help) · patient portal (invite-only login, Overview, Progress,
-Messages, Updates) · compliance copy fixes · accessibility and visual pass.
+FAQ · success stories page · cookie banner + analytics · admin (dashboard, applicants, queries, analytics,
+staff, activity, help; charts, calendar, to-do and the patient portal were retired for Elation on
+2026-11-13) · compliance copy fixes · accessibility and visual pass.
 
 - **Intake and Contact submit to Firestore.** `submitIntakeRecord()` → `lib/intakeSubmission.js`
   writes `intakeRecords`; Contact → `lib/contactSubmission.js` writes `contactMessages`. No sign-in;
@@ -226,8 +227,8 @@ Messages, Updates) · compliance copy fixes · accessibility and visual pass.
 - **Legal pages (2026-10-13), drafts awaiting a Florida health-care attorney:** `/privacy`,
   `/terms` and `/privacy-practices` (the HIPAA Notice of Privacy Practices the intake checkbox
   links to, opening in a new tab) in `pages/Legal.jsx`, linked from the footer. They describe
-  what the system really does (intake fields, portal, opt-in visit counts, Google Firebase and
-  Google Workspace (notification emails) as service providers, Google Fonts, server logs). **Change the system, change these.**
+  what the system really does (intake fields, opt-in visit counts, Elation Health (record,
+  patient portal, billing), Google Firebase and Google Workspace as service providers, Google Fonts, server logs). **Change the system, change these.**
   Still open for the client: the legal entity name, the cancellation and refund policy (the
   Terms say it is confirmed in writing at enrollment), and more licensed states when there are any.
 
@@ -247,10 +248,9 @@ delete, vitals ranges, copy vs Terms) is planned for 2026-10-22. Strike items th
    See `docs/meeting-analysis.md`. `buildIntakeRecord()` deliberately groups fields to mirror
    standard EMR intake sections (demographics / vitals / medicalHistory /
    familyHistory / socialHistory / nutrition / visit / consent) so a vendor mapping is direct.
-2. **Firestore rules: deployed 2026-11-06** with the site (179/179 tests pass). Always deploy
-   them **together with the site**, since the 2026-10-19 rules expect the new client (a chart's
-   `lastNote` names its `noteId`, linking a portal login marks the invite used in the same batch,
-   the intake sections are checked key by key). Keep `firestore.rules` free of a byte-order mark
+2. **Firestore rules: deployed 2026-11-06** with the site. The `elation-emr` branch trims them
+   (47/47 tests pass). Always deploy them **together with the site** (the intake sections are
+   checked key by key). Keep `firestore.rules` free of a byte-order mark
    (PowerShell's `Set-Content -Encoding utf8` adds one). When editing it from a script, never put
    new text through `String.prototype.replace`: a `$'` in the rules' regexes expands to "the rest
    of the file" and once duplicated the whole file (2026-10-19). Use `split(a).join(b)`.
@@ -259,7 +259,7 @@ delete, vitals ranges, copy vs Terms) is planned for 2026-10-22. Strike items th
    privacy policy line and the attorney's view, since reCAPTCHA would run on the intake.
 3. **Phone number: +1 (866) 849-2673** (toll-free, Louie 2026-11-04; it replaced
    +1 (850) 454-6700, which was removed 2026-11-02). Set once as `SUPPORT_PHONE` in
-   `lib/siteContact.js` (Contact, footer, intake help line, portal, legal pages, invite preview),
+   `lib/siteContact.js` (Contact, footer, intake help line, legal pages),
    plus `telephone` in the `index.html` JSON-LD, `public/llms.txt` and `PHONE` in
    `functions/emails.js`. Change all four together. Urgent problems still point to urgent care
    and 911 (FAQ, portal message form), not the phone. Footer social links are still `#` (the Social
@@ -286,22 +286,12 @@ delete, vitals ranges, copy vs Terms) is planned for 2026-10-22. Strike items th
   care card (`ProgramGrid.jsx`), the pricing badge (`PricingSection.jsx`), the Core tier feature and
   the About pillar stay as written. Do not re-flag or reword them. The About intro now says
   "weight loss medication when clinically appropriate".
-- **Portal issues from the 2026-10-08 audit, fixed 2026-10-19:** the portal has its own named
-  Firebase app (`"portal"` in `portal/lib/patientAuth.js`; the intake, contact, site events and
-  admin share the default app and look it up by name, never `getApps().length`); the portal signs
-  out after 15 idle minutes (`useIdleTimeout` with `PORTAL_ACTIVITY_KEY`); a login can move to
-  a new chart with that chart's invite (a returning patient, or an old `patientAccounts` doc with
-  no `intakeId`); "Forgot password" from an invite returns to it; a discharged chart takes no
-  weigh-ins (rules and UI); `/portal/*` visits are not counted. Linking marks the invite `used`,
-  so it can't be read by its link afterwards.
 - **Intake (2026-10-19):** every section is checked key by key with length caps in the rules
   (`isIntakeSections`; a new intake field must be added there too, or sends are refused), and
   textareas carry `maxLength={2000}`. A required textarea of spaces only is invalid
   (`firstInvalid`), which matters for the Edit dialog on the review screen. After 20 seconds on
   "Sending…" the intake says the connection may have dropped (Firestore queues the write offline).
-- Left on purpose: the Dashboard's Today strip and To-do still read every active chart's notes
-  (fine for a few hundred patients; past that, store the next due dates on the chart), and
-  Analytics still reads one document per event (per-day totals need a server).
+- Left on purpose: Analytics still reads one document per event (per-day totals need a server).
 - Two-step sign-in is optional for staff and not enforced by the rules. Enforcing it needs
   Identity Platform in the Firebase console, then a rules check on the second factor.
 - **18 or older** (decided 2026-10-13): the intake's date of birth refuses anyone under 18
@@ -317,264 +307,93 @@ delete, vitals ranges, copy vs Terms) is planned for 2026-10-22. Strike items th
 
 ---
 
+## Elation EMR (2026-11-13): the practice runs in Elation
+
+Dr. Antonious bought **Elation** (API access, Patient Passport portal, billing). Design:
+`docs/superpowers/specs/2026-11-13-elation-emr-design.md` (with the deploy checklist); Phase A
+plan: `docs/superpowers/plans/2026-11-13-elation-phase-a-retire.md`.
+
+- **Flow (Louie):** form → our admin (Applicants) → staff admit → Elation. Declined applicants
+  never reach Elation. Charts, notes, prescriptions, scheduling, patient portal and membership
+  billing all live in Elation.
+- **Phase A (done on branch `elation-emr`, 2026-11-13, not deployed):** retired our patient
+  charts, notes, prescriptions, calendar, to-do, patient messages inbox, the whole patient
+  portal (`/account/*`, `/portal/setup`), Stripe billing, the visit-copy functions, `sendMail`
+  and the portal emails, and their rules (those collections fall to the deny-all rule). Admit
+  is a status change only (`useIntakeRecords.patchRecord`). Old audit actions keep their labels
+  in `Activity.jsx` but can no longer be written.
+- **Kept:** `/portal/reset` as a **staff-only** password page (`admin/layout/PasswordReset.jsx`),
+  because Firebase's reset email (also used to set up new staff) may have its action URL set
+  to `https://corephia.com/portal/reset`.
+- **Patient portal link:** header and mobile menu link to `PATIENT_PORTAL_URL` in
+  `lib/siteContact.js` (Elation Patient Passport, new tab). Empty hides it; set it once Dr.
+  Antonious gives the address.
+- **Phase B (next):** a callable function `sendToElation(intakeId)` creates the patient in
+  Elation on admit (OAuth client credentials, secrets `ELATION_CLIENT_ID` /
+  `ELATION_CLIENT_SECRET`, sandbox first), writes `elation: { patientId, sentAt }` or an error
+  back on the intake, with Retry on Applicants. The intake is deleted from Firestore 30 days
+  after a successful send (Louie). Waiting on the sandbox client ID and secret.
+- The Google BAA is still needed before real patients: intakes sit in Firestore until admitted.
+
 ## Membership (2026-09-30)
 
 `/membership` shows two plans, Core ($299) and Core Complete ($349) a month. Core+ was merged
-into Core on 2026-11-02 (Louie): Core took its features, and it is gone from the intake and admin
-lists (`PRICES_ANNOUNCED` back on per Louie, 2026-09-30), no per-card buttons and no "Most
-popular" highlight; `/pricing` redirects there. Nav, footer and the Hero quick link say "Membership". Two
-switches in `data/pricingTiers.js`: `PLANS_SHOWN` (plans on the page, the intake plan question,
-`?plan=` preselect) and `PRICES_ANNOUNCED` (false = "Coming soon" on cards and in the FAQ). The
-program pages carry no pricing block. Plans and features are still placeholders awaiting the
-client. The Core tier's "Prescription medication" feature and the "Medication Available" badge are
-approved (2026-10-14). Core's "24/7 patient support" became "Patient support through
-your portal" (2026-10-13), to match the Terms (messages are read in working hours).
+into Core on 2026-11-02 (Louie). `/pricing` redirects there. Two switches in
+`data/pricingTiers.js`: `PLANS_SHOWN` (plans on the page, the intake plan question, `?plan=`
+preselect) and `PRICES_ANNOUNCED` (false = "Coming soon"). Plans and features are still
+placeholders awaiting the client, and must match what is set up in Elation billing. The Core
+tier's "Prescription medication" feature and the "Medication Available" badge are approved
+(2026-10-14). Payment copy (FAQ "How do I pay?", Terms "Cost and payment", `llms.txt`): billed
+monthly by card after acceptance; to cancel, call or email us. Cancellation and refund terms
+are still "confirmed in writing at enrollment".
 
-### Billing: Stripe (built 2026-11-05 on this branch, not deployed)
+## Admin (what is left after Elation)
 
-Design approved 2026-11-05: `docs/superpowers/specs/2026-11-05-stripe-membership-billing-design.md`;
-plan: `docs/superpowers/plans/2026-11-05-stripe-membership-billing.md`. Monthly only (no enrollment
-or first-visit fee). Patients pay in the portal after admission and before the first visit can be
-booked. Discharge cancels the subscription and emails the patient. Refund and cancellation policy
-are still waiting on Dr. Antonious.
+Pages: Dashboard (applicant totals and charts), Applicants (admit / decline; `discharged` is an
+older status, still shown and filterable), Queries (contact form), Analytics, Staff, Activity
+(super admin), Profile (`/admin/security`), Help. Unknown `/admin/...` addresses go to the
+dashboard. Keep the Help topics in step when a screen changes.
 
-Stripe chosen over Hint Health. Account "CorePhia", in the **sandbox** (test mode). Flow: form →
-staff admit → portal invite → patient picks a plan and pays in the portal (Stripe Checkout) → the
-webhook marks the chart's membership. Card changes, receipts and cancelling go through Stripe's
-hosted customer portal. Nobody pays before a clinician has accepted them, and every charge is a
-membership, never medication. Stripe gets name, email and plan only, nothing medical. The
-secret key goes in Secret Manager, never in the repo or chat.
-
-Where things live:
-- `functions/billing.js`: plan to price mapping, Stripe status mapping, `MODE` and `PRICES`
-  (switch both to go live; the test IDs below are sandbox). Self-check `functions/billing.check.js`,
-  in `npm run check`.
-- `functions/index.js`: `startCheckout`, `openBillingPortal`, `stripeWebhook`, `onChartDischarged`
-  (discharge cancels the subscription at the end of the paid month and emails the patient).
-  Secrets `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` in Secret Manager.
-- Chart field `membership` (plus `formPlan`, the plan chosen on the form); server-only
-  `billing/{chartId}` (no browser access, see `firestore.rules`).
-- Portal: `src/portal/membership/` (plan choice, Checkout, member tabs, Manage billing).
-- Admin: membership badge on the chart; **Mark as member** and **End membership** (manual,
-  admin and super admin only, never over a live Stripe membership); a "Paid: book first visit" group
-  on the to-do list.
-- Paid-only booking: the rules and `AppointmentDialog` refuse a new appointment for a chart with
-  no membership; new message topics and updates to the patient wait too. **Once the rules are live,
-  admitted charts with no membership can't be booked until the patient pays or an admin marks them
-  by hand.**
-- Public copy: Terms "Cost and payment", Privacy (Stripe as a service provider), FAQ "How do I pay?",
-  `public/llms.txt`, admin Help "Membership and booking". Cancellation and refund still read
-  "confirmed in writing at enrollment". Cancel at period end is the default until Dr. Antonious
-  decides the refund policy.
-
-**Deployed 2026-11-10, not working yet:** the three HTTP functions need public access (see
-Commands), and Stripe still needs the webhook endpoint (5 events) and its `whsec_` in the secret,
-and the customer portal settings saved in the sandbox. **Not verified yet** (needs the deployed sandbox): a real Checkout
-payment, the webhook transactions, discharge cancellation and its email, the portal member tabs,
-and the Choose / Manage billing redirects.
-
-Test-mode price IDs (live mode will have new ones):
-- Core $299/month: `price_1UYAmdGfYKc3UVG5MLvaqCfg`
-- Core Complete $349/month: `price_1UYAmIGfYKc3UVG5L161NXEW`
-
-Still waiting on the client: a first-visit or enrollment fee or monthly only; the
-cancellation and refund policy (also open in the Terms and Stripe's customer-portal settings);
-final plans; the legal entity name for statements; HSA/FSA.
-
-## Admin: applicants, patient charts, staff (2026-10-01)
-
-Spec: `docs/superpowers/specs/2026-10-01-patient-charts-notes-staff-design.md`.
-
-- **Applicants** (`/admin/applicants`, was "Patients"): intake submissions; admit or decline.
-  Admitting creates a chart (`chartStore.setApplicantStatus`, one batch with the status).
-- **Patients** (`/admin/patients`, `/admin/patients/:chartId`): charts for admitted applicants.
-  Collection `patients/{intakeId}`, with `notes` and `notes/*/amendments` subcollections.
-  Notes are consultation, progress, exercise or dietitian; draft (author-only) → signed (locked
-  forever) → addenda.
-  Prescriptions are structured entries (start / renew / stop) inside notes;
-  `chartMath.currentPrescriptions()` derives what's current (`npm run check` self-test).
 - **Roles:** `dietitian`, `provider`, `coAdmin` ("Co-admin"), `admin` (Dr. Antonious only),
   `superAdmin` (Hyacinth). Page access in `admin/staff/roles.js`; `firestore.rules` has
-  `isClinical()` (all five) and `isStaff()` (co-admin and up). On the **Staff** page
-  (`/admin/staff`) admin and co-admins grant dietitian, provider or co-admin; the admin can
+  `isClinical()` (all five), `isAdmitter()` (all but the dietitian) and `isStaff()` (co-admin
+  and up). On **Staff** admin and co-admins grant dietitian, provider or co-admin; the admin can
   change or delete those and no-access accounts, a co-admin only dietitians, providers and
-  no-access accounts. **Only the admin and super admin set a staff member's name** (what their
-  signed notes carry), including when adding them: a co-admin's new accounts sign with their
-  email until the admin uses Edit name. Only a super admin grants admin or
-  touches the admin, and super admins are hidden from everyone else. Nobody edits or deletes
-  their own account. Several test accounts are `admin` for now (Louie, 2026-10-01).
-  Deleting removes the `user/{uid}` staff record only; the Firebase Auth login can only be
-  deleted from the console (no server). Signed notes keep the signer's name on the note.
-- The public login's sign-up record moved to `patientAccounts/{uid}`. The old `patients/{uid}`
-  sign-up docs can be deleted in the console.
-- **The new rules must be deployed** (`firebase deploy --only firestore:rules`) before any of this
-  works against the live project. `npm run test:rules` passes (2026-10-19).
+  no-access accounts. **Only the admin and super admin set a staff member's name**, including
+  when adding. Only a super admin grants admin or touches the admin, and super admins are
+  hidden from everyone else. Nobody edits or deletes their own account. Deleting removes the
+  `user/{uid}` record only; the Firebase Auth login can only be deleted from the console.
+  Staff data access is in `staff/staffStore.js` (demo mode keeps an in-memory list).
+- **Account menu** (`AccountMenu.jsx`, top right, theme switch to its left): Profile (display
+  name, password, two-step sign-in, photo in `staffPhotos/{uid}` as a 256 px JPEG data URL);
+  Sign out asks first. Admin dark mode: blue *text* uses `accent-text`, not `accent-dark`.
+- **Audit log** (`recordAuditEvent`): `at` is server time; the rules require the signed-in email
+  and a known action. Adding an action means adding it to `AUDIT_ACTIONS`, the rules list
+  **and** `ACTION_LABELS` in `Activity.jsx`; `npm run check` catches the first two drifting.
+- **Idle sign-out** (`lib/useIdleTimeout.js`): last activity in localStorage, shared by every
+  tab; 15 minutes.
+- **Dialogs** share `ui/useDialog.js` (Escape closes the top one, scroll lock until the last
+  closes, confirm dialogs start on Cancel). Shared form helpers are in `ui/formUi.js`.
+- **Live role and name:** `AdminApp` follows `user/{uid}` (`watchAdminAccess`).
+- Dates the admin calls "today" use Tampa time (`lib/calendarMath.js`, `todayInTampa()`).
 
-## Admin additions (2026-10-01)
+## Email (2026-11-04): Cloud Functions + Google Workspace
 
-The new-intake email is back as a Cloud Function (2026-11-04): see "Email" below.
+All email goes out from `CorePhia <info@corephia.com>`, replies to info@ (Google Workspace),
+sent by Cloud Functions in `functions/` (Node 22, `us-central1`) with `nodemailer` over
+`smtp.gmail.com:465`. The info@ **app password** is the `SMTP_PASSWORD` secret in Google
+Secret Manager, never in a file.
 
-**To-do** (`/admin/todo`, all clinical roles): renewals and follow-ups due within 7 days or
-overdue, plus admitted patients with no signed note, from `chartMath.dueTasks()` (checked by
-`npm run check`). No "mark done": signing the note that handles an item clears it. Reads every
-active chart's notes on open (fine for a few hundred patients).
-
-**Account menu** (`AccountMenu.jsx`, top right, with the theme switch to its left):
-Profile opens `/admin/security` (titled "Profile": display name, password, two-step
-sign-in); Sign out asks first. Password change re-checks the current password, plus the
-authenticator code when two-step is on.
-
-Admin dark mode: blue *text* uses `accent-text` (light #1d4ed8, dark #60a5fa), not
-`accent-dark`, which stays for solid fills under `oncolor` text.
-
-## Dietitian and exercise notes, calendar (decisions 2026-10-02, built since)
-
-Built. Louie's answers, still the rules:
-
-- **Roles:** a **Dietitian** role only. No exercise role yet, and no name chosen for it.
-- **Logins:** the dietitian gets their own login and signs their own notes.
-- **Exercise notes:** **providers write it** until an exercise role exists; that role takes it
-  over later. **Dietitian notes** are written by the dietitian, the admin and the super admin
-  (`canWriteNote` in `roles.js`, mirrored by `canWriteType` in the rules).
-- **Calendar:** both real appointments (with times, Tampa time) and existing follow-up dates,
-  shown as "Follow-up due: …" until booked.
-- **What the dietitian can see:** everything a provider sees, same full dashboard (Louie,
-  2026-10-08); can't admit or decline applicants; writes dietitian notes only.
-
-## Admin changes (2026-10-08)
-
-Louie asked for a whole-admin audit and the fixes; the audit also covered the public site.
-
-- **Dashboard "Today" strip** (`dashboard/TodayStrip.jsx`): four cards (visits today, due this
-  week, needs a reply, pending applicants), each linking to its page, each loading on its own.
-  It counts the whole practice. The sample-data fallback and its notice were removed: with no real
-  intakes the pages are empty. Sample records only appear in demo mode.
-- **Patient chart layout:** the header carries allergies, current prescriptions and next
-  follow-ups. Notes: one **New note** menu (`NewNoteMenu.jsx`, one line under each type), "Your
-  drafts" pinned above "Signed", a preview line per note ("Nothing written yet" flags empty
-  drafts). Removed updates collapse to one line.
-- **Profile photos:** the Profile page photo is changeable (`lib/staffPhotos.js`). Stored in
-  Firestore `staffPhotos/{uid}` as a 256 px JPEG data URL (about 5 to 30 KB), not Firebase
-  Storage (a new bucket needs the paid plan). Shown on Profile, the account menu and Staff.
-  Demo mode keeps them in memory.
-- **Audit log** (`recordAuditEvent`): `at` is the server time, the rules require the signed-in
-  email and a known action. It now also records sign-in, sign-out (idle sign-out is separate),
-  password change, two-step on/off and opening the full applicant list (at most once per half
-  hour per tab, so it doesn't push real events out of view). Adding an action means
-  adding it to `AUDIT_ACTIONS`, the rules list **and** `ACTION_LABELS` in `Activity.jsx`;
-  `npm run check` catches the first two drifting. Older entries (an ISO string `at`) no longer show.
-- **Idle sign-out** (`lib/useIdleTimeout.js`): the last-activity time lives in localStorage and
-  is shared by every tab, so closing the tab no longer keeps someone signed in for days. A fresh
-  sign-in resets it. "Last sign in" and the audit trail count real sign-ins only.
-- **Dialogs** share `ui/useDialog.js`: Escape closes only the top dialog, focus moves only when it
-  opens, the page-scroll lock lasts until the last dialog closes. Confirm dialogs start on
-  Cancel. New dialogs should use the hook.
-- **Note editor:** typing is saved when you leave any way (browser Back, navigation) and the tab
-  asks before closing with unsaved text; Close waits at most 8 seconds for a save when offline.
-- Dates the admin calls "today" use Tampa time (`calendarMath.todayInTampa()`), including the
-  to-do, note defaults and Analytics days. New site events store Tampa's day.
-- Unknown `/admin/...` addresses go to the dashboard. The Help page has topics for the chart,
-  the dashboard and the changes above; keep them in step when a screen changes.
-
-## Admin changes (2026-10-19)
-
-From a whole-system audit (Louie asked for every finding fixed):
-
-- **Discharged:** "Make inactive" on Patients sets the intake status `discharged` (was
-  `declined`), shown and filterable on Applicants. `INTAKE_STATUSES` and the rules' status list
-  both carry it.
-- **Live role and name:** `AdminApp` follows `user/{uid}` (`watchAdminAccess`), so a rename or
-  role change applies at once instead of failing every write until the next sign-in.
-- **Rules tightened** (tests in `tests/firestore.rules.test.js`): a chart's `lastNote` must name
-  a note signed in the same batch; a draft on an inactive chart can't be edited or signed (only
-  deleted); "added by" on a staff record must be the adder's own name; an appointment must be
-  with a real staff record; `admittedBy` holds only uid, name and role.
-- Adding staff: if the staff record is refused, the new login deletes itself, so the email can
-  be added again. "Start their charts" on Patients shows only for admitters. Dashboard weeks are
-  Tampa weeks. Analytics loads the chosen range (30 days on open) and keeps the longest loaded.
-  The chart's Messages line listens to that patient's topics only.
-
-## Client portal (decisions 2026-10-02)
-
-Planned on top of the existing patient login (`/account`), with Elation set aside per Louie.
-Dr. Antonious's asks, the four sections, constraints and the notification email draft are in
-`docs/client-portal.md`. Louie's answers:
-
-- **Accounts are invite-only.** Staff admitting an applicant sends a "set up your client
-  portal" invite; the account is linked to that intake record. No public sign-up: "Create
-  account" leaves the site and "Log in" becomes "Patient portal".
-- **Start with the login only.** The sections wait. Agreed order for later: Updates → Track
-  progress → Messages; Membership waits on a billing system. **Since built** (`src/portal/`):
-  Overview, Progress (patients log their own weight), Messages, Updates and Membership
-  (`/account/membership`; payment is built, see "Billing: Stripe"). Open portal issues are
-  under "Known remaining gaps". Resume notes: `docs/client-portal.md` "Where we left off".
-- **Redesign (2026-11-05, built on the branch, not deployed)**, spec
-  `docs/superpowers/specs/2026-11-05-patient-portal-redesign-design.md`:
-  - **Own shell** (`portal/PortalShell.jsx`): no website header, footer or cookie banner;
-    `App.jsx` branches `/account` and `/portal/*` before the site frame. Sidebar on computers,
-    tab bar on phones. Routes: `/account`, `/account/progress`, `/account/messages`,
-    `/account/updates`, `/account/membership`, `/account/account`. New tokens in `index.css`:
-    `good`, `good-soft`, `wash`.
-  - **What's next card** (Overview): one card chosen by `portal/lib/whatsNext.js` in priority
-    order (rules and order in that file; `whatsNext.check.js` is in `npm run check`). A
-    "seen update" is remembered per device in localStorage (`corephia-portal-seen-update`).
-    No new-reply reminder (Louie, 2026-11-05): the Messages card below already shows new replies.
-  - **Dark mode** (2026-11-05): the admin switch and `.dark` scope, on `#patient-portal-root`
-    (`PortalShell`), choice in localStorage `corephia-portal-theme` (named in the privacy policy).
-    Portal-only overrides in `index.css` (`#patient-portal-root.dark`: accent-dark, good,
-    good-soft, wash); red and amber boxes use `[.dark_&]:` variants. Sidebar foot on computers,
-    top bar on phones. The sign-in panel (`LoginPanel`, portalled to body) stays light.
-  - **Visits:** patients see booked visits, never the staff note. Functions `mirrorVisit` and
-    `copyVisitsOnChartCreate` (`functions/index.js`; pure copy in `functions/visits.js`,
-    `visits.check.js` in `npm run check`) copy only `{ start, minutes, discipline, staffRole,
-    status, updatedAt }` to `patients/{id}/visits/{id}`. Visits and reminders show the staff
-    role only; Messages and Updates still show "Name (Role)". A staff member's role change does
-    not refresh existing copies until the appointment is next written. Deployed 2026-11-10.
-  - **Portal demo** (dev only): `/account?demoPortal=<scenario>` with Firebase unconfigured
-    (scenarios: unpaid, member, nothingBooked, ending, pastDue, manual, ended, closed).
-- Idea to check before relying on it: Firebase email-link sign-in sent from the admin, with
-  rules matching the signed-in email to an admitted intake record, would avoid needing a
-  server (Blaze plan + functions) for the invite.
-
-## Email (2026-11-04): Cloud Functions + Google Workspace, replacing EmailJS
-
-All email goes out from `CorePhia <info@corephia.com>`, replies to info@ (Google Workspace, MX
-`smtp.google.com`). A `noreply@` sender was tried and dropped (Louie, 2026-11-04); if the
-`noreply` alias, its "Send mail as" or its Gmail filter were set up, they are unused. Emails are sent
-through Cloud Functions in `functions/` (Node 22, `us-central1`, the Firestore location), with
-`nodemailer` over `smtp.gmail.com:465`. The info@ **app password** is the `SMTP_PASSWORD`
-secret in Google Secret Manager, never in a file. Firebase Extensions (Trigger Email) were
-rejected: Google shuts Extensions down on 2027-03-31.
-
-- **`sendMail`** sends each new `mail/{id}` document and writes back `state: sent|error`. The
-  browser queues with `queueMail()` (`src/lib/mail.js`, was `lib/emailjs.js`) and names only
-  `kind`, `to`, `chartId` (and `inviteId`). The `mail` block in `firestore.rules` checks that
-  the recipient is that chart's intake email, invites only by admitters for an invite that
-  exists, a linked patient may only queue the `staff` notice, and nobody reads mail from the
-  browser. This closed the audit's "invite email abuse" item. "Sent" in the admin now means
-  queued, not delivered: a delivery failure shows only on the `mail` doc and in the function logs.
-- **`notifyNewIntake`** fires on each new `intakeRecords` doc: an alert to `INTAKE_ALERT_TO`
-  (`providermd@corephia.com`, which the website no longer shows: taken off Contact and the
-  footer 2026-11-04; add `dr.dan@corephia.com` once that mailbox exists) and a receipt
-  to the patient's intake email ("Welcome to CorePhia!": the form was received, the care team is reviewing it, and if
-  it is a good fit we will reach out to book the first visit and send the portal invite). Neither carries anything from the answers.
-- **Wording** of all six emails (invite, update, message, staff notice, new-form alert,
-  receipt) is in `functions/emails.js`. Visitor-facing text says "form", not "intake" (Louie).
-  No sign-off line of our own: Google Workspace's "Append footer" (Gmail admin, Compliance)
-  adds the CorePhia logo, phone and site to everything info@ sends; update its number there
-  when the phone changes. The phone stays in the emails' "Questions?" line anyway. Each email
-  is a white card (border `#dde3ee`, 16px radius) on `paper-50`, with a 5px `brand` (#3b5bdb)
-  band on top and a Georgia headline (Fraunces doesn't load in Gmail), no "Hello," opener,
-  built from tables so Outlook lays it out too. No images or gradients (blocked or dropped). The invite
-  puts its button before the 7-day line. Keep the invite in step with `INVITE_EMAIL` in
-  `InviteDialog.jsx`. Preview: render `buildEmail()` to HTML; real test:
-  `cd functions; $env:SMTP_PASSWORD="..."; node send-test.js you@corephia.com` (sends all six to
-  one address, `[TEST]` subjects; not deployed).
-- **Setup state (2026-11-04):** Blaze plan and the Workspace BAA, app password, DKIM/SPF/DMARC
-  records at Namecheap (DNS is Namecheap BasicDNS; DKIM host `google._domainkey`) were in
-  progress with Louie. The Cloud Build role is granted and `sendMail` and `notifyNewIntake`
-  are live (seen 2026-11-06). Remove EmailJS now: its `VITE_EMAILJS_*` keys,
-  the always-true `*Configured` flags in `lib/mail.js` and the account afterwards.
+- **`notifyNewIntake`** is the only function left. On each new `intakeRecords` doc it sends an
+  alert to `INTAKE_ALERT_TO` (`providermd@corephia.com`; add `dr.dan@corephia.com` once that
+  mailbox exists) and a receipt to the patient's intake email ("Welcome to CorePhia!"). Neither
+  carries anything from the answers. Patient emails after admission come from Elation.
+- **Wording** of both emails is in `functions/emails.js`. Visitor-facing text says "form", not
+  "intake" (Louie). Google Workspace's "Append footer" adds the logo, phone and site; update
+  its number there when the phone changes. Each email is a white card on `paper-50` with a 5px
+  `brand` band and a Georgia headline, built from tables. Real test:
+  `cd functions; $env:SMTP_PASSWORD="..."; node send-test.js you@corephia.com`.
+- Remove EmailJS now: its `VITE_EMAILJS_*` keys and the account.
 
 ## Site analytics (2026-09-30)
 
@@ -664,8 +483,7 @@ and intake branches, so every route change passes through). **Never paste Google
   configured, and `.env.local` configures it. Don't touch the user's dev server. Start your own
   on another port from node, which can pass empty values (PowerShell drops an empty env var):
   `spawn('npx.cmd', ['vite','--port','5190','--strictPort'], { shell: true, env: { ...process.env, VITE_FIREBASE_API_KEY: '', VITE_FIREBASE_PROJECT_ID: '' } })`.
-  Then open `/admin?demoRole=superAdmin` (or `provider`, `dietitian`, `coAdmin`, `admin`), or the
-  portal at `/account?demoPortal=member` (also unpaid, nothingBooked, ending, pastDue, manual, ended, closed).
+  Then open `/admin?demoRole=superAdmin` (or `provider`, `dietitian`, `coAdmin`, `admin`).
   Demo data is in memory, so a reload resets it. Stop your server and run
   `git clean -fdq .playwright-mcp` afterwards (the folder also holds tracked files; never
   delete it whole).

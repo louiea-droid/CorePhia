@@ -105,3 +105,21 @@ is recorded in Elation, the Passport URL.
 - ~~Elation billing covers monthly memberships~~: confirmed (Louie, 2026-11-13). Stripe goes.
 - ~~Retention after send~~: 30 days, confirmed (Louie, 2026-11-13).
 - Google BAA still required before real patients (option A keeps intakes in Firestore).
+
+## Deploy checklist (Phase A, for Louie)
+
+Deploy the site, rules and functions together, from the merged branch:
+
+1. `firebase deploy --only hosting,firestore:rules,functions`. The CLI asks whether to delete
+   the functions no longer in the code: answer yes.
+2. If it did not ask: `firebase functions:delete sendMail startCheckout openBillingPortal
+   stripeWebhook onChartDischarged mirrorVisit copyVisitsOnChartCreate --region us-central1`.
+3. Delete the Stripe secrets: `firebase functions:secrets:destroy STRIPE_SECRET_KEY` and
+   `firebase functions:secrets:destroy STRIPE_WEBHOOK_SECRET`.
+4. Firestore console: delete the test data in `patients`, `appointments`, `todos`, `billing`,
+   `patientAccounts` and `mail` (the rules now refuse them from the browser anyway).
+5. Stripe sandbox: delete the webhook endpoint if one was made. The account can be closed later.
+6. After deploying: check `/account` shows "page not found", the admin sidebar shows Dashboard,
+   Applicants, Queries, Analytics, Staff, Activity, and a staff password reset still works.
+7. When Dr. Antonious sends the Patient Passport address, set `PATIENT_PORTAL_URL` in
+   `src/lib/siteContact.js` and deploy hosting.
