@@ -1,7 +1,6 @@
-// The words of every email the site sends. Edit here, then redeploy the
-// function. Health details never go in an email: each one only says something
-// is waiting in the portal. Keep the invite in step with INVITE_EMAIL in
-// src/admin/patients/InviteDialog.jsx (the preview staff see).
+// The words of every email the site sends: the new-form alert and the
+// receipt. Edit here, then redeploy the function. Health details never go in
+// an email. Patient emails after admission come from Elation (2026-11-13).
 const SITE = "https://corephia.com"
 // No sign-off line of our own: Google Workspace appends the CorePhia footer
 // (logo, phone, site) to everything info@ sends (Gmail admin, Compliance,
@@ -38,39 +37,6 @@ ${after.map(p).join("\n")}
 
 export function buildEmail(mail) {
   switch (mail.kind) {
-    case "invite":
-      return {
-        to: mail.to,
-        subject: "Set up your CorePhia patient portal",
-        ...layout({
-          title: "Your patient portal is ready",
-          paragraphs: [
-            "Use the button below to choose a password and sign in. Your CorePhia portal is where you'll find updates and messages from your care team.",
-          ],
-          button: { label: "Set up your portal", url: `${SITE}/portal/setup?c=${encodeURIComponent(mail.chartId)}&i=${encodeURIComponent(mail.inviteId)}` },
-          after: [`The link works for 7 days. Questions? Call us at ${PHONE} or email info@corephia.com.`],
-        }),
-      }
-    case "update":
-      return {
-        to: mail.to,
-        subject: "You have a new update from CorePhia",
-        ...layout({
-          title: "You have a new update",
-          paragraphs: ["Your CorePhia care team posted an update. Log in to your portal to read it."],
-          button: { label: "Open your portal", url: `${SITE}/account/updates` },
-        }),
-      }
-    case "message":
-      return {
-        to: mail.to,
-        subject: "You have a new message from CorePhia",
-        ...layout({
-          title: "You have a new message",
-          paragraphs: ["Your CorePhia care team sent you a message. Log in to your portal to read it."],
-          button: { label: "Open your portal", url: `${SITE}/account/messages` },
-        }),
-      }
     case "newIntake":
       return {
         to: INTAKE_ALERT_TO,
@@ -98,33 +64,6 @@ export function buildEmail(mail) {
             "For your privacy, this email doesn't include any of your answers.",
             `Questions? Call us at ${PHONE} or email info@corephia.com.`,
           ],
-        }),
-      }
-    case "staff":
-      return {
-        to: "info@corephia.com",
-        subject: "New patient message",
-        ...layout({
-          title: "New patient message",
-          paragraphs: ["A patient sent a message in the CorePhia portal. Log in to the admin to read it."],
-          button: { label: "Open Messages", url: `${SITE}/admin/messages` },
-        }),
-      }
-    // Sent when staff discharge a patient whose subscription is live.
-    case "membershipCancelled":
-      return {
-        to: mail.to,
-        subject: "Your CorePhia membership has been cancelled",
-        ...layout({
-          title: "Your membership has been cancelled",
-          paragraphs: [
-            "Your CorePhia membership has been cancelled. You won't be charged again.",
-            // endedNow: cancelled at once (a past-due card), so no time is left.
-            mail.endedNow
-              ? "Your membership has ended."
-              : `Your membership stays active until ${new Date(mail.endsOn).toLocaleDateString("en-US", { timeZone: "America/New_York", dateStyle: "long" })}.`,
-          ],
-          after: [`Questions? Call us at ${PHONE} or email info@corephia.com.`],
         }),
       }
     default:
