@@ -25,7 +25,7 @@ import {
 } from "firebase/firestore"
 import { config, db, INTAKE_COLLECTION, sendStaffResetEmail, USERS_COLLECTION, usingSeedData } from "../lib/firebase"
 import { visitEntryFor } from "../../lib/progressMath"
-import { todayInTampa } from "../calendar/calendarMath"
+import { todayInTampa } from "../lib/calendarMath"
 import { formPlanFrom } from "./chartMath"
 import { tiers } from "../../data/pricingTiers"
 

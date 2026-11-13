@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { ChevronDownIcon } from "../../components/icons"
 import { usePopupPlacement } from "../../components/usePopupPlacement"
-import { periodOf, timesIn } from "./calendarMath"
+import { periodOf, timesIn } from "../lib/calendarMath"
 
 // Same trigger and option look as components/Select, so the booking dialog's
 // fields match.

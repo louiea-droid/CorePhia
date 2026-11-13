@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import AppointmentDialog from "./AppointmentDialog"
 import { loadAppointments } from "./appointmentStore"
-import { addDays, fromTampa, lanes, monthDays, monthRange, slotTime, tampaParts, todayInTampa, unbookedFollowUps, weekRange } from "./calendarMath"
+import { addDays, fromTampa, lanes, monthDays, monthRange, slotTime, tampaParts, todayInTampa, unbookedFollowUps, weekRange } from "../lib/calendarMath"
 import { nextFollowUps } from "../patients/chartMath"
 import { loadActiveChartNotes, loadStaff } from "../patients/chartStore"
 import { DISCIPLINE_LABELS } from "../patients/noteUi"

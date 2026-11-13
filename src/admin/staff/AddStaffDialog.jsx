@@ -1,14 +1,14 @@
 import { useState } from "react"
 import Select from "../../components/Select"
 import { AUDIT_ACTIONS, USERS_COLLECTION, recordAuditEvent } from "../lib/firebase"
-import { addStaff } from "../patients/chartStore"
-import { inputClass, labelClass } from "../patients/noteUi"
+import { addStaff } from "./staffStore"
+import { inputClass, labelClass } from "../ui/formUi"
 import Modal from "../ui/Modal"
 import { ROLE_LABELS, canNameStaff, grantableRoles } from "./roles"
 import { staffErrorMessage } from "./staffMath"
 
 // Add a staff member: name, email, role. They get an email to set their own
-// password (chartStore.addStaff).
+// password (staffStore.addStaff).
 export default function AddStaffDialog({ actor, onClose, onAdded }) {
   const grantable = grantableRoles(actor.role)
   const [form, setForm] = useState({ name: "", email: "", role: grantable[0] ?? "provider" })

@@ -1,4 +1,4 @@
-import { addDays, fromTampa, todayInTampa, weekDays } from "../calendar/calendarMath.js"
+import { addDays, fromTampa, todayInTampa, weekDays } from "../lib/calendarMath.js"
 
 const DAY = 86400000
 

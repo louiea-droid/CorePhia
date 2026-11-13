@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useNavigate, useOutletContext } from "react-router-dom"
-import { tampaParts } from "../admin/calendar/calendarMath"
+import { tampaParts } from "../admin/lib/calendarMath"
 import CareTeamCard from "./CareTeamCard"
 import { listenMyVisits } from "./lib/visitStore"
 import { seenUpdateId, whatsNext } from "./lib/whatsNext"

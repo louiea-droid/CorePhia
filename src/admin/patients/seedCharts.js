@@ -5,7 +5,7 @@
 // prescription due for renewal inside a week, so every part of the chart
 // page has something real-looking to show.
 
-import { addDays, changeFor, fromTampa, todayInTampa } from "../calendar/calendarMath"
+import { addDays, changeFor, fromTampa, todayInTampa } from "../lib/calendarMath"
 
 const DAY = 86400000
 const isoDay = (ms) => new Date(ms).toLocaleDateString("en-CA")

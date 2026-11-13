@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import Select from "../../components/Select"
 import ConfirmDialog from "../ui/ConfirmDialog"
 import { PAGE_SIZE_OPTIONS } from "../lib/constants"
@@ -7,10 +7,6 @@ import PageHeader from "../layout/PageHeader"
 import Pagination from "../ui/Pagination"
 import ApplicantModal from "./ApplicantModal"
 import ApplicantsTable from "./ApplicantsTable"
-import AppointmentDialog from "../calendar/AppointmentDialog"
-import { loadAppointmentsFor } from "../calendar/appointmentStore"
-import { asDate } from "../patients/chartMath"
-import { loadCharts, setApplicantStatus } from "../patients/chartStore"
 import { ApplicantsSkeleton } from "../ui/Skeleton"
 import { canAdmit } from "../staff/roles"
 import { useIntakeRecords } from "./useIntakeRecords"
@@ -33,13 +29,9 @@ function readStoredPageSize() {
   }
 }
 
-export default function Applicants({ role, actor }) {
-  const { records, error, removeRecord, patchRecord, patchLocal } = useIntakeRecords()
+export default function Applicants({ role }) {
+  const { records, error, removeRecord, patchRecord } = useIntakeRecords()
   const [selectedRecord, setSelectedRecord] = useState(null)
-  const [booking, setBooking] = useState(null) // prefill for a new appointment, or null
-  // { id, visit }: the next booked visit for the record with that id, so a
-  // stale answer for a previously opened record is never shown.
-  const [nextVisitFor, setNextVisitFor] = useState(null)
   const [pendingDelete, setPendingDelete] = useState(null)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState(null)
@@ -54,42 +46,9 @@ export default function Applicants({ role, actor }) {
   // dietitian can do it (roles.canAdmit; firestore.rules isAdmitter).
   const canReview = canAdmit(role)
 
-  // Charts by id, for the membership badge on admitted rows. Best effort: without them the cell shows a dash.
-  const [charts, setCharts] = useState(null)
-  useEffect(() => {
-    let active = true
-    loadCharts()
-      .then((list) => active && setCharts(new Map(list.map((chart) => [chart.id, chart]))))
-      .catch(() => {})
-    return () => {
-      active = false
-    }
-  }, [])
-
-  const selectedId = selectedRecord?.id
-  useEffect(() => {
-    if (!selectedId) return
-    let active = true
-    loadAppointmentsFor(selectedId)
-      .then(
-        (list) =>
-          active &&
-          setNextVisitFor({
-            id: selectedId,
-            visit: list.find((entry) => entry.status === "scheduled" && asDate(entry.start) >= new Date()) ?? null,
-          }),
-      )
-      .catch(() => {})
-    return () => {
-      active = false
-    }
-  }, [selectedId])
-
-  // Admitting starts (or reactivates) the patient's chart; moving away from
-  // admitted marks it inactive. Both happen with the status in one batch.
+  // Admitting only sets the status: the patient's chart lives in Elation.
   const updateStatus = async (record, status) => {
-    await setApplicantStatus(record, status, actor)
-    patchLocal(record.id, { status })
+    await patchRecord(record.id, { status })
     recordAuditEvent({
       action: AUDIT_ACTIONS.updateIntakeStatus,
       targetCollection: INTAKE_COLLECTION,
@@ -257,7 +216,6 @@ export default function Applicants({ role, actor }) {
                   actually renders instead of padding to 100 blank rows. */}
               <ApplicantsTable
                 records={pageRecords}
-                charts={charts}
                 onSelect={setSelectedRecord}
                 minRows={pageSize === 10 ? 10 : 0}
                 rankOffset={(currentPage - 1) * pageSize}
@@ -280,13 +238,6 @@ export default function Applicants({ role, actor }) {
 
       <ApplicantModal
         record={selectedRecord}
-        nextVisit={nextVisitFor && nextVisitFor.id === selectedRecord?.id ? nextVisitFor.visit : null}
-        onBook={(record) =>
-          setBooking({
-            intakeId: record.id,
-            patientName: `${record.demographics?.firstName ?? ""} ${record.demographics?.lastName ?? ""}`.trim(),
-          })
-        }
         onClose={() => setSelectedRecord(null)}
         canDelete={canDelete}
         onRequestDelete={setPendingDelete}
@@ -295,25 +246,6 @@ export default function Applicants({ role, actor }) {
         onSaveNote={saveNote}
         audit
       />
-
-      {booking && (
-        <AppointmentDialog
-          appointment={null}
-          prefill={booking}
-          actor={actor}
-          onClose={() => setBooking(null)}
-          onSaved={(saved) => {
-            setBooking(null)
-            // The next visit is the earlier of the one already shown and the
-            // one just booked, not simply the newest booking.
-            setNextVisitFor((current) =>
-              current?.id === saved.intakeId && current.visit && asDate(current.visit.start) < asDate(saved.start)
-                ? current
-                : { id: saved.intakeId, visit: saved },
-            )
-          }}
-        />
-      )}
 
       <ConfirmDialog
         open={Boolean(pendingDelete)}

@@ -1,4 +1,3 @@
-import MembershipBadge from "../patients/MembershipBadge"
 import { goalBucket } from "../analytics/analytics"
 import { formatClockTime, formatRelativeTime, useRelativeTimeClock } from "../lib/relativeTime"
 
@@ -18,7 +17,7 @@ const STATUS_BADGE = {
 // came in visibly reads as new. rankOffset is how many rows are ahead of this
 // page in the full sorted list — 0 on page 1, pageSize on page 2, and so on —
 // so the cutoff is correct regardless of which page is showing.
-export default function ApplicantsTable({ records, charts, onSelect, minRows = 0, rankOffset = 0 }) {
+export default function ApplicantsTable({ records, onSelect, minRows = 0, rankOffset = 0 }) {
   const fillerRowCount = Math.max(0, minRows - records.length)
   const anyRecentOnPage = records.some((_, index) => rankOffset + index < 10)
   const now = useRelativeTimeClock(anyRecentOnPage)
@@ -48,9 +47,6 @@ export default function ApplicantsTable({ records, charts, onSelect, minRows = 0
             </th>
             <th scope="col" className="pb-2 font-medium">
               Status
-            </th>
-            <th scope="col" className="pb-2 font-medium">
-              Membership
             </th>
             <th scope="col" className="pb-2 font-medium">
               Goal
@@ -92,9 +88,6 @@ export default function ApplicantsTable({ records, charts, onSelect, minRows = 0
                   >
                     {record.status ?? "pending"}
                   </span>
-                </td>
-                <td className="py-4">
-                  {record.status === "admitted" && charts?.has(record.id) ? <MembershipBadge chart={charts.get(record.id)} compact /> : <span className="text-ink-950/60">—</span>}
                 </td>
                 <td className="truncate py-4 text-ink-950/60">{goalBucket(record).replace("Not sure, I just need to lose weight", "Not sure") || "—"}</td>
                 <td className="truncate py-4 text-ink-950/60">{record.visit?.reason || "—"}</td>

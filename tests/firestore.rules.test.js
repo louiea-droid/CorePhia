@@ -736,6 +736,15 @@ describe("portal invites", () => {
   })
 })
 
+describe("applicant status", () => {
+  // Admitting is a status change only since Elation (2026-11-13): no chart is written.
+  test("an admitter sets the status with no chart write", async () => {
+    await assertSucceeds(updateDoc(doc(as("provider"), "intakeRecords", "pending1"), { status: "admitted" }))
+    await assertSucceeds(updateDoc(doc(as("admin"), "intakeRecords", "pending1"), { status: "declined" }))
+    await assertFails(updateDoc(doc(as("dietitian"), "intakeRecords", "pending1"), { status: "admitted" }))
+  })
+})
+
 describe("deleting an intake", () => {
   test("the super admin deletes an intake only while it has no chart", async () => {
     await assertFails(deleteDoc(doc(as("super"), "intakeRecords", "chart1")))

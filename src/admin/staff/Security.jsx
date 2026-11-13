@@ -14,7 +14,7 @@ import {
   updateAdminPassword,
 } from "../lib/firebase"
 import { EyeIcon, EyeOffIcon, PencilIcon } from "../ui/icons"
-import { inputClass, labelClass } from "../patients/noteUi"
+import { inputClass, labelClass } from "../ui/formUi"
 import PageHeader from "../layout/PageHeader"
 import { ROLE_LABELS } from "./roles"
 

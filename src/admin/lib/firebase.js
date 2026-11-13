@@ -32,7 +32,7 @@ import {
 } from "firebase/firestore"
 import { isClinicalRole } from "../staff/roles"
 import { markAdminActivity } from "./useIdleTimeout"
-import { addDays, todayInTampa } from "../calendar/calendarMath"
+import { addDays, todayInTampa } from "./calendarMath"
 
 const config = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,

@@ -1,6 +1,6 @@
 // The portal Overview's "What's next" card: the most useful reminder first, then up to two more.
 // New replies are not a reminder: the Messages card just below already marks them (Louie, 2026-11-05).
-import { tampaParts, TIME_ZONE } from "../../admin/calendar/calendarMath.js"
+import { tampaParts, TIME_ZONE } from "../../admin/lib/calendarMath.js"
 
 const DAY = 86400000
 const WEIGH_IN_AFTER_DAYS = 7

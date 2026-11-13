@@ -6,7 +6,7 @@
 // pay: back on the portal, the chart turns into a member a few seconds later,
 // the way Stripe's notice would land.
 
-import { addDays, fromTampa, tampaParts } from "../../admin/calendar/calendarMath.js"
+import { addDays, fromTampa, tampaParts } from "../../admin/lib/calendarMath.js"
 
 const DAY = 86400000
 const now = Date.now()

@@ -1,7 +1,15 @@
 // Calendar arithmetic, all in Tampa time whatever the viewer's computer is
 // set to. Pure (no React, no Firebase) so calendarMath.check.js runs it
 // under plain node. Calendar days are "YYYY-MM-DD" strings throughout.
-import { asDate, daysFrom } from "../patients/chartMath.js"
+import { asDate } from "../ui/formUi.js"
+
+// Calendar days from one YYYY-MM-DD to another, negative when `to` is earlier.
+// Date.UTC so a DST change in between doesn't shave off an hour and a day.
+const utcDay = (iso) => {
+  const [year, month, day] = iso.split("-").map(Number)
+  return Date.UTC(year, month - 1, day)
+}
+export const daysFrom = (from, to) => Math.round((utcDay(to) - utcDay(from)) / 86_400_000)
 
 export const TIME_ZONE = "America/New_York"
 

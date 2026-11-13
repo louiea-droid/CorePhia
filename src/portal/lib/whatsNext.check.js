@@ -1,6 +1,6 @@
 // Self-check for whatsNext.js: `npm run check`. Plain node:assert.
 import assert from "node:assert/strict"
-import { fromTampa } from "../../admin/calendar/calendarMath.js"
+import { fromTampa } from "../../admin/lib/calendarMath.js"
 import { whatsNext } from "./whatsNext.js"
 
 const at = (day, time) => fromTampa(day, time)
