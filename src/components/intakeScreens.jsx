@@ -1,9 +1,9 @@
 // This is a data module (SCREENS, PLANS) whose helpers happen to be JSX, not a
 // component module, so fast refresh reloading the page when it changes is fine.
 /* oxlint-disable react/only-export-components */
-import { PLANS_SHOWN } from "../data/pricingTiers"
+import { PLANS_SHOWN, PRICES_ANNOUNCED, tiers } from "../data/pricingTiers"
 import DatePicker from "./DatePicker"
-import { CheckCircleIcon } from "./icons"
+import { CheckCircleIcon, LockIcon } from "./icons"
 import Select from "./Select"
 
 // A `pattern` that needs at least one character that isn't a space.
@@ -24,7 +24,9 @@ function adultBirthdayCutoff(today) {
   return `${Number(year) - 18}-${month}-${month === "02" && day === "29" ? "28" : day}`
 }
 
-export const PLANS = ["Core", "Core Complete"]
+export const PLANS = tiers.map((tier) => tier.name)
+// Where each plan's membership is set up (Elation), once the form is saved.
+export const enrollUrlFor = (plan) => tiers.find((tier) => tier.name === plan)?.enrollUrl ?? ""
 
 // The four programs, in Dr. Antonious's words (CLAUDE.md, 2026-09-30).
 const FOCUS_OPTIONS = ["Medical care", "Dietitian services", "Comprehensive Exercise Plan", "Follow-ups", "Not sure yet"]
@@ -173,6 +175,74 @@ function OptionCards({ type, name, options, required, columns = 1 }) {
 }
 
 const ChoiceCards = (props) => <OptionCards type="radio" required {...props} />
+
+// The plan step: same covering-radio pattern as OptionCards (so tapping moves
+// on and "please pick one" anchors to the card), with room for the price and
+// what each plan includes. Selection: thicker accent border plus a filled dot.
+function PlanCards({ defaultValue }) {
+  return (
+    <div className="space-y-3">
+      {tiers.map((tier) => {
+        const price = PRICES_ANNOUNCED ? `$${tier.price} a month` : "price coming soon"
+        return (
+          <label
+            key={tier.name}
+            className="group relative block cursor-pointer rounded-2xl border border-ink-950/10 bg-white p-5 transition-colors duration-200 ease-out-smooth hover:border-ink-950/30 has-checked:border-accent-dark has-checked:ring-1 has-checked:ring-accent-dark has-checked:ring-inset has-focus-visible:ring-2 has-focus-visible:ring-accent/60 has-focus-visible:ring-offset-2 has-focus-visible:ring-offset-paper-50 sm:p-6"
+          >
+            <input
+              type="radio"
+              name="plan"
+              value={tier.name}
+              required
+              defaultChecked={defaultValue === tier.name}
+              aria-label={`${tier.name}, ${price}`}
+              className="absolute inset-0 size-full cursor-pointer appearance-none rounded-2xl outline-none"
+            />
+            <span className="flex items-start justify-between gap-4">
+              <span>
+                <span className="block font-serif text-2xl leading-tight text-ink-950">{tier.name}</span>
+                <span className="mt-1 block text-ink-950">
+                  {PRICES_ANNOUNCED ? (
+                    <>
+                      <span className="font-serif text-3xl">${tier.price}</span>
+                      <span className="text-sm text-ink-950/70"> a month</span>
+                    </>
+                  ) : (
+                    <span className="text-sm text-ink-950/70">Price coming soon</span>
+                  )}
+                </span>
+              </span>
+              <span
+                aria-hidden="true"
+                className="mt-1 flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-ink-950/25 transition-colors duration-200 group-has-checked:border-accent-dark"
+              >
+                <span className="size-3 rounded-full bg-accent-dark opacity-0 transition-opacity duration-200 group-has-checked:opacity-100" />
+              </span>
+            </span>
+            <span className="mt-3 block text-sm text-ink-950/70">{tier.description}</span>
+            <span className="mt-4 block border-t border-ink-950/10 pt-4">
+              {tier.highlightsLead && (
+                <span className="mb-2 block text-sm font-medium text-ink-950">{tier.highlightsLead}:</span>
+              )}
+              <span className="block space-y-2">
+                {tier.highlights.map((item) => (
+                  <span key={item} className="flex items-start gap-2.5 text-sm text-ink-950/80">
+                    <CheckCircleIcon className="mt-0.5 size-4 shrink-0 text-accent-dark" />
+                    {item}
+                  </span>
+                ))}
+              </span>
+            </span>
+          </label>
+        )
+      })}
+      <p className="flex items-start gap-2 pt-1 text-sm text-ink-950/70">
+        <LockIcon className="mt-0.5 size-4 shrink-0" />
+        You're only charged once our provider accepts you.
+      </p>
+    </div>
+  )
+}
 const CheckCards = (props) => <OptionCards type="checkbox" required={false} {...props} />
 
 const lbs = (value) => (value ? `${value} lbs` : "")
@@ -251,7 +321,7 @@ const REVIEW_SECTIONS = [
   {
     title: "Visit",
     rows: (a) => [
-      ...(PLANS_SHOWN ? [["Plan", a.plan || "Not sure yet", ["visit"]]] : []),
+      ...(PLANS_SHOWN ? [["Plan", a.plan, ["plan"]]] : []),
       ["Focus", a.appointmentType, ["visit"]],
       ["Preferred date", a.preferredDate, ["visit"]],
       ["Preferred time", a.preferredTime, ["visit"]],
@@ -617,7 +687,7 @@ export const SCREENS = [
   {
     id: "visit",
     question: "Let's plan your first visit.",
-    render: ({ selectedPlan, today }) => (
+    render: ({ today }) => (
       <>
         <div>
           <p className={labelClass}>
@@ -626,17 +696,6 @@ export const SCREENS = [
           <ChoiceCards name="appointmentType" options={FOCUS_OPTIONS} />
         </div>
         <div className="grid gap-5 sm:grid-cols-2">
-          {/* Follows PLANS_SHOWN in data/pricingTiers.js. */}
-          {PLANS_SHOWN && (
-            <Field label="Membership plan">
-              <Select
-                name="plan"
-                ariaLabel="Membership plan"
-                defaultValue={selectedPlan}
-                options={[{ value: "", label: "I'm not sure yet" }, ...PLANS.map((plan) => ({ value: plan, label: plan }))]}
-              />
-            </Field>
-          )}
           <Field label="Preferred time" required>
             <Select
               name="preferredTime"
@@ -655,6 +714,17 @@ export const SCREENS = [
         </Field>
       </>
     ),
+  },
+  {
+    // The last question (Louie, 2026-11-13): after the form is saved, the
+    // patient goes to this plan's Elation sign-up (enrollUrlFor). No "not
+    // sure" option. ?plan= from the Membership page preselects it.
+    id: "plan",
+    question: "Choose your membership plan.",
+    hint: "After you send your form, you'll set up your membership on our secure sign-up page.",
+    showIf: () => PLANS_SHOWN,
+    autoAdvance: "plan",
+    render: ({ selectedPlan }) => <PlanCards defaultValue={selectedPlan} />,
   },
   {
     id: "review",

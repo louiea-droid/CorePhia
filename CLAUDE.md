@@ -231,7 +231,9 @@ staff, activity, help; charts, calendar, to-do and the patient portal were retir
   links to, opening in a new tab) in `pages/Legal.jsx`, linked from the footer. They describe
   what the system really does (intake fields, opt-in visit counts, Elation Health (record,
   patient portal, billing), Google Firebase and Google Workspace as service providers, Google Fonts, server logs). **Change the system, change these.**
-  Still open for the client: the legal entity name, the cancellation and refund policy (the
+  Legal entity: **CorePhia Health PLLC** (from the Elation sign-up pages, 2026-11-13) in the
+  privacy policy, Terms, notice, footer copyright, JSON-LD `legalName` and `llms.txt`.
+  Still open for the client: the cancellation and refund policy (the
   Terms say it is confirmed in writing at enrollment), and more licensed states when there are any.
 
 ### Audit 2026-10-21
@@ -345,8 +347,18 @@ into Core on 2026-11-02 (Louie). `/pricing` redirects there. Two switches in
 preselect) and `PRICES_ANNOUNCED` (false = "Coming soon"). Plans and features are still
 placeholders awaiting the client, and must match what is set up in Elation billing. The Core
 tier's "Prescription medication" feature and the "Medication Available" badge are approved
-(2026-10-14). Payment copy (FAQ "How do I pay?", Terms "Cost and payment", `llms.txt`): billed
-monthly by card after acceptance; to cancel, call or email us. Cancellation and refund terms
+(2026-10-14). **Plan step (2026-11-13, Louie):** the intake's last question before the review is
+"Choose your membership plan" (`PlanCards` in `intakeScreens.jsx`: price, description and the
+tier's `highlights` from `pricingTiers.js`, never a medication line; required, no "not sure";
+`?plan=` preselects; "You're only charged once our provider accepts you"). Once the
+form is saved, the patient is sent to that plan's Elation sign-up (`enrollUrl` in
+`pricingTiers.js`) to add a card before a provider has reviewed the form (Louie chose this).
+Payment copy (FAQ "How do I pay?", Terms "Intake and enrollment" and "Cost and payment",
+`llms.txt`) says so. Elation's page (checked 2026-11-13) says "Charges begin upon membership
+activation by the practice", so the card is saved but charged only once staff activate the
+membership after acceptance; a declined patient is never charged. The page shows "COREPHIA
+HEALTH PLLC", now used as the legal entity name (see Legal pages).
+To cancel, call or email us. Cancellation and refund terms
 are still "confirmed in writing at enrollment".
 
 ## Admin (what is left after Elation)
@@ -489,6 +501,8 @@ and intake branches, so every route change passes through). **Never paste Google
   Demo data is in memory, so a reload resets it. Stop your server and run
   `git clean -fdq .playwright-mcp` afterwards (the folder also holds tracked files; never
   delete it whole).
+- **Intake screens are `relative z-10`**: the slide-in animation makes each a stacking context,
+  so without it the Back button's arrow painted over open date and select popups (2026-11-13).
 - **The intake keeps every screen in the DOM** (inactive ones hidden), so tests that read the
   "current screen" must pick the visible one. Leaving a half-filled intake raises a
   `beforeunload` prompt, which blocks tool calls until it is dismissed.

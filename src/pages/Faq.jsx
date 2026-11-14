@@ -87,7 +87,7 @@ const faqGroups = [
       },
       {
         q: "How do I pay?",
-        a: "After you're accepted, we set up your membership and you pay by card. It's billed monthly. To cancel, call or email us.",
+        a: "You choose your plan at the end of the intake form. Once you send the form, we take you to our secure sign-up page, where you add a card. You aren't charged then: billing starts only once our provider accepts you and we activate your membership. After that it's billed monthly and renews automatically until you cancel. To cancel, call or email us.",
       },
       {
         // Florida only for now (Louie, 2026-10-13). Add states here, in the Terms

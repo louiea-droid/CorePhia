@@ -25,7 +25,7 @@ const privacy = [
   {
     h: "Who this covers",
     body: [
-      "This policy is from CorePhia, a weight loss program based in Tampa, Florida. It covers this website, the patient intake, the contact form, and the patient portal we provide through Elation Health. It applies to visitors, people who apply, and patients.",
+      "This policy is from CorePhia Health PLLC (\"CorePhia\"), a weight loss program based in Tampa, Florida. It covers this website, the patient intake, the contact form, and the patient portal we provide through Elation Health. It applies to visitors, people who apply, and patients.",
       "Information you give us as a patient is also covered by our Notice of Privacy Practices (linked at the end of this page), which explains your rights over your health records. If anything in that notice is more protective than this page, the notice controls for your health information.",
     ],
   },
@@ -143,7 +143,7 @@ const terms = [
   {
     h: "Agreeing to these terms",
     body: [
-      "These terms govern your use of the CorePhia website, patient intake, contact form, and patient portal. By using them, you agree to these terms and to our privacy policy. If you do not agree, please do not use them.",
+      "These terms are between you and CorePhia Health PLLC (\"CorePhia\", \"we\" or \"us\"). They govern your use of the CorePhia website, patient intake, contact form, and patient portal. By using them, you agree to these terms and to our privacy policy. If you do not agree, please do not use them.",
     ],
   },
   {
@@ -180,7 +180,7 @@ const terms = [
   {
     h: "Intake and enrollment",
     body: [
-      "Submitting an intake is a request to be considered. It is not enrollment and it is not a promise of treatment. After a provider reviews it, our team will contact you about next steps. We can accept or decline any request.",
+      "Submitting an intake is a request to be considered. It is not a promise of treatment. At the end of the intake you choose a plan and add a card on our secure sign-up page. A provider then reviews your intake, and our team will contact you about next steps. We can accept or decline any request. If we decline, your membership is not activated and your card is not charged.",
     ],
   },
   {
@@ -188,7 +188,7 @@ const terms = [
     body: [
       [
         "The program is cash pay. We do not bill insurance, and we do not promise that any insurer or plan will reimburse you.",
-        "Memberships are billed monthly by card. Your membership starts when your first payment goes through, and it renews each month until you cancel. To cancel, call or email us.",
+        "Memberships are billed monthly by card, through a secure sign-up page run by our medical records provider. Your card is not charged when you sign up. Your membership starts, and the first charge is made, when we activate it after you are accepted. It renews automatically each month until you cancel. To cancel, call or email us.",
         "The plans and prices on the Membership page are what we offer now. A price can change, but not for a membership you have already started, unless we tell you first. The price and terms that apply to you are confirmed when you enroll.",
         "Cancellation and refund terms are confirmed in writing when you enroll.",
       ],
@@ -267,7 +267,7 @@ const privacyPractices = [
     h: "Why you are getting this notice",
     body: [
       "This notice describes how medical information about you may be used and disclosed and how you can get access to this information. Please review it carefully.",
-      "It applies to the health information CorePhia creates or receives about you as a patient: in the intake, your chart, the patient portal, and our messages with you.",
+      "It applies to the health information CorePhia Health PLLC (\"CorePhia\") creates or receives about you as a patient: in the intake, your chart, the patient portal, and our messages with you.",
     ],
   },
   {

@@ -159,7 +159,7 @@ export default function Footer() {
             </p> */}
            
             <p className="mt-2">
-              &copy; {new Date().getFullYear()} CorePhia. All rights reserved.
+              &copy; {new Date().getFullYear()} CorePhia Health PLLC. All rights reserved.
             </p>
           </div>
         </div>

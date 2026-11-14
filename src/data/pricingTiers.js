@@ -18,6 +18,18 @@ export const tiers = [
     icon: LeafIcon,
     description: "Essential support to kickstart your journey, with nutrition and workout guidance.",
     price: "299",
+    // Elation membership sign-up; the intake sends the patient here after the
+    // form is saved (Louie, 2026-11-13).
+    enrollUrl: "https://app.elationemr.com/membership/1449583043739652/1451540339032515",
+    // The few lines the intake's plan cards show (taken from features). No
+    // medication line there: that step leads straight to payment, and the
+    // program, not a medication, is what's paid for (CLAUDE.md).
+    highlights: [
+      "Physician consultation & medical evaluation",
+      "Personalized nutrition guidance",
+      "Workout & lifestyle recommendations",
+      "Monthly progress review with provider",
+    ],
     popular: false,
     features: [
       "Physician consultation & medical evaluation",
@@ -36,6 +48,14 @@ export const tiers = [
     icon: CrownIcon,
     description: "Our most hands-on plan, with more time from your provider, dietitian and trainer.",
     price: "349",
+    enrollUrl: "https://app.elationemr.com/membership/1449583043739652/1451543320199619",
+    highlightsLead: "Everything in Core, plus",
+    highlights: [
+      "Custom meal plans from your dietitian",
+      "1:1 exercise plan with certified trainer check-ins",
+      "Advanced lab testing (twice a year)",
+      "Extra provider visits between your monthly reviews",
+    ],
     popular: false,
     // Visit counts and trainer frequency still to be confirmed by the client
     // (2026-11-02); "Unlimited provider access" and "VIP experience" removed.

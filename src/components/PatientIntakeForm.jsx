@@ -6,7 +6,7 @@ import { SUPPORT_PHONE } from "../lib/siteContact"
 import { trackEvent } from "../lib/track"
 import { PLANS_SHOWN } from "../data/pricingTiers"
 import { ArrowRightIcon, CheckCircleIcon, ChevronRightIcon, CloseIcon } from "./icons"
-import { EXACT, PLANS, SCREENS } from "./intakeScreens"
+import { EXACT, PLANS, SCREENS, enrollUrlFor } from "./intakeScreens"
 import { SET_VALUE_EVENT } from "./Select"
 
 const MULTI_FIELDS = new Set(["conditions", "familyHistory"])
@@ -467,6 +467,9 @@ export default function PatientIntakeForm() {
   // Offline, Firestore holds the write until the connection is back and the
   // send never fails, so "Sending…" would sit there with no word of why.
   const [slowSend, setSlowSend] = useState(false)
+  // The chosen plan's Elation sign-up, where the patient goes once the form
+  // is saved.
+  const [enrollUrl, setEnrollUrl] = useState("")
   const [splashDone, setSplashDone] = useState(splashSeen)
   useEffect(() => {
     markSplashSeen(true)
@@ -515,6 +518,12 @@ export default function PatientIntakeForm() {
     window.addEventListener("beforeunload", warn)
     return () => window.removeEventListener("beforeunload", warn)
   }, [dirty, status])
+
+  // Saved: on to the plan's sign-up. In an effect, not in handleSubmit, so
+  // the beforeunload warning above is already gone when the page changes.
+  useEffect(() => {
+    if (status === "sent" && enrollUrl) window.location.assign(enrollUrl)
+  }, [status, enrollUrl])
 
   // On every screen change: back to the top, and focus the new question so a
   // screen reader announces it. Skipped on first load, where the page itself
@@ -695,6 +704,7 @@ export default function PatientIntakeForm() {
     const slowTimer = setTimeout(() => setSlowSend(true), SLOW_SEND_MS)
     try {
       await submitIntakeRecord(record)
+      setEnrollUrl(enrollUrlFor(record.visit.membershipPlan))
       setStatus("sent")
     } catch (cause) {
       // Never fall through to the confirmation screen on a failure — it tells
@@ -720,16 +730,33 @@ export default function PatientIntakeForm() {
           <div className="flex flex-col items-center rounded-3xl bg-paper-100 p-10 text-center">
             <CheckCircleIcon className="size-14 text-accent-dark" />
             <h1 className="mt-5 font-serif text-3xl text-ink-950">Request received</h1>
-            <p className="mt-3 max-w-md text-ink-950/70">
-              Thanks for filling out your intake form. A member of our care team will reach out within one business
-              day to confirm your appointment.
-            </p>
-            <Link
-              to="/"
-              className="mt-6 rounded-full bg-ink-950 px-6 py-3 text-sm font-semibold text-paper-50 transition-colors duration-200 ease-out-smooth hover:bg-ink-900"
-            >
-              Back to home
-            </Link>
+            {enrollUrl ? (
+              <>
+                <p role="status" className="mt-3 max-w-md text-ink-950/70">
+                  Your form is saved, and our care team will reach out within one business day. Now we're taking you
+                  to our secure sign-up page to set up your membership.
+                </p>
+                <a
+                  href={enrollUrl}
+                  className="mt-6 rounded-full bg-ink-950 px-6 py-3 text-sm font-semibold text-paper-50 transition-colors duration-200 ease-out-smooth hover:bg-ink-900"
+                >
+                  Set up your membership
+                </a>
+              </>
+            ) : (
+              <>
+                <p className="mt-3 max-w-md text-ink-950/70">
+                  Thanks for filling out your intake form. A member of our care team will reach out within one business
+                  day to confirm your appointment.
+                </p>
+                <Link
+                  to="/"
+                  className="mt-6 rounded-full bg-ink-950 px-6 py-3 text-sm font-semibold text-paper-50 transition-colors duration-200 ease-out-smooth hover:bg-ink-900"
+                >
+                  Back to home
+                </Link>
+              </>
+            )}
           </div>
         </main>
       </div>
@@ -773,7 +800,11 @@ export default function PatientIntakeForm() {
               // out of both validation and FormData.
               disabled={!visible.includes(screen)}
               hidden={screen.id !== currentId}
-              className={direction === "back" ? "animate-view-back" : "animate-view-forward"}
+              // relative z-10: the slide-in animation makes each screen its own
+              // stacking context, so a date or select popup's z-index only
+              // counts inside it, and the Back button's (rotated, so layered)
+              // arrow painted over an open popup. Raised above the button row.
+              className={`relative z-10 ${direction === "back" ? "animate-view-back" : "animate-view-forward"}`}
             >
               <h2
                 id={`q-${screen.id}`}
