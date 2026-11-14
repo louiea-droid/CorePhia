@@ -66,11 +66,14 @@ npm run preview  # serve the built dist/
 
 Deployed via Firebase Hosting (`firebase.json` → `public: "dist"`, `cleanUrls: true`, SPA
 rewrite to `/app.html`).
-Firebase project is `corephia-health`. **Last deploy 2026-11-06: hosting + `firestore.rules`
-from `main` at 592b5d8** (checked live: titles, `/pricing` 301, security headers). All 8
-functions were deployed by 2026-11-10; the Elation branch (`elation-emr`, 2026-11-13) removes 7
-of them (only `notifyNewIntake` stays), so its deploy follows the checklist in
-`docs/superpowers/specs/2026-11-13-elation-emr-design.md`. The CLI checks every
+Firebase project is `corephia-health`. **Last deploy 2026-11-13: hosting + `firestore.rules` +
+functions from branch `elation-emr` at 657f9ee** (lint, check, build and 47/47 rules tests
+first; checked live: care@ on Contact, PLLC in Terms and JSON-LD, the FAQ payment answer, the plan
+step and Elation links in the bundles, HSTS and X-Frame-Options). Only `notifyNewIntake` is
+live (the other 7 were already gone). `main` is behind the live site until `elation-emr` is
+merged. Left from the Phase A checklist in
+`docs/superpowers/specs/2026-11-13-elation-emr-design.md`: destroy the Stripe secrets, clear the
+retired test collections, delete the Stripe webhook. The CLI checks every
 `defineSecret` in the codebase on any functions deploy.
 
 ## Stack
