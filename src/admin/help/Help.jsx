@@ -105,13 +105,13 @@ const TOPICS = [
     show: (role) => canAdmit(role),
     steps: [
       "Open Email templates. Each template has a purpose (Accepted, Declined, Welcome or New email) and is a draft or published. Only published templates can be sent.",
-      "The admin can create and edit templates, then Publish. Bold, italic, underline, lists and links work. Links can only go to corephia.com or Elation.",
+      "The admin and super admin can create and edit templates, then Publish. Bold, italic, underline, lists and links work. Links can only go to corephia.com or Elation.",
       "Press Insert first name to put the patient's first name in. It is the only personal detail an email can hold.",
       "Set one published template as the default for its purpose. That one is chosen first in the Admit and Decline box and used for the Welcome receipt.",
       "History keeps every save. Use Compare to see changes and Restore to bring an older version back.",
       "Press Send me a test to get the email yourself before you rely on it.",
     ],
-    note: "Providers and co-admins can open the page and send emails. Only the admin edits, publishes, deletes and restores.",
+    note: "Providers and co-admins can open the page and send emails. Only the admin and super admin edit, publish, delete and restore.",
   },
   // One page of short answers. A question's `show` defaults to everyone, and
   // `see` names the how-to topic its answer links to.

@@ -258,7 +258,7 @@ delete, vitals ranges, copy vs Terms) is planned for 2026-10-22. Strike items th
    standard EMR intake sections (demographics / vitals / medicalHistory /
    familyHistory / socialHistory / nutrition / visit / consent) so a vendor mapping is direct.
 2. **Firestore rules: deployed 2026-11-06** with the site. The `elation-emr` branch trims them
-   (47/47 tests pass). Always deploy them **together with the site** (the intake sections are
+   (53/53 tests pass). Always deploy them **together with the site** (the intake sections are
    checked key by key). Keep `firestore.rules` free of a byte-order mark
    (PowerShell's `Set-Content -Encoding utf8` adds one). When editing it from a script, never put
    new text through `String.prototype.replace`: a `$'` in the rules' regexes expands to "the rest
