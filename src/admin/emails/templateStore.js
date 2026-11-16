@@ -1,6 +1,6 @@
 // Email templates in Firestore (`emailTemplates`, with a `versions` subcollection).
 // Demo mode keeps an in-memory list. Saving rewrites the whole document, as the rules require.
-import { collection, doc, getDocs, limit, onSnapshot, orderBy, query, serverTimestamp, writeBatch } from "firebase/firestore"
+import { collection, doc, getDoc, getDocs, limit, onSnapshot, orderBy, query, serverTimestamp, writeBatch } from "firebase/firestore"
 import { getFunctions, httpsCallable } from "firebase/functions"
 import { DEFAULT_TEMPLATES } from "../../../functions/emailDefaults.js"
 import { AUDIT_ACTIONS, app, db, recordAuditEvent, usingSeedData } from "../lib/firebase"
@@ -13,12 +13,22 @@ const para = (text) => ({ type: "doc", content: [{ type: "paragraph", content: [
 // ---- demo mode ----
 let demo = null
 const demoListeners = new Set()
-const demoTemplates = () =>
-  (demo ??= [
+const demoTemplates = () => {
+  if (demo) return demo
+  demo = [
     ...DEFAULT_TEMPLATES,
     { name: "Outside Florida", purpose: "declined", status: "published", isDefault: false, subject: "An update on your CorePhia form", headline: "Thank you, {firstName}", body: para("We can only see patients who live in Florida right now.") },
     { name: "Checking in", purpose: "manual", status: "published", isDefault: false, subject: "Checking in", headline: "Hi {firstName}", body: para("Just checking in to see how you're doing.") },
-  ].map((t, i) => ({ ...t, id: `demo-${i}`, updatedAt: new Date(), updatedBy: "Demo" })))
+  ].map((t, i) => ({ ...t, id: `demo-${i}`, updatedAt: new Date(), updatedBy: "Demo" }))
+  demo.forEach((t) => demoLog(t.id, t, "Demo"))
+  return demo
+}
+
+const demoVersions = new Map()
+const demoLog = (id, t, actorName) => {
+  const v = { ...pick(t), id: `v-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, updatedAt: new Date(), updatedBy: actorName }
+  demoVersions.set(id, [v, ...(demoVersions.get(id) ?? [])])
+}
 const demoEmit = () => demoListeners.forEach((fn) => fn([...demoTemplates()]))
 
 export function watchTemplates(onChange, onError) {
@@ -38,13 +48,18 @@ export function watchTemplates(onChange, onError) {
 export async function saveTemplate(id, fields, actorName, auditAction = AUDIT_ACTIONS.saveEmailTemplate) {
   const data = pick(fields)
   if (usingSeedData) {
-    const list = demoTemplates()
     const newId = id ?? `demo-${Date.now()}`
-    if (data.isDefault) list.forEach((t) => t.purpose === data.purpose && t.id !== newId && (t.isDefault = false))
     const at = { updatedAt: new Date(), updatedBy: actorName }
-    const at0 = list.findIndex((t) => t.id === newId)
-    if (at0 >= 0) list[at0] = { ...list[at0], ...data, ...at }
-    else list.push({ id: newId, ...data, ...at })
+    const next = demoTemplates().map((t) =>
+      data.isDefault && t.purpose === data.purpose && t.id !== newId && t.isDefault ? { ...t, isDefault: false, ...at } : t,
+    )
+    next.filter((t, i) => t !== demo[i]).forEach((t) => demoLog(t.id, t, actorName))
+    const found = next.findIndex((t) => t.id === newId)
+    const saved = { ...(found >= 0 ? next[found] : {}), id: newId, ...data, ...at }
+    if (found >= 0) next[found] = saved
+    else next.push(saved)
+    demo = next
+    demoLog(newId, saved, actorName)
     demoEmit()
     return newId
   }
@@ -81,13 +96,17 @@ export async function deleteTemplate(id) {
 }
 
 export async function loadVersions(id) {
-  if (usingSeedData) return []
+  if (usingSeedData) {
+    demoTemplates()
+    return demoVersions.get(id) ?? []
+  }
   const snap = await getDocs(query(collection(db, COLLECTION, id, "versions"), orderBy("updatedAt", "desc"), limit(50)))
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
 }
 
 // Brings back name, subject, headline and body; purpose, status and default stay as they are now.
 export async function restoreVersion(id, version, actorName, current) {
+  current ??= usingSeedData ? demoTemplates().find((t) => t.id === id) : (await getDoc(doc(db, COLLECTION, id))).data()
   const { name, subject, headline, body } = version
   return saveTemplate(id, { ...pick(current), name, subject, headline, body }, actorName, AUDIT_ACTIONS.restoreEmailTemplate)
 }
