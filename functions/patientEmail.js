@@ -3,7 +3,7 @@
 // before the claim and again inside the transaction.
 const ADMITTERS = ["provider", "coAdmin", "admin", "superAdmin"]
 const TEST_SENDERS = ["admin", "superAdmin"]
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+export const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const NEXT_STATUS = { accepted: "admitted", declined: "declined" }
 
 const no = (code, message) => ({ ok: false, code, message })

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict"
-import { planSend } from "./patientEmail.js"
+import { planSend, EMAIL } from "./patientEmail.js"
 
 const intake = (extra = {}) => ({ status: "pending", demographics: { email: " Pat@X.co ", firstName: "Pat" }, ...extra })
 const tpl = (purpose, status = "published") => ({ purpose, status })
@@ -24,4 +24,6 @@ assert.deepEqual(planSend({ mode: "test", role: "admin", template: tpl("declined
 // missing pieces
 assert.equal(planSend({ ...base, template: null }).code, "not-found")
 assert.equal(planSend({ ...base, intake: null }).code, "not-found")
+assert.ok(EMAIL.test("smith@gmail.com") && EMAIL.test("a.b@yahoo.com"))
+assert.ok(!EMAIL.test("nope") && !EMAIL.test("a b@x.co"))
 console.log("patientEmail: ok")

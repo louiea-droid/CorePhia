@@ -11,7 +11,7 @@ import nodemailer from "nodemailer"
 import { buildEmail } from "./emails.js"
 import { renderTemplate, PURPOSE_LABELS } from "./emailRender.js"
 import { DEFAULT_TEMPLATES } from "./emailDefaults.js"
-import { planSend } from "./patientEmail.js"
+import { planSend, EMAIL } from "./patientEmail.js"
 
 initializeApp()
 const SMTP_PASSWORD = defineSecret("SMTP_PASSWORD")
@@ -52,8 +52,16 @@ export const notifyNewIntake = onDocumentCreated({ ...OPTIONS, document: "intake
   await send({ kind: "newIntake", receivedAt: event.time }).catch((error) => console.error("New intake alert failed:", error))
   const demographics = event.data.data().demographics ?? {}
   const to = String(demographics.email ?? "").trim().toLowerCase()
-  if (!/^[^s@]+@[^s@]+.[^s@]+$/.test(to)) return console.error("Intake receipt skipped: no valid email on", event.params.recordId)
-  await send({ to, ...renderTemplate(await welcomeTemplate(), { firstName: demographics.firstName }) }).catch((error) => console.error("Intake receipt failed:", error))
+  if (!EMAIL.test(to)) return console.error("Intake receipt skipped: no valid email on", event.params.recordId)
+  const welcome = await welcomeTemplate()
+  let mail
+  try {
+    mail = renderTemplate(welcome, { firstName: demographics.firstName })
+  } catch (error) {
+    console.error("Stored welcome template unusable, using the built-in one:", error)
+    mail = renderTemplate(DEFAULT_TEMPLATES.find((d) => d.purpose === "welcome"), { firstName: demographics.firstName })
+  }
+  await send({ to, ...mail }).catch((error) => console.error("Intake receipt failed:", error))
 })
 
 const fail = (plan) => { throw new HttpsError(plan.code, plan.message) }
@@ -94,7 +102,7 @@ export const sendPatientEmail = onCall({ ...OPTIONS }, async (request) => {
   }
 
   try {
-    await send({ to: plan.to, ...renderTemplate(template, { firstName: intake?.demographics?.firstName }) })
+    await send({ to: plan.to, ...renderTemplate(template, { firstName: mode === "test" ? "Jane" : intake?.demographics?.firstName }) })
   } catch (error) {
     console.error("Patient email failed:", error)
     if (mode === "decision") await intakeRef.update({ [`patientEmails.${plan.kind}`]: FieldValue.delete() })
