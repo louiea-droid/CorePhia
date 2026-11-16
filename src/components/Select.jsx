@@ -43,6 +43,7 @@ export default function Select({
   // For a Select with no wrapping <label> giving it a name (e.g. one per
   // table row): read before the selected value, "Role for Sam: Provider".
   ariaLabel,
+  disabled = false,
 }) {
   const isControlled = controlledValue !== undefined
   const [internalValue, setInternalValue] = useState(defaultValue)
@@ -119,10 +120,11 @@ export default function Select({
         ref={triggerRef}
         type="button"
         onClick={() => setOpen((previous) => !previous)}
+        disabled={disabled}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={ariaLabel ? `${ariaLabel}: ${selectedLabel ? optionLabel(selectedLabel) : placeholder}` : undefined}
-        className={`${baseTriggerClass} ${triggerClassName}`}
+        className={`${baseTriggerClass} ${triggerClassName} disabled:cursor-not-allowed disabled:opacity-60`}
       >
         <span className={selectedLabel ? "" : "text-ink-950/40"}>
           {selectedLabel ? optionLabel(selectedLabel) : placeholder}

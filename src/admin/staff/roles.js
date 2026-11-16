@@ -29,11 +29,14 @@ const PAGE_ROLES = {
   activity: ["superAdmin"],
   security: CLINICAL_ROLES,
   help: CLINICAL_ROLES,
+  emailTemplates: ADMITTERS,
 }
 
 export const canOpen = (page, role) => PAGE_ROLES[page]?.includes(role) ?? false
 
 export const canAdmit = (role) => ADMITTERS.includes(role)
+// Editing, publishing, deleting, restoring and test-sending email templates.
+export const canEditTemplates = (role) => ["admin", "superAdmin"].includes(role)
 // Renaming someone else's staff record: admin and super admin only, and only
 // accounts they can already manage. Mirrors the name check in isRoleChange.
 export const canRenameMember = (viewer, member) => canNameStaff(viewer.role) && canManageMember(viewer, member)

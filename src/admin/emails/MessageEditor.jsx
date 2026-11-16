@@ -71,7 +71,7 @@ export default function MessageEditor({ value, onChange, readOnly = false }) {
     content: value,
     editable: !readOnly,
     onUpdate: ({ editor: e }) => onChange?.(e.getJSON()),
-    editorProps: { handleKeyDown: (_v, e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setLinkOpen(true); return true } return false }, attributes: { role: "textbox", "aria-multiline": "true", "aria-label": "Message", class: "min-h-40 px-3 py-2 text-sm text-ink-950 outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-accent-dark [&_a]:underline dark:[&_a]:text-accent-text" } },
+    editorProps: { handleKeyDown: (_v, e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setLinkOpen(true); return true } return false }, attributes: { role: "textbox", "aria-multiline": "true", "aria-label": "Message", class: "min-h-40 px-3 py-2 text-sm leading-relaxed [&_p+p]:mt-3 [&_p+ul]:mt-3 [&_p+ol]:mt-3 [&_ul+p]:mt-3 [&_ol+p]:mt-3 text-ink-950 outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-accent-dark [&_a]:underline dark:[&_a]:text-accent-text" } },
   })
   const s = useEditorState({
     editor,
@@ -84,7 +84,7 @@ export default function MessageEditor({ value, onChange, readOnly = false }) {
 
   // Outside changes (switching templates) replace the content without firing onChange.
   useEffect(() => {
-    if (editor && JSON.stringify(editor.getJSON()) !== JSON.stringify(value)) editor.commands.setContent(value, { emitUpdate: false })
+    if (editor && JSON.stringify(editor.getJSON()) !== JSON.stringify(value)) editor.chain().setMeta("addToHistory", false).setContent(value, { emitUpdate: false }).run()
   }, [editor, value])
   useEffect(() => { editor?.setEditable(!readOnly) }, [editor, readOnly])
 

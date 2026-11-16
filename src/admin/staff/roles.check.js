@@ -2,6 +2,7 @@
 import assert from "node:assert/strict"
 import {
   canAdmit,
+  canEditTemplates,
   canManageMember,
   canNameStaff,
   canOpen,
@@ -56,5 +57,12 @@ assert.equal(canOpen("help", ""), false)
 // Charts, To-do, Calendar and the patient inbox moved to Elation (2026-11-13): nobody opens them.
 for (const page of ["patients", "todo", "calendar", "inbox"])
   for (const role of ["dietitian", "provider", "coAdmin", "admin", "superAdmin"]) assert.equal(canOpen(page, role), false, `${page} ${role}`)
+
+// Email templates: admitters open the page; only the admin and super admin edit.
+assert.equal(canOpen("emailTemplates", "provider"), true)
+assert.equal(canOpen("emailTemplates", "dietitian"), false)
+assert.equal(canEditTemplates("coAdmin"), false)
+assert.equal(canEditTemplates("admin"), true)
+assert.equal(canEditTemplates("superAdmin"), true)
 
 console.log("roles: all checks passed")

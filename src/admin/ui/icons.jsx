@@ -315,3 +315,64 @@ export function RedoIcon(props) {
     </svg>
   )
 }
+
+// Email templates page.
+export function TemplateIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="3.5" y="4.5" width="17" height="15" rx="2" />
+      <path d="M7.5 9h9M7.5 13h6" />
+    </svg>
+  )
+}
+
+export function PlusIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  )
+}
+
+export function HistoryIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M3.5 12a8.5 8.5 0 1 0 2.8-6.3L3.5 8.5M3.5 3.5v5h5M12 7.5V12l3 2" />
+    </svg>
+  )
+}
+
+export function ShieldIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 3 4.5 6v6c0 4.3 3.2 7.7 7.5 8.8 4.3-1.1 7.5-4.5 7.5-8.8V6L12 3Z" />
+      <path d="M12 9v4M12 16.5h.01" />
+    </svg>
+  )
+}
+
+export function DesktopIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="3" y="4" width="18" height="12" rx="2" />
+      <path d="M8 20h8M12 16v4" />
+    </svg>
+  )
+}
+
+export function PhoneIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="7" y="2.5" width="10" height="19" rx="2.5" />
+      <path d="M11 18.5h2" />
+    </svg>
+  )
+}
+
+export function SendIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M21 3 10 14M21 3l-7 18-4-7-7-4 18-7Z" />
+    </svg>
+  )
+}

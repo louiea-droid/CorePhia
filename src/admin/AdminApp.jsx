@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react"
+import { Suspense, lazy, useCallback, useEffect, useState } from "react"
 import { Helmet } from "react-helmet-async"
 import { Navigate, Route, Routes } from "react-router-dom"
 import AccountMenu from "./layout/AccountMenu"
@@ -33,6 +33,9 @@ import Sidebar from "./layout/Sidebar"
 import SiteTraffic from "./analytics/SiteTraffic"
 import { useAdminTheme } from "./lib/useAdminTheme"
 import { useIdleTimeout } from "./lib/useIdleTimeout"
+
+// Lazy, so the message editor (TipTap) loads only on this page.
+const EmailTemplates = lazy(() => import("./emails/EmailTemplates"))
 
 // Chart access sits behind these two on top of the password: idle staff get
 // signed out automatically rather than leaving an open session on a shared
@@ -77,6 +80,21 @@ function AdminRoutes({ role, signerName, user, displayName, onDisplayNameChange,
         )}
       />
       <Route path="/admin/analytics" element={guard("analytics", <SiteTraffic />)} />
+      <Route
+        path="/admin/emails"
+        element={guard(
+          "emailTemplates",
+          <Suspense
+            fallback={
+              <div className="flex h-full items-center justify-center">
+                <Loader />
+              </div>
+            }
+          >
+            <EmailTemplates role={role} actorName={actor.name} />
+          </Suspense>,
+        )}
+      />
       <Route path="/admin/traffic" element={<Navigate to="/admin/analytics" replace />} />
       <Route path="/admin/help" element={guard("help", <Help role={role} />)} />
       <Route path="/admin/staff" element={guard("staff", <Staff actor={actor} />)} />

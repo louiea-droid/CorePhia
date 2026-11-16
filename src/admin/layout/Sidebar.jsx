@@ -9,6 +9,7 @@ import {
   HelpIcon,
   MailIcon,
   StaffIcon,
+  TemplateIcon,
   TrafficIcon,
 } from "../ui/icons"
 import { canOpen } from "../staff/roles"
@@ -33,6 +34,7 @@ const NAV_GROUPS = [
   [
     { label: "Queries", icon: MailIcon, to: "/admin/queries", page: "messages" },
     { label: "Analytics", icon: TrafficIcon, to: "/admin/analytics", page: "analytics" },
+    { label: "Email templates", icon: TemplateIcon, to: "/admin/emails", page: "emailTemplates" },
   ],
   [
     { label: "Staff", icon: StaffIcon, to: "/admin/staff", page: "staff" },
