@@ -242,3 +242,76 @@ export function ClockIcon(props) {
     </svg>
   )
 }
+
+// Editor toolbar icons (email message editor).
+export function BoldIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M7 5h6a3.5 3.5 0 0 1 0 7H7zM7 12h7a3.5 3.5 0 0 1 0 7H7z" />
+    </svg>
+  )
+}
+
+export function ItalicIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M10 5h8M6 19h8M14 5l-4 14" />
+    </svg>
+  )
+}
+
+export function UnderlineIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M7 5v6a5 5 0 0 0 10 0V5M5 20h14" />
+    </svg>
+  )
+}
+
+export function BulletListIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01" />
+    </svg>
+  )
+}
+
+export function NumberedListIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M10 6h10M10 12h10M10 18h10M4 5l1.5-1v4M4 14.5h2.5L4 18h3" />
+    </svg>
+  )
+}
+
+export function LinkIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />
+    </svg>
+  )
+}
+
+export function ClearFormatIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M5 5h10M10 5l-3 14M14 19h6M16 13l4 4M20 13l-4 4" />
+    </svg>
+  )
+}
+
+export function UndoIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3" />
+    </svg>
+  )
+}
+
+export function RedoIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="m15 14 5-5-5-5M20 9H10a6 6 0 0 0 0 12h3" />
+    </svg>
+  )
+}
