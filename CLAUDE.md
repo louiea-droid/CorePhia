@@ -77,13 +77,15 @@ dashboard. The CLI checks every `defineSecret` in the codebase on any functions 
 
 ## Stack
 
-React 19 · Vite 8 · Tailwind CSS v4 · react-router-dom v7 · react-helmet-async · oxlint.
+React 19 · Vite 8 · Tailwind CSS v4 · react-router-dom v7 · react-helmet-async · TipTap (the email template editor) · oxlint.
 Firebase (Auth + Firestore). No TypeScript. Tests: `npm run check` (the self-checks: roles,
 calendarMath, staffMath, `googleAnalytics.check.js` (only public pages are trackable),
-`functions/emails.check.js` (the two emails build, retired kinds throw), and
+`functions/emails.check.js` (the two emails build, retired kinds throw), `emailRender.check.js` and
+`patientEmail.check.js` (renderer, send planning), `templateMath.check.js` and
+`patientEmailState.check.js` (the admin's template and send-state rules), and
 `auditActions.check.js`, which fails if `AUDIT_ACTIONS` in `admin/lib/firebase.js` and the action
 list in `firestore.rules` drift apart) and `npm run test:rules` (Firestore rules against the
-emulator: all 47 pass as of 2026-11-13). Java 21 and a global `firebase` CLI are installed on
+emulator: all 53 pass as of 2026-11-16). Java 21 and a global `firebase` CLI are installed on
 this machine (2026-11-04). If port 8080 is taken (another project's emulator), run the tests
 with a config that moves the Firestore emulator to another port (`--config` file at the
 project root with `emulators.firestore.port`).
@@ -327,7 +329,8 @@ plan: `docs/superpowers/plans/2026-11-13-elation-phase-a-retire.md`.
   charts, notes, prescriptions, calendar, to-do, patient messages inbox, the whole patient
   portal (`/account/*`, `/portal/setup`), Stripe billing, the visit-copy functions, `sendMail`
   and the portal emails, and their rules (those collections fall to the deny-all rule). Admit
-  is a status change only (`useIntakeRecords.patchRecord`). Old audit actions keep their labels
+  is a status change (`useIntakeRecords.patchRecord`), plus the optional patient email added
+  2026-11-16 (see Email templates). Old audit actions keep their labels
   in `Activity.jsx` but can no longer be written.
 - **Kept:** `/portal/reset` as a **staff-only** password page (`admin/layout/PasswordReset.jsx`),
   because Firebase's reset email (also used to set up new staff) may have its action URL set
@@ -366,8 +369,9 @@ are still "confirmed in writing at enrollment".
 
 ## Admin (what is left after Elation)
 
-Pages: Dashboard (applicant totals and charts), Applicants (admit / decline; `discharged` is an
-older status, still shown and filterable), Queries (contact form), Analytics, Staff, Activity
+Pages: Dashboard (applicant totals and charts), Applicants (admit / decline, each with an optional
+patient email; `discharged` is an older status, still shown and filterable), Email templates
+(`/admin/emails`, admitters open it), Queries (contact form), Analytics, Staff, Activity
 (super admin), Profile (`/admin/security`), Help. Unknown `/admin/...` addresses go to the
 dashboard. Keep the Help topics in step when a screen changes.
 
@@ -401,11 +405,30 @@ sent by Cloud Functions in `functions/` (Node 22, `us-central1`) with `nodemaile
 `smtp.gmail.com:465`. The info@ **app password** is the `SMTP_PASSWORD` secret in Google
 Secret Manager, never in a file.
 
-- **`notifyNewIntake`** is the only function left. On each new `intakeRecords` doc it sends an
+- **`notifyNewIntake`**: on each new `intakeRecords` doc it sends an
   alert to `INTAKE_ALERT_TO` (`providermd@corephia.com`; add `dr.dan@corephia.com` once that
   mailbox exists) and a receipt to the patient's intake email ("Welcome to CorePhia!"). Neither
-  carries anything from the answers. Patient emails after admission come from Elation.
-- **Wording** of both emails is in `functions/emails.js`. Visitor-facing text says "form", not
+  carries anything from the answers. Patient emails after admission come from Elation. The receipt uses the default published
+  **Welcome** template (built-in wording if none).
+- **Email templates (2026-11-16, branch `email-templates`, not deployed):** Admin > Email
+  templates (`admin/emails/`; collections `emailTemplates` and create-only
+  `emailTemplates/{id}/versions`). Purposes: Accepted, Declined, Welcome, New email (`manual`);
+  draft or published; one default per purpose (published, not for New email). TipTap editor:
+  bold, italic, underline, lists, links (only corephia.com, Elation hosts), first-name chip. Only
+  `admin` and `superAdmin` edit, publish, delete, restore and "Send me a test"; admitters open
+  the page and send. Rendering is `functions/emailRender.js`, default wording
+  `emailDefaults.js`; every email gets the fixed phone/care@ and privacy lines.
+- **`sendPatientEmail`** (callable, `us-central1`, secret `SMTP_PASSWORD` only, in
+  `functions/patientEmail.js` and `index.js`): sends decision, manual and test emails. Checks
+  the role server-side, claims the send in a transaction (a double click or second staff gets
+  `already-exists`), sets the status for decisions, writes `patientEmails` on the intake and a
+  `send_patient_email` audit entry. **Once-only rule:** one Accepted or Declined email per
+  applicant, ever; after that the status can change with no email. Only the first name goes in
+  an email, never form answers. No valid email on the form: status change only. New audit
+  actions: save/delete/restore_email_template, send_patient_email. Deploy rules, hosting and
+  functions together; the Declined wording needs Dr. Antonious's OK before real patients. The
+  real send test (Gmail desktop and phone) is not done yet.
+- **Wording** of the built-in emails is in `functions/emails.js`. Visitor-facing text says "form", not
   "intake" (Louie). Google Workspace's "Append footer" adds the logo, phone and site; update
   its number there when the phone changes. Each email is a white card on `paper-50` with a 5px
   `brand` band and a Georgia headline, built from tables. Real test:

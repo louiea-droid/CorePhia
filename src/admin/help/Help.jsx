@@ -30,10 +30,11 @@ const TOPICS = [
     steps: [
       "Open Applicants. New form submissions show as Pending. Search by name, or filter by status.",
       "Click a row to read the whole form.",
-      "Press Admit or Decline. Then add an admitted patient in Elation, where their chart, visits, messages and billing live.",
+      "Press Admit or Decline. A box asks which email to send the patient (the default is chosen for you, and Preview shows it). Pending and Discharge change the status with no email. Then add an admitted patient in Elation, where their chart, visits, messages and billing live.",
+      "Press Send email on a form to send a New email template to that person.",
       "Use Note to save a private team note.",
     ],
-    note: "Admitting doesn't email the patient. Dietitians can read forms but can't admit or decline.",
+    note: "Each person gets one Accepted or Declined email, ever. After that you can still change the status, but no second decision email is sent. Dietitians can read forms but can't admit or decline.",
   },
   {
     id: "elation",
@@ -91,10 +92,26 @@ const TOPICS = [
     show: everyone,
     steps: [
       "New form alert: to the practice when someone sends the form. It never includes their answers.",
-      "Form receipt: to the person who sent it, saying we received it and will be in touch.",
+      "Form receipt: to the person who sent it, saying we received it. It uses the default Welcome template.",
+      "Accepted and Declined: sent when you admit or decline an applicant, if you choose to send one.",
+      "New email: sent by hand from Applicants with Send email.",
       "Password reset and new staff set-up: a secure link to choose a password.",
     ],
-    note: "No email goes out on admit or decline. Patient emails after that come from Elation.",
+    note: "Patient emails only use the first name and never include health information. Messages after that come from Elation.",
+  },
+  {
+    id: "email-templates",
+    title: "Edit patient emails",
+    show: (role) => canAdmit(role),
+    steps: [
+      "Open Email templates. Each template has a purpose (Accepted, Declined, Welcome or New email) and is a draft or published. Only published templates can be sent.",
+      "The admin can create and edit templates, then Publish. Bold, italic, underline, lists and links work. Links can only go to corephia.com or Elation.",
+      "Press Insert first name to put the patient's first name in. It is the only personal detail an email can hold.",
+      "Set one published template as the default for its purpose. That one is chosen first in the Admit and Decline box and used for the Welcome receipt.",
+      "History keeps every save. Use Compare to see changes and Restore to bring an older version back.",
+      "Press Send me a test to get the email yourself before you rely on it.",
+    ],
+    note: "Providers and co-admins can open the page and send emails. Only the admin edits, publishes, deletes and restores.",
   },
   // One page of short answers. A question's `show` defaults to everyone, and
   // `see` names the how-to topic its answer links to.
@@ -105,7 +122,7 @@ const TOPICS = [
     questions: [
       {
         q: "Does the patient get an email when I admit them?",
-        a: "No. Admitting only marks them admitted. Add them in Elation, which handles their portal invite.",
+        a: "Yes, if you choose to send one in the box that opens. Pick the Accepted template, or change the status without an email. Add them in Elation, which handles their portal invite.",
         see: "applicants",
         show: (role) => canAdmit(role),
       },
@@ -137,7 +154,7 @@ const TOPICS = [
 // by id so the topic data above stays plain.
 const GROUPS = [
   ["Getting started", ["signing-in", "questions", "elation"]],
-  ["Applicants", ["applicants", "dashboard", "emails"]],
+  ["Applicants", ["applicants", "dashboard", "emails", "email-templates"]],
   ["Practice", ["queries", "analytics", "staff"]],
 ]
 

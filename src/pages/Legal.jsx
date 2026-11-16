@@ -56,7 +56,7 @@ const privacy = [
         "To review your intake, decide with you whether the program fits, and arrange your first visit.",
         "To provide and document your care, including prescriptions when a provider decides they are appropriate.",
         "To run your patient portal, schedule visits, and answer your messages and questions.",
-        "To send you emails about your care and your account.",
+        "To email you when we receive your form and when we make a decision, and to send other program emails. These never include health information.",
         "To understand, in anonymous counts, which pages people use, so we can improve the site.",
         "To keep the site and patient records secure, to prevent misuse, and to meet legal and professional obligations.",
       ],
@@ -204,7 +204,7 @@ const terms = [
   {
     h: "Messages and notifications",
     body: [
-      "You agree that we may contact you electronically, by email and through the portal, and by phone about scheduling and your care. Emails we send from info@corephia.com never contain health details.",
+      "You agree that we may contact you electronically, by email and through the portal, and by phone about scheduling and your care. We email you when we receive your form and when we decide on it, and may send other emails about the program. Emails we send from info@corephia.com never contain health details, and use only your first name.",
       "We read portal messages during working hours and reply as soon as we reasonably can. Messages are not monitored around the clock, so do not use them for anything urgent. For an emergency, call 911.",
     ],
   },

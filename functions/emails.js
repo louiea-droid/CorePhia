@@ -1,6 +1,8 @@
-// The words of every email the site sends: the new-form alert and the
-// receipt. Edit here, then redeploy the function. Health details never go in
-// an email. Patient emails after admission come from Elation (2026-11-13).
+// The words of the built-in emails: the new-form alert and the receipt
+// fallback. The receipt uses the default Welcome template when one exists;
+// decision and manual emails come from templates (sendPatientEmail).
+// Edit here, then redeploy the function. Health details never go in an email.
+// Patient emails after admission come from Elation (2026-11-13).
 import { layout, renderTemplate } from "./emailRender.js"
 import { DEFAULT_TEMPLATES } from "./emailDefaults.js"
 
