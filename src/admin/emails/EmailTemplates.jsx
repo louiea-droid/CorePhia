@@ -18,6 +18,7 @@ import {
   ShieldIcon,
   TemplateIcon,
 } from "../ui/icons"
+import EmailFrame from "./EmailFrame"
 import MessageEditor from "./MessageEditor"
 import TemplateHistory from "./TemplateHistory"
 import { groupByPurpose, validateTemplate } from "./templateMath"
@@ -592,7 +593,6 @@ function MoreMenu({ items }) {
 function Preview({ template, canTest, testDisabled, onTest }) {
   const [phone, setPhone] = useState(false)
   const [sending, setSending] = useState(false)
-  const [height, setHeight] = useState(400)
   const deferred = useDeferredValue(template)
   const { subject, html } = renderTemplate(deferred, { firstName: "Jane" })
   const seg = (on) =>
@@ -622,15 +622,7 @@ function Preview({ template, canTest, testDisabled, onTest }) {
           <p className="font-semibold break-words text-ink-950">{subject || "(no subject)"}</p>
           <p className="text-xs break-all text-ink-950/60">CorePhia &lt;info@corephia.com&gt; to jane.doe@example.com</p>
         </div>
-        <iframe
-          key={phone ? "phone" : "desktop"}
-          title="Email preview"
-          sandbox="allow-same-origin"
-          srcDoc={`<!doctype html><html><head><meta name="viewport" content="width=device-width"></head><body style="margin:0;background:#f5f7fb">${html}</body></html>`}
-          onLoad={(event) => setHeight(event.currentTarget.contentDocument?.documentElement.scrollHeight ?? 400)}
-          style={{ height }}
-          className="block w-full border-0"
-        />
+        <EmailFrame key={phone ? "phone" : "desktop"} html={html} />
       </div>
       {canTest && (
         <div className="mt-3 flex flex-col items-center gap-1">

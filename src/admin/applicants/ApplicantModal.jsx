@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from "react"
 import { medicationInterestLabel } from "../analytics/analytics"
 import { createPortal } from "react-dom"
+import { watchTemplates } from "../emails/templateStore"
 import { AUDIT_ACTIONS, INTAKE_COLLECTION, recordAuditEvent } from "../lib/firebase"
-import { CloseIcon, NoteIcon, TrashIcon } from "../ui/icons"
+import { CloseIcon, NoteIcon, SendIcon, TrashIcon } from "../ui/icons"
 import { getAdminPortalRoot } from "../ui/portalRoot"
 import { useDialog } from "../ui/useDialog"
+import PatientEmailDialog from "./PatientEmailDialog"
+import { sentLines, sentPatch } from "./patientEmailState"
 
 // Every active colour here is deliberately one that .dark does NOT redefine,
 // because these three sit side by side: ink-950 was tried for pending and
@@ -19,6 +22,10 @@ const STATUS_OPTIONS = [
   // A patient who has left the practice. Offered only once someone is admitted.
   { value: "discharged", label: "Discharge", activeClass: "bg-slate-200 text-ink-800" },
 ]
+
+// Admit and Decline go through the email dialog; Pending and Discharge save on one click.
+const EMAIL_PURPOSE = { admitted: "accepted", declined: "declined" }
+const DECISION_STATUS = { accepted: "admitted", declined: "declined" }
 
 const STATUS_BADGE = {
   admitted: "bg-accent-dark/10 text-accent-text",
@@ -86,6 +93,8 @@ export default function ApplicantModal({
   canReview,
   onUpdateStatus,
   onSaveNote,
+  // (record, patch): the record after sendPatientEmail, for local state only.
+  onEmailSent,
   audit = true,
   // Optional: the next booked visit, and a "Book appointment" action.
 }) {
@@ -98,6 +107,9 @@ export default function ApplicantModal({
   const [statusSaving, setStatusSaving] = useState(false)
   const [noteOpen, setNoteOpen] = useState(false)
   const [reviewError, setReviewError] = useState(null)
+  const [emailPurpose, setEmailPurpose] = useState(null)
+  const [templates, setTemplates] = useState(null)
+  const [templatesError, setTemplatesError] = useState(null)
   // The note textarea is local state (so typing doesn't fire a write per
   // keystroke), reset to whatever's on the record whenever a different chart
   // opens. Adjusted during render rather than in an effect — the recommended
@@ -108,7 +120,16 @@ export default function ApplicantModal({
     setNote(record?.adminNote ?? "")
     setNoteOpen(false)
     setReviewError(null)
+    setEmailPurpose(null)
   }
+
+  // Template names for the sent lines, and the choices in the email dialog.
+  // Only admitters can read templates (firestore.rules).
+  const watchingTemplates = open && Boolean(canReview)
+  useEffect(() => {
+    if (!watchingTemplates) return
+    return watchTemplates(setTemplates, (cause) => setTemplatesError(cause.message))
+  }, [watchingTemplates])
 
   const status = record?.status ?? "pending"
   const hasNote = Boolean(record?.adminNote?.trim())
@@ -129,6 +150,14 @@ export default function ApplicantModal({
     } finally {
       setStatusSaving(false)
     }
+  }
+
+  const pickStatus = (nextStatus) => {
+    if (nextStatus === status) return
+    if (EMAIL_PURPOSE[nextStatus]) {
+      setReviewError(null)
+      setEmailPurpose(EMAIL_PURPOSE[nextStatus])
+    } else changeStatus(nextStatus)
   }
 
   const saveNote = async () => {
@@ -179,6 +208,7 @@ export default function ApplicantModal({
   const fullName = [demographics?.firstName, demographics?.lastName].filter(Boolean).join(" ") || "Applicant"
   const address = demographics?.address ?? {}
   const cityState = [address.city, address.state].filter(Boolean).join(", ")
+  const emailLines = sentLines(record, templates ?? [])
 
   return createPortal(
     <div className="fixed inset-0 z-50" role="presentation">
@@ -211,6 +241,11 @@ export default function ApplicantModal({
                 <p className="mt-1 text-sm text-ink-950/50">
                   Submitted {formatDate(record.submittedAt, { month: "long", day: "numeric", year: "numeric" })}
                 </p>
+                {emailLines.map((line, index) => (
+                  <p key={index}className="mt-0.5 text-xs text-ink-950/60">
+                    {line}
+                  </p>
+                ))}
               </div>
               <div className="flex shrink-0 items-center gap-1">
                 {canDelete && (
@@ -249,7 +284,7 @@ export default function ApplicantModal({
                         // Which option is active is otherwise conveyed only by
                         // colour, which a screen reader can't see.
                         aria-pressed={status === option.value}
-                        onClick={() => changeStatus(option.value)}
+                        onClick={() => pickStatus(option.value)}
                         className={`cursor-pointer rounded-lg px-2.5 py-1 text-xs font-medium transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-50 ${
                           status === option.value ? option.activeClass : "bg-white text-ink-950/60 hover:bg-ink-950/5"
                         }`}
@@ -275,6 +310,15 @@ export default function ApplicantModal({
                     {hasNote && !noteOpen && (
                       <span className="absolute -top-0.5 -right-0.5 size-1.5 rounded-full bg-accent-dark" aria-hidden="true" />
                     )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEmailPurpose("manual")}
+                    className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-white px-2.5 py-1 text-xs font-medium text-ink-950/60 transition-colors duration-200 hover:bg-ink-950/5"
+                  >
+                    <SendIcon className="size-3.5" />
+                    Send email
                   </button>
                 </div>
 
@@ -416,6 +460,24 @@ export default function ApplicantModal({
           </div>
         </div>
       </div>
+
+      {emailPurpose && (
+        <PatientEmailDialog
+          record={record}
+          purpose={emailPurpose}
+          templates={templates}
+          templatesError={templatesError}
+          onCancel={() => setEmailPurpose(null)}
+          onSent={(templateId, sentAt) => {
+            onEmailSent(record, sentPatch(record, emailPurpose, templateId, sentAt))
+            setEmailPurpose(null)
+          }}
+          onStatusOnly={async () => {
+            await onUpdateStatus(record, DECISION_STATUS[emailPurpose])
+            setEmailPurpose(null)
+          }}
+        />
+      )}
     </div>,
     getAdminPortalRoot(),
   )

@@ -30,8 +30,13 @@ export function useIntakeRecords() {
   // once Firestore has actually accepted the write.
   async function patchRecord(id, patch) {
     await updateIntakeRecord(id, patch)
+    applyLocal(id, patch)
+  }
+
+  // Local state only, for a change the server already made (sendPatientEmail).
+  function applyLocal(id, patch) {
     setRecords((current) => current?.map((record) => (record.id === id ? { ...record, ...patch } : record)) ?? current)
   }
 
-  return { records, error, removeRecord, patchRecord }
+  return { records, error, removeRecord, patchRecord, applyLocal }
 }

@@ -30,7 +30,7 @@ function readStoredPageSize() {
 }
 
 export default function Applicants({ role }) {
-  const { records, error, removeRecord, patchRecord } = useIntakeRecords()
+  const { records, error, removeRecord, patchRecord, applyLocal } = useIntakeRecords()
   const [selectedRecord, setSelectedRecord] = useState(null)
   const [pendingDelete, setPendingDelete] = useState(null)
   const [deleting, setDeleting] = useState(false)
@@ -56,6 +56,13 @@ export default function Applicants({ role }) {
       targetLabel: [record.demographics?.firstName, record.demographics?.lastName].filter(Boolean).join(" "),
     })
     setSelectedRecord((current) => (current?.id === record.id ? { ...current, status } : current))
+  }
+
+  // sendPatientEmail already set the status and patientEmails (and audited),
+  // so this only shows it without a reload.
+  const afterEmailSent = (record, patch) => {
+    applyLocal(record.id, patch)
+    setSelectedRecord((current) => (current?.id === record.id ? { ...current, ...patch } : current))
   }
 
   const saveNote = async (record, adminNote) => {
@@ -237,6 +244,7 @@ export default function Applicants({ role }) {
         onRequestDelete={setPendingDelete}
         canReview={canReview}
         onUpdateStatus={updateStatus}
+        onEmailSent={afterEmailSent}
         onSaveNote={saveNote}
         audit
       />
