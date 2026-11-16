@@ -410,7 +410,7 @@ Secret Manager, never in a file.
   mailbox exists) and a receipt to the patient's intake email ("Welcome to CorePhia!"). Neither
   carries anything from the answers. Patient emails after admission come from Elation. The receipt uses the default published
   **Welcome** template (built-in wording if none).
-- **Email templates (2026-11-16, branch `email-templates`, not deployed):** Admin > Email
+- **Email templates (2026-11-16, merged into `elation-emr`, not pushed or deployed):** Admin > Email
   templates (`admin/emails/`; collections `emailTemplates` and create-only
   `emailTemplates/{id}/versions`). Purposes: Accepted, Declined, Welcome, New email (`manual`);
   draft or published; one default per purpose (published, not for New email). TipTap editor:
