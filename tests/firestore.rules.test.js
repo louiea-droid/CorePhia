@@ -394,3 +394,64 @@ describe("staff photos", () => {
     await assertFails(getDoc(doc(env.authenticatedContext("patient1", { email: "p1@x.co" }).firestore(), "staffPhotos", "provider")))
   })
 })
+describe("email templates", () => {
+  const tpl = (overrides = {}) => ({
+    name: "Accepted",
+    purpose: "accepted",
+    status: "published",
+    isDefault: false,
+    subject: "Welcome",
+    headline: "Hello",
+    body: { type: "doc", content: [] },
+    updatedAt: serverTimestamp(),
+    updatedBy: "admin",
+    ...overrides,
+  })
+  const byWho = (uid) => tpl({ updatedBy: uid })
+  const seed = async (id, data) =>
+    env.withSecurityRulesDisabled((c) => setDoc(doc(c.firestore(), "emailTemplates", id), { ...tpl(), updatedAt: new Date(), ...data }))
+
+  test("admin and super admin create a template; the others can't", async () => {
+    await assertSucceeds(setDoc(doc(as("admin"), "emailTemplates", "t1"), byWho("admin")))
+    await assertSucceeds(setDoc(doc(as("super"), "emailTemplates", "t2"), byWho("super")))
+    for (const uid of ["coadmin", "provider", "dietitian"]) {
+      await assertFails(setDoc(doc(as(uid), "emailTemplates", "t3"), byWho(uid)))
+    }
+  })
+  test("admitters read templates, the dietitian doesn't", async () => {
+    await seed("t1", {})
+    await assertSucceeds(getDoc(doc(as("provider"), "emailTemplates", "t1")))
+    await assertFails(getDoc(doc(as("dietitian"), "emailTemplates", "t1")))
+  })
+  test("a malformed template is refused", async () => {
+    const db = as("admin")
+    await assertFails(setDoc(doc(db, "emailTemplates", "x1"), tpl({ status: "draft", isDefault: true })))
+    await assertFails(setDoc(doc(db, "emailTemplates", "x2"), tpl({ purpose: "manual", isDefault: true })))
+    await assertFails(setDoc(doc(db, "emailTemplates", "x3"), tpl({ extra: 1 })))
+    await assertFails(setDoc(doc(db, "emailTemplates", "x4"), tpl({ updatedBy: "someone else" })))
+    await assertSucceeds(setDoc(doc(db, "emailTemplates", "x5"), tpl({ isDefault: true })))
+  })
+  test("the default can't be deleted, another template can", async () => {
+    await seed("def", { isDefault: true })
+    await seed("other", {})
+    await assertFails(deleteDoc(doc(as("admin"), "emailTemplates", "def")))
+    await assertSucceeds(deleteDoc(doc(as("admin"), "emailTemplates", "other")))
+  })
+  test("versions are create-only", async () => {
+    await assertSucceeds(setDoc(doc(as("admin"), "emailTemplates/t1/versions/v1"), byWho("admin")))
+    await assertFails(setDoc(doc(as("provider"), "emailTemplates/t1/versions/v2"), byWho("provider")))
+    await assertSucceeds(getDoc(doc(as("provider"), "emailTemplates/t1/versions/v1")))
+    for (const uid of ["admin", "super"]) {
+      await assertFails(updateDoc(doc(as(uid), "emailTemplates/t1/versions/v1"), { subject: "x" }))
+      await assertFails(deleteDoc(doc(as(uid), "emailTemplates/t1/versions/v1")))
+    }
+  })
+  test("the browser can't write patientEmails; the send audit action is accepted", async () => {
+    await assertFails(updateDoc(doc(as("admin"), "intakeRecords", "pending1"), { patientEmails: [] }))
+    const db = env.authenticatedContext("provider", { email: "provider@x.co" }).firestore()
+    await assertSucceeds(setDoc(doc(db, "auditLog", "se1"), {
+      actorUid: "provider", actorEmail: "provider@x.co", action: "send_patient_email",
+      targetCollection: "intakeRecords", targetId: "pending1", targetLabel: "Pat", at: serverTimestamp(),
+    }))
+  })
+})

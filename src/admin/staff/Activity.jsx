@@ -38,6 +38,10 @@ const ACTION_LABELS = {
   [AUDIT_ACTIONS.changePassword]: "Changed their password",
   [AUDIT_ACTIONS.enableTwoStep]: "Turned on two-step sign-in",
   [AUDIT_ACTIONS.disableTwoStep]: "Turned off two-step sign-in",
+  [AUDIT_ACTIONS.saveEmailTemplate]: "Saved an email template",
+  [AUDIT_ACTIONS.deleteEmailTemplate]: "Deleted an email template",
+  [AUDIT_ACTIONS.restoreEmailTemplate]: "Restored an email template version",
+  [AUDIT_ACTIONS.sendPatientEmail]: "Sent a patient email",
   set_membership_manually: "Marked as member",
   end_membership_manually: "Ended membership",
 }

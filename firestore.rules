@@ -237,7 +237,9 @@ service cloud.firestore {
              'view_contact_message', 'delete_contact_message', 'add_staff',
              'change_staff_role', 'rename_staff_account', 'delete_staff_account',
              'list_intake_records', 'sign_in', 'sign_out', 'idle_sign_out',
-             'change_password', 'enable_two_step', 'disable_two_step'
+             'change_password', 'enable_two_step', 'disable_two_step',
+             'save_email_template', 'delete_email_template', 'restore_email_template',
+             'send_patient_email'
            ]
         && data.targetCollection is string && data.targetCollection.size() <= 60
         && data.targetId is string && data.targetId.size() > 0 && data.targetId.size() <= 200
@@ -251,6 +253,49 @@ service cloud.firestore {
       // has to land in the trail too.
       allow create: if isClinical() && isOwnAuditEntry();
       allow update, delete: if false;
+    }
+
+    // Email templates (Settings > Emails): wording the practice edits, never
+    // patient data. Only the admin tiers write; admitters read because they
+    // pick a template when sending. A default must be published, and a manual
+    // template is never a default (nothing sends it by itself). Versions are
+    // create-only history so a restore is always possible. The send log
+    // (patientEmails on the intake) is written by the function, not here:
+    // isStatusUpdate() only lets clients touch status and adminNote.
+    function isTemplateEditor() {
+      return role() in ['admin', 'superAdmin'];
+    }
+
+    function isWellFormedTemplate(d) {
+      return d.keys().hasOnly([
+            'name', 'purpose', 'status', 'isDefault', 'subject', 'headline', 'body', 'updatedAt', 'updatedBy'
+          ])
+        && d.keys().hasAll([
+            'name', 'purpose', 'status', 'isDefault', 'subject', 'headline', 'body', 'updatedAt', 'updatedBy'
+          ])
+        && d.purpose in ['accepted', 'declined', 'welcome', 'manual']
+        && d.status in ['draft', 'published']
+        && d.isDefault is bool
+        && !(d.isDefault && d.status == 'draft')
+        && !(d.isDefault && d.purpose == 'manual')
+        && d.name is string && d.name.size() > 0 && d.name.size() <= 80
+        && d.subject is string && d.subject.size() > 0 && d.subject.size() <= 200
+        && d.headline is string && d.headline.size() > 0 && d.headline.size() <= 200
+        && d.body is map
+        && d.updatedAt == request.time
+        && d.updatedBy == myName();
+    }
+
+    match /emailTemplates/{id} {
+      allow read: if isAdmitter();
+      allow create, update: if isTemplateEditor() && isWellFormedTemplate(request.resource.data);
+      allow delete: if isTemplateEditor() && !resource.data.isDefault;
+
+      match /versions/{v} {
+        allow read: if isAdmitter();
+        allow create: if isTemplateEditor() && isWellFormedTemplate(request.resource.data);
+        allow update, delete: if false;
+      }
     }
 
     // The contact page has the same no-login constraint as intake, so create

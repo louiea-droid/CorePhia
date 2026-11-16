@@ -68,6 +68,10 @@ export const AUDIT_ACTIONS = {
   changePassword: "change_password",
   enableTwoStep: "enable_two_step",
   disableTwoStep: "disable_two_step",
+  saveEmailTemplate: "save_email_template",
+  deleteEmailTemplate: "delete_email_template",
+  restoreEmailTemplate: "restore_email_template",
+  sendPatientEmail: "send_patient_email",
 }
 
 // A record with no status field yet (every one submitted before this feature
