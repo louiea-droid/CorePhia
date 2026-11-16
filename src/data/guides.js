@@ -158,7 +158,6 @@ export const guides = [
   },
   {
     slug: "choosing-a-weight-loss-program-in-florida",
-    reviewed: false,
     program: "medical-care",
     name: "How to choose a weight loss program in Florida",
     title: "How to Choose a Weight Loss Program in Florida | CorePhia",
@@ -202,7 +201,6 @@ export const guides = [
   },
   {
     slug: "what-to-expect-weight-loss-intake",
-    reviewed: false,
     program: "medical-care",
     name: "What to expect when you start a weight loss program",
     title: "What to Expect When You Start a Weight Loss Program | CorePhia",
@@ -250,7 +248,6 @@ export const guides = [
   },
   {
     slug: "what-happens-at-a-weight-loss-follow-up",
-    reviewed: false,
     program: "follow-ups",
     name: "What happens at a weight loss follow-up",
     title: "What Happens at a Weight Loss Follow-Up | CorePhia",
@@ -298,7 +295,6 @@ export const guides = [
   },
   {
     slug: "medical-weight-loss-tampa-florida",
-    reviewed: false,
     program: "medical-care",
     name: "Medical weight loss in Tampa, Florida",
     title: "Medical Weight Loss in Tampa, Florida | CorePhia",
@@ -335,7 +331,6 @@ export const guides = [
   },
   {
     slug: "why-weight-loss-slows-down",
-    reviewed: false,
     program: "follow-ups",
     name: "Why weight loss slows down, and what to do about it",
     title: "Why Weight Loss Slows Down and What to Do | CorePhia",

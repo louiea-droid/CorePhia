@@ -71,10 +71,9 @@ functions from branch `elation-emr` at 657f9ee** (lint, check, build and 47/47 r
 first; checked live: care@ on Contact, PLLC in Terms and JSON-LD, the FAQ payment answer, the plan
 step and Elation links in the bundles, HSTS and X-Frame-Options). Only `notifyNewIntake` is
 live (the other 7 were already gone). `main` is behind the live site until `elation-emr` is
-merged. Left from the Phase A checklist in
-`docs/superpowers/specs/2026-11-13-elation-emr-design.md`: destroy the Stripe secrets, clear the
-retired test collections, delete the Stripe webhook. The CLI checks every
-`defineSecret` in the codebase on any functions deploy.
+merged. Phase A cleanup (2026-11-16): the Stripe secrets are destroyed and the retired
+collections were already empty. Left for Louie: delete the Stripe webhook in the Stripe
+dashboard. The CLI checks every `defineSecret` in the codebase on any functions deploy.
 
 ## Stack
 
@@ -208,9 +207,10 @@ staff, activity, help; charts, calendar, to-do and the patient portal were retir
 - **"Medically reviewed by a board-certified physician. Last reviewed …"** (`ReviewedLine.jsx`,
   date in `LAST_REVIEWED`) on the program pages, the FAQ and the guides. The provider is not
   named (Louie). **It is only true once Dr. Antonious has read those pages: get his sign-off
-  before deploying**, and change the date when he reviews again. A guide written after the last
-  review carries `reviewed: false` in `guides.js` (the 5 from 2026-10-15), which hides the line
-  and the JSON-LD `lastReviewed` until he has read it; then remove the flag and move the date.
+  before deploying**, and change the date when he reviews again. He signed off on all of them,
+  including the 8 guides (via Louie, 2026-11-16; date moved to 2026-11-16). A guide written
+  after the last review carries `reviewed: false` in `guides.js`, which hides the line and the
+  JSON-LD `lastReviewed` until he has read it; then remove the flag and move the date.
 - **Tampa map link** (2026-10-13): "Tampa, Florida" in the footer and on Contact opens Google
   Maps in a new tab (`LOCATION` and `LOCATION_MAP_URL` in `lib/siteContact.js`).
 - **Footer Social block is hidden** while every link in `socialLinks` (`Footer.jsx`) is `#`
@@ -410,7 +410,7 @@ Secret Manager, never in a file.
   its number there when the phone changes. Each email is a white card on `paper-50` with a 5px
   `brand` band and a Georgia headline, built from tables. Real test:
   `cd functions; $env:SMTP_PASSWORD="..."; node send-test.js you@corephia.com`.
-- Remove EmailJS now: its `VITE_EMAILJS_*` keys and the account.
+- EmailJS is gone from the code and the env files (2026-11-16). Left: close the EmailJS account.
 
 ## Site analytics (2026-09-30)
 

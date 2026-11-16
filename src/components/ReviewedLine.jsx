@@ -2,7 +2,7 @@
 // The site does not name the provider (CLAUDE.md), so it names the credential.
 // Only true once the provider has read the page: update the date when they
 // review it again.
-export const LAST_REVIEWED = "2026-10-13"
+export const LAST_REVIEWED = "2026-11-16"
 
 const label = new Date(`${LAST_REVIEWED}T12:00:00`).toLocaleDateString("en-US", {
   month: "long",
