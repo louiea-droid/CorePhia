@@ -87,7 +87,7 @@ export const isConfigured = Boolean(config.apiKey && config.projectId)
 // there is unreachable without a real signed-in Firebase user.
 export const usingSeedData = import.meta.env.DEV && !isConfigured
 
-const app = isConfigured ? (getApps().find((existing) => existing.name === "[DEFAULT]") ?? initializeApp(config)) : null
+export const app = isConfigured ? (getApps().find((existing) => existing.name === "[DEFAULT]") ?? initializeApp(config)) : null
 const auth = app ? getAuth(app) : null
 const db = app ? getFirestore(app) : null
 
