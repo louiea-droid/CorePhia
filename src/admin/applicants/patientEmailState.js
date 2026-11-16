@@ -1,16 +1,17 @@
 // What the patient email dialog on Applicants should offer, and the "sent"
 // lines on a record. Pure, so `npm run check` runs it under plain node.
-import { EMAIL } from "../../../functions/patientEmail.js"
+import { EMAIL, sentDecision } from "../../../functions/patientEmail.js"
 import { formatStamp } from "../ui/formUi.js"
 
 const DECISIONS = ["accepted", "declined"]
 
 // purpose: accepted | declined | manual. Only one decision email per intake,
 // ever, so either one already sent (or in flight) blocks both; a New email
-// is never blocked by one.
-export function emailDialogState(record, purpose) {
+// is never blocked by one. A claim stuck at "sending" for over 10 minutes
+// doesn't block, as in the function.
+export function emailDialogState(record, purpose, now = Date.now()) {
   const emails = record?.patientEmails ?? {}
-  const sentKind = purpose === "manual" ? null : DECISIONS.find((kind) => emails[kind])
+  const sentKind = purpose === "manual" ? null : sentDecision(emails, now)
   if (sentKind) return { kind: "alreadySent", sentKind, sentAt: emails[sentKind].sentAt }
   if (!EMAIL.test(String(record?.demographics?.email ?? "").trim())) return { kind: "noEmail" }
   return { kind: "send" }

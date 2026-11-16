@@ -9,9 +9,9 @@ import { initializeApp } from "firebase-admin/app"
 import { getFirestore, FieldValue } from "firebase-admin/firestore"
 import nodemailer from "nodemailer"
 import { buildEmail } from "./emails.js"
-import { renderTemplate, PURPOSE_LABELS } from "./emailRender.js"
+import { renderTemplate } from "./emailRender.js"
 import { DEFAULT_TEMPLATES } from "./emailDefaults.js"
-import { planSend, EMAIL } from "./patientEmail.js"
+import { planSend, sendLabel, EMAIL } from "./patientEmail.js"
 
 initializeApp()
 const SMTP_PASSWORD = defineSecret("SMTP_PASSWORD")
@@ -85,19 +85,25 @@ export const sendPatientEmail = onCall({ ...OPTIONS }, async (request) => {
   const intakeRef = mode === "test" ? null : db.doc(`intakeRecords/${intakeId}`)
   const intakeSnap = intakeRef ? await intakeRef.get() : null
   const intake = intakeSnap?.exists ? intakeSnap.data() : null
-  const input = { mode, role, template, callerEmail }
+  const input = { mode, role, template, callerEmail, now: Date.now() }
   let plan = planSend({ ...input, intake })
   if (!plan.ok) fail(plan)
 
   // Decisions claim the intake first, so a double click or a second person
-  // gets already-exists instead of a second email.
+  // gets already-exists instead of a second email. claimedAt lets a claim left
+  // by a crashed send go stale after 10 minutes (planSend); a stale claim of
+  // the other kind is cleared here.
   if (mode === "decision") {
     await db.runTransaction(async (tx) => {
       const fresh = (await tx.get(intakeRef)).data()
-      const again = planSend({ ...input, intake: fresh })
+      const again = planSend({ ...input, now: Date.now(), intake: fresh })
       if (!again.ok) fail(again)
       plan = again
-      tx.update(intakeRef, { [`patientEmails.${plan.kind}`]: { state: "sending", templateId, by: uid } })
+      const stale = ["accepted", "declined"].filter((k) => k !== plan.kind && fresh?.patientEmails?.[k])
+      tx.update(intakeRef, {
+        [`patientEmails.${plan.kind}`]: { state: "sending", templateId, by: uid, claimedAt: FieldValue.serverTimestamp() },
+        ...Object.fromEntries(stale.map((k) => [`patientEmails.${k}`, FieldValue.delete()])),
+      })
     })
   }
 
@@ -127,7 +133,7 @@ export const sendPatientEmail = onCall({ ...OPTIONS }, async (request) => {
     action: "send_patient_email",
     targetCollection: mode === "test" ? "emailTemplates" : "intakeRecords",
     targetId: mode === "test" ? templateId : intakeId,
-    targetLabel: `${PURPOSE_LABELS[template.purpose]} email`,
+    targetLabel: sendLabel({ mode, kind: plan.kind, intake, template }),
     at: FieldValue.serverTimestamp(),
   })
   return { sentAt: sentAt.toISOString(), to: plan.to }

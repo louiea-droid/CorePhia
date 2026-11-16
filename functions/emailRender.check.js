@@ -8,16 +8,26 @@ const t = (text, marks) => ({ type: "text", text, ...(marks && { marks }) })
 const name = { type: "firstName" }
 
 // first name, escaping, fixed lines
-const r = renderTemplate({ subject: "Hi {firstName} & co", headline: "Thank you, {firstName}", body: doc(p(t("Dear "), name, t("."))) }, { firstName: "<Jo>" })
-assert.equal(r.subject, "Hi <Jo> & co")
-assert.ok(r.html.includes("Thank you, &lt;Jo&gt;"))
-assert.ok(r.html.includes("Dear &lt;Jo&gt;."))
-assert.ok(!r.html.includes("<Jo>"))
-assert.ok(r.text.includes("Dear <Jo>."))
+const r = renderTemplate({ subject: "Hi {firstName} & co", headline: "Thank you, {firstName} <b>", body: doc(p(t("Dear <i>"), name, t("."))) }, { firstName: "Jo" })
+assert.equal(r.subject, "Hi Jo & co")
+assert.ok(r.html.includes("Thank you, Jo &lt;b&gt;"))
+assert.ok(r.html.includes("Dear &lt;i&gt;Jo."))
+assert.ok(!r.html.includes("<b>") && !r.html.includes("<i>"))
+assert.ok(r.text.includes("Dear <i>Jo."))
 assert.ok(r.text.includes("Questions? Call us at +1 (866) 849-2673 or email care@corephia.com."))
 assert.ok(r.text.includes("For your privacy, this email doesn't include any of your health information."))
 // empty name falls back to "there"
 assert.ok(renderTemplate({ subject: "s", headline: "Hi {firstName}", body: doc() }, { firstName: "  " }).html.includes("Hi there"))
+// The first name is checked once for every path (anyone can send the form, so
+// the Welcome receipt must not carry someone else's sentence): letters, then
+// letters, spaces, apostrophes, dots and hyphens, 40 at most; else "there".
+const hi = (firstName) => renderTemplate({ subject: "Hi {firstName}", headline: "h", body: doc() }, { firstName }).subject
+for (const ok of ["Jane", "Mary-Jane", "O'Neil", "José", "Anne Marie", "J.R."]) assert.equal(hi(ok), "Hi " + ok, ok)
+assert.equal(hi("José"), "Hi José") // a decomposed é is still a letter
+for (const bad of ["Your card was charged $499, call 555", "a".repeat(60), "<Jo>", "-Jo", "https://evil.io", "", "  ", undefined]) {
+  assert.equal(hi(bad), "Hi there", String(bad))
+}
+assert.equal(hi("  Mary\r\n  Jane "), "Hi Mary Jane")
 
 // marks and lists
 const marked = renderTemplate({ subject: "s", headline: "h", body: doc(
@@ -50,6 +60,14 @@ assert.ok(hostile.html.includes("Big") && hostile.html.includes("red"))
 assert.ok(!hostile.html.includes("img") && !hostile.html.includes("color:red") && !hostile.html.includes("evil.io"))
 
 assert.equal(plainText(doc(p(t("a")), p(t("b")))), "a\n\nb")
+
+// nested lists: each item its own <li> and line, never glued together
+const li = (...content) => ({ type: "listItem", content })
+const nestedDoc = doc({ type: "bulletList", content: [li(p(t("Fruit")), { type: "orderedList", content: [li(p(t("Apple"))), li(p(t("Banana")))] })] })
+const nested = renderTemplate({ subject: "s", headline: "h", body: nestedDoc }, { firstName: "A" })
+assert.ok(!nested.html.includes("AppleBanana") && !nested.text.includes("AppleBanana"))
+assert.ok(/<li>Fruit<ol[^>]*><li>Apple<\/li><li>Banana<\/li><\/ol><\/li>/.test(nested.html), nested.html)
+assert.equal(plainText(nestedDoc), "- Fruit\n   1. Apple\n   2. Banana")
 
 // defaults: three, one per purpose, render without throwing, no em dashes
 assert.deepEqual(DEFAULT_TEMPLATES.map((d) => d.purpose).sort(), ["accepted", "declined", "welcome"])

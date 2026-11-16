@@ -77,15 +77,22 @@ function inlineHtml(n, name) {
   return kids(n).map((c) => inlineHtml(c, name)).join("")
 }
 
-function blockHtml(n, name) {
+// A list item's paragraphs run inline (a <br> between them); a nested list
+// renders as its own list inside the item.
+const itemHtml = (li, name) =>
+  kids(li)
+    .map((c, i) => (c.type === "paragraph" ? `${i ? "<br>" : ""}${inlineHtml(c, name)}` : blockHtml(c, name, true)))
+    .join("")
+
+function blockHtml(n, name, nested = false) {
   switch (n.type) {
     case "paragraph":
       return `<p style="margin:0 0 16px">${kids(n).map((c) => inlineHtml(c, name)).join("")}</p>`
     case "bulletList":
     case "orderedList": {
       const tag = n.type === "bulletList" ? "ul" : "ol"
-      const items = kids(n).map((li) => `<li>${kids(li).map((c) => inlineHtml(c, name)).join("<br>")}</li>`).join("")
-      return `<${tag} style="margin:0 0 16px;padding-left:22px">${items}</${tag}>`
+      const items = kids(n).map((li) => `<li>${itemHtml(li, name)}</li>`).join("")
+      return `<${tag} style="margin:${nested ? "4px 0 0" : "0 0 16px"};padding-left:22px">${items}</${tag}>`
     }
     default:
       // Unknown node (heading, image, ...): keep any text, drop the element.
@@ -100,12 +107,24 @@ function inlineText(n, name) {
   return kids(n).map((c) => inlineText(c, name)).join("")
 }
 
-function blockText(n, name) {
+const INDENT = "   "
+
+function blockText(n, name, indent = "") {
   switch (n.type) {
     case "bulletList":
     case "orderedList":
+      // The item's first paragraph takes the marker; later ones and nested lists sit indented under it.
       return kids(n)
-        .map((li, i) => `${n.type === "bulletList" ? "-" : `${i + 1}.`} ${kids(li).map((c) => inlineText(c, name)).join("\n")}`)
+        .map((li, i) => {
+          const marker = n.type === "bulletList" ? "-" : `${i + 1}.`
+          return kids(li)
+            .map((c, j) => {
+              const inner = blockText(c, name, indent + INDENT)
+              if (c.type === "bulletList" || c.type === "orderedList") return inner
+              return (j ? indent + INDENT : `${indent}${marker} `) + inner
+            })
+            .join("\n")
+        })
         .join("\n")
     case "paragraph":
       return inlineText(n, name)
@@ -122,8 +141,16 @@ export function plainText(body, name = "{firstName}") {
 
 const fill = (s, name) => String(s ?? "").split("{firstName}").join(name)
 
+// Anyone can send the form, so the Welcome receipt would carry whatever was
+// typed as a first name. Only a name-shaped one goes in an email: a letter,
+// then letters, spaces, apostrophes, dots or hyphens, 40 at most.
+export function safeFirstName(firstName) {
+  const name = String(firstName ?? "").normalize("NFC").replace(/\s+/g, " ").trim()
+  return /^\p{L}[\p{L}' .-]{0,39}$/u.test(name) ? name : "there"
+}
+
 export function renderTemplate(template, { firstName } = {}) {
-  const name = String(firstName ?? "").trim() || "there"
+  const name = safeFirstName(firstName)
   const title = fill(template.headline, name)
   const inner = [
     ...kids(template.body).map((n) => blockHtml(n, name)),

@@ -20,6 +20,11 @@ assert.deepEqual(emailDialogState(sent("accepted", { state: "sending", sentAt: u
   sentKind: "accepted",
   sentAt: undefined,
 })
+// A claim stuck at "sending" for over 10 minutes no longer blocks (the function treats it the same).
+const now = Date.parse(at)
+const claim = (minutes) => ({ ...jane, patientEmails: { accepted: { state: "sending", claimedAt: { toMillis: () => now - minutes * 60000 } } } })
+assert.deepEqual(emailDialogState(claim(11), "declined", now), { kind: "send" })
+assert.equal(emailDialogState(claim(1), "declined", now).kind, "alreadySent")
 // A New email is never blocked by a decision email.
 assert.deepEqual(emailDialogState(sent("declined"), "manual"), { kind: "send" })
 

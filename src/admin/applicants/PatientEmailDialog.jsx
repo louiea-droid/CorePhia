@@ -1,6 +1,6 @@
 import { useId, useRef, useState } from "react"
 import { createPortal } from "react-dom"
-import { PURPOSE_LABELS, renderTemplate } from "../../../functions/emailRender.js"
+import { PURPOSE_LABELS, renderTemplate, safeFirstName } from "../../../functions/emailRender.js"
 import EmailFrame from "../emails/EmailFrame"
 import { pickable } from "../emails/templateMath"
 import { sendPatientEmail } from "../emails/templateStore"
@@ -36,6 +36,8 @@ export default function PatientEmailDialog({ record, purpose, templates, templat
   const [busy, setBusy] = useState(null) // "send" | "status"
   const [error, setError] = useState(null)
   const [previewing, setPreviewing] = useState(false)
+  // The function's message when another send got there first (already-exists).
+  const [raced, setRaced] = useState(null)
 
   useDialog({ onClose: onCancel, focusRef: cancelRef, closable: !busy })
 
@@ -43,7 +45,7 @@ export default function PatientEmailDialog({ record, purpose, templates, templat
   const fullName = [record.demographics?.firstName, record.demographics?.lastName].filter(Boolean).join(" ") || "this applicant"
   const email = String(record.demographics?.email ?? "").trim()
   const decision = purpose !== "manual"
-  const state = emailDialogState(record, purpose)
+  const state = raced ? { kind: "alreadySent" } : emailDialogState(record, purpose)
   const picks = templates ? pickable(templates, purpose) : []
   const chosen = picks.find((t) => t.id === chosenId) ?? picks[0]
   const loading = state.kind === "send" && !templates && !templatesError
@@ -55,7 +57,9 @@ export default function PatientEmailDialog({ record, purpose, templates, templat
       const { sentAt } = await sendPatientEmail({ mode: decision ? "decision" : "manual", templateId: chosen.id, intakeId: record.id })
       onSent(chosen.id, sentAt)
     } catch (cause) {
-      setError(cause?.message || "The email couldn't be sent.")
+      // Someone else's decision email went first: offer only the status change.
+      if (cause?.code === "functions/already-exists") setRaced(cause.message)
+      else setError(cause?.message || "The email couldn't be sent.")
       setBusy(null)
     }
   }
@@ -81,7 +85,7 @@ export default function PatientEmailDialog({ record, purpose, templates, templat
 
   if (state.kind === "alreadySent") {
     const on = formatDay(state.sentAt)
-    message = `${firstName} already received the ${SENT_NAME[state.sentKind]} email${on ? ` on ${on}` : ""}. Contact them directly to explain the change.`
+    message = `${raced ?? `${firstName} already received the ${SENT_NAME[state.sentKind]} email${on ? ` on ${on}` : ""}.`} Contact them directly to explain the change.`
     actions = statusOnlyButton("Change status", solid(purpose))
   } else if (state.kind === "noEmail") {
     message = `${firstName} has no valid email address, so no email can be sent.`
@@ -151,7 +155,7 @@ export default function PatientEmailDialog({ record, purpose, templates, templat
                       <span className="block text-sm font-semibold break-words text-ink-950">{t.name}</span>
                       <span className="mt-0.5 block text-xs break-words text-ink-950/60">
                         {t.isDefault ? "Default · " : ""}
-                        {t.subject.replaceAll("{firstName}", firstName)}
+                        {t.subject.replaceAll("{firstName}", safeFirstName(record.demographics?.firstName))}
                       </span>
                     </span>
                   </label>
@@ -186,7 +190,7 @@ export default function PatientEmailDialog({ record, purpose, templates, templat
       </div>
 
       {previewing && chosen && (
-        <EmailPreview template={chosen} firstName={record.demographics?.firstName?.trim() || "Jane"} email={email} onClose={() => setPreviewing(false)} />
+        <EmailPreview template={chosen} firstName={record.demographics?.firstName} email={email} onClose={() => setPreviewing(false)} />
       )}
     </div>,
     getAdminPortalRoot(),
