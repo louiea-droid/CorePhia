@@ -404,7 +404,7 @@ function Editor({
             value={current.name}
             onChange={(event) => onEdit({ name: event.target.value })}
             disabled={!editable}
-            maxLength={100}
+            maxLength={80}
             placeholder="Template name"
             className="-ml-2 w-full min-w-0 rounded-lg @lg:w-auto @lg:flex-1 border border-dashed border-transparent bg-transparent px-2 py-1 font-serif text-2xl text-ink-950 outline-none transition-colors duration-200 placeholder:text-ink-950/35 hover:border-ink-950/15 focus:border-ink-950/40 disabled:hover:border-transparent"
           />

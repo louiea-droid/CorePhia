@@ -11,7 +11,7 @@ export const firstNameNode = Node.create({
     "span",
     {
       "data-first-name": "",
-      class: "mx-0.5 rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent-dark dark:text-accent-text",
+      class: "mx-0.5 rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent-dark [.dark_&]:text-accent-text",
     },
     "first name",
   ],
