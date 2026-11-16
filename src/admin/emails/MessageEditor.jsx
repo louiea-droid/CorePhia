@@ -71,7 +71,7 @@ export default function MessageEditor({ value, onChange, readOnly = false }) {
     content: value,
     editable: !readOnly,
     onUpdate: ({ editor: e }) => onChange?.(e.getJSON()),
-    editorProps: { attributes: { role: "textbox", "aria-multiline": "true", "aria-label": "Message", class: "min-h-40 px-3 py-2 text-sm text-ink-950 outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-accent-dark [&_a]:underline dark:[&_a]:text-accent-text" } },
+    editorProps: { handleKeyDown: (_v, e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setLinkOpen(true); return true } return false }, attributes: { role: "textbox", "aria-multiline": "true", "aria-label": "Message", class: "min-h-40 px-3 py-2 text-sm text-ink-950 outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-accent-dark [&_a]:underline dark:[&_a]:text-accent-text" } },
   })
   const s = useEditorState({
     editor,
