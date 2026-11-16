@@ -24,7 +24,8 @@ import Loader from "./ui/Loader"
 import Login from "./layout/Login"
 import Messages from "./messages/Messages"
 import Applicants from "./applicants/Applicants"
-import { ROLE_LABELS, canOpen } from "./staff/roles"
+import { ROLE_LABELS, canEditTemplates, canOpen } from "./staff/roles"
+import { seedDefaultsIfEmpty } from "./emails/templateStore"
 import Staff from "./staff/Staff"
 import ThemeSwitch from "./layout/ThemeSwitch"
 import { readLastViewedMessagesAt, writeLastViewedMessagesAt } from "./messages/recentMessages"
@@ -318,6 +319,13 @@ export default function AdminApp() {
       setSignerName(access.name)
     })
   }, [user])
+
+  // Admit and Decline need a published template, so the defaults are created
+  // when an admin or super admin first signs in, not only on Email templates.
+  useEffect(() => {
+    if (!user || !signerName || !canEditTemplates(role)) return
+    seedDefaultsIfEmpty(signerName).catch((error) => console.error("Default email templates not created:", error))
+  }, [user, role, signerName])
 
   // The admin must never be indexed or followed, wherever it is hosted.
   const head = (

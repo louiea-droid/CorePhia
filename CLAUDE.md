@@ -329,8 +329,8 @@ plan: `docs/superpowers/plans/2026-11-13-elation-phase-a-retire.md`.
   charts, notes, prescriptions, calendar, to-do, patient messages inbox, the whole patient
   portal (`/account/*`, `/portal/setup`), Stripe billing, the visit-copy functions, `sendMail`
   and the portal emails, and their rules (those collections fall to the deny-all rule). Admit
-  is a status change (`useIntakeRecords.patchRecord`), plus the optional patient email added
-  2026-11-16 (see Email templates). Old audit actions keep their labels
+  is a status change (`useIntakeRecords.patchRecord`), plus the patient decision email added
+  2026-11-16 (see Email templates; status only when no email can be sent). Old audit actions keep their labels
   in `Activity.jsx` but can no longer be written.
 - **Kept:** `/portal/reset` as a **staff-only** password page (`admin/layout/PasswordReset.jsx`),
   because Firebase's reset email (also used to set up new staff) may have its action URL set
@@ -369,8 +369,8 @@ are still "confirmed in writing at enrollment".
 
 ## Admin (what is left after Elation)
 
-Pages: Dashboard (applicant totals and charts), Applicants (admit / decline, each with an optional
-patient email; `discharged` is an older status, still shown and filterable), Email templates
+Pages: Dashboard (applicant totals and charts), Applicants (admit / decline, each sending a patient
+email, or status only when none can be sent; `discharged` is an older status, still shown and filterable), Email templates
 (`/admin/emails`, admitters open it), Queries (contact form), Analytics, Staff, Activity
 (super admin), Profile (`/admin/security`), Help. Unknown `/admin/...` addresses go to the
 dashboard. Keep the Help topics in step when a screen changes.
@@ -423,10 +423,15 @@ Secret Manager, never in a file.
   the role server-side, claims the send in a transaction (a double click or second staff gets
   `already-exists`), sets the status for decisions, writes `patientEmails` on the intake and a
   `send_patient_email` audit entry. **Once-only rule:** one Accepted or Declined email per
-  applicant, ever; after that the status can change with no email. Only the first name goes in
-  an email, never form answers. No valid email on the form: status change only. New audit
+  applicant, ever; after that the status can change with no email. The dialog offers a
+  status-only change only after a send error, with no published template, with no valid
+  address, or once a decision email was sent. A claim stuck at "sending" (`claimedAt`) stops
+  blocking after 10 minutes. Only the first name goes in an email, never form answers, and
+  only a name-shaped one (`safeFirstName`; else "there"). New audit
   actions: save/delete/restore_email_template, send_patient_email. Deploy rules, hosting and
-  functions together; the Declined wording needs Dr. Antonious's OK before real patients. The
+  functions together; after the first deploy an admin or super admin signs in once so the
+  default templates are created (AdminApp seeds them; until then Admit and Decline have no
+  template). The Declined wording needs Dr. Antonious's OK before real patients. The
   real send test (Gmail desktop and phone) is not done yet.
 - **Wording** of the built-in emails is in `functions/emails.js`. Visitor-facing text says "form", not
   "intake" (Louie). Google Workspace's "Append footer" adds the logo, phone and site; update

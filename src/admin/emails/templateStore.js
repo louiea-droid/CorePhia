@@ -111,10 +111,20 @@ export async function restoreVersion(id, version, actorName, current) {
   return saveTemplate(id, { ...pick(current), name, subject, headline, body }, actorName, AUDIT_ACTIONS.restoreEmailTemplate)
 }
 
-export async function seedDefaultsIfEmpty(actorName) {
-  if (usingSeedData) return
-  if (!(await getDocs(query(collection(db, COLLECTION), limit(1)))).empty) return
-  for (const d of DEFAULT_TEMPLATES) await saveTemplate(null, d, actorName)
+// Once per page load (AdminApp on an admin's sign-in, and Email templates):
+// two seeds at once would both see an empty collection. A failure clears it so
+// the next call tries again.
+let seeding = null
+export function seedDefaultsIfEmpty(actorName) {
+  seeding ??= (async () => {
+    if (usingSeedData) return
+    if (!(await getDocs(query(collection(db, COLLECTION), limit(1)))).empty) return
+    for (const d of DEFAULT_TEMPLATES) await saveTemplate(null, d, actorName)
+  })().catch((error) => {
+    seeding = null
+    throw error
+  })
+  return seeding
 }
 
 export async function sendPatientEmail({ mode, templateId, intakeId }) {

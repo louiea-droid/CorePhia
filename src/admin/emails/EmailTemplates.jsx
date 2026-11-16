@@ -52,9 +52,6 @@ const primary = `${button} bg-accent-dark text-oncolor hover:bg-brand-dark`
 const secondary = `${button} border border-ink-950/15 bg-white text-ink-950 hover:bg-ink-950/5`
 const quiet = `${button} text-ink-950/70 hover:bg-ink-950/5 hover:text-ink-950`
 
-// Once per page load: React runs effects twice in development, and two seeds at once would both see an empty collection.
-let seeding = null
-
 // Every email patients get. The admin and super admin edit; the other admitters read.
 export default function EmailTemplates({ role, actorName }) {
   const editable = canEditTemplates(role)
@@ -73,8 +70,7 @@ export default function EmailTemplates({ role, actorName }) {
   useEffect(() => watchTemplates(setTemplates, (e) => setLoadError(e.message)), [])
   useEffect(() => {
     if (!editable) return
-    seeding ??= seedDefaultsIfEmpty(actorName)
-    seeding.catch((e) => setLoadError(e.message))
+    seedDefaultsIfEmpty(actorName).catch((e) => setLoadError(e.message))
   }, [editable, actorName])
   useEffect(() => {
     if (!toast) return
@@ -195,7 +191,8 @@ export default function EmailTemplates({ role, actorName }) {
     }
   }
 
-  const statusOptions = (lockedDefault ? ["draft", "default"] : current?.purpose === "manual" ? ["draft", "published"] : ["draft", "published", "default"]).map(
+  // The saved default stays published and default until another template takes over.
+  const statusOptions = (lockedDefault ? ["default"] : current?.purpose === "manual" ? ["draft", "published"] : ["draft", "published", "default"]).map(
     (value) => ({ value, label: STATUS_LABELS[value] }),
   )
   const setStatus = (value) =>

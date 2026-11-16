@@ -12,6 +12,7 @@
     "test:rules": "firebase emulators:exec --only firestore \"node --test tests/*.test.js\""
   },
   "dependencies": {
+    "@tiptap/core": "^3.34.0",
     "@tiptap/pm": "^3.34.0",
     "@tiptap/react": "^3.34.0",
     "@tiptap/starter-kit": "^3.34.0",
