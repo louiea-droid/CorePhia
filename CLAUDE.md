@@ -553,7 +553,7 @@ and intake branches, so every route change passes through). **Never paste Google
   `beforeunload` prompt, which blocks tool calls until it is dismissed.
 - **Intake for every kind of patient** (Louie, 2026-11-18): a progress bar under the logo,
   one segment per section, each filling through its screens, with the section name
-  above it, no "Part x of 6" (removed, Louie) (`sectionFor` in `intakeScreens.jsx`, taken from the review's
+  in a pale-blue tag over its own segment; the current section's segment widens (4x) so the tag always fits (mockup option B with A's tag; one tag that glides with the segments, its `left` computed from the 1:4 shares and 6px gaps), no "Part x of 6" (removed, Louie) (`sectionFor` in `intakeScreens.jsx`, taken from the review's
   `REVIEW_SECTIONS`, so a new screen must be listed there to get its section; sections must
   stay contiguous in `SCREENS`), no "Need help? Call" line for now (removed, Louie), 16px answer cards, consent text and
   errors, a 44px Back button, and "Send my form" as the last button. Hims has no progress
@@ -570,6 +570,10 @@ and intake branches, so every route change passes through). **Never paste Google
   `toISOString()`), and takes `min` and `max`. Since 2026-11-18 (Louie) it is a typeable
   mm/dd/yyyy box (number pad on phones) with the calendar on its icon; with nothing picked and
   today out of range (date of birth) the calendar opens on the year grid at the latest allowed date.
+  The typing rules are in `dateTyping.js` (checked by `dateTyping.check.js`): month, day and
+  year are separate parts, so editing one never shifts digits into the others, and the caret
+  stays where the patient is typing (it used to jump to the end, so editing the month cleared
+  the year).
   On the contact screen ZIP comes before City and State, and a Florida ZIP fills both
   (`fillFromZip` in `intakeScreens.jsx`, list in `data/floridaZips.json` from GeoNames,
   CC BY 4.0, lazy-loaded; nothing leaves the site). It never overwrites a city the patient typed.

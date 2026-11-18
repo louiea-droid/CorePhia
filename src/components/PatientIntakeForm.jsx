@@ -464,7 +464,7 @@ function Splash({ onDone }) {
           width="336"
           height="112"
           alt=""
-          className="animate-splash-in h-14 w-auto self-start brightness-0 invert sm:h-16"
+          className="animate-splash-in h-14 w-auto self-center brightness-0 invert sm:h-16 sm:self-start"
         />
         <div className="my-auto">
           <p
@@ -554,7 +554,9 @@ export default function PatientIntakeForm() {
     if (sections.at(-1)?.name !== name) sections.push({ name, total: 0, done: 0 })
     sections.at(-1).total += 1
     if (index <= position) sections.at(-1).done += 1
-  })  // Continue appears only once the screen has an answer (Louie's rule, on
+  })
+  const currentSection = sectionFor(current.id)
+  const sectionIndex = sections.findIndex((section) => section.name === currentSection)  // Continue appears only once the screen has an answer (Louie's rule, on
   // every question). A screen can set a stricter ready rule instead.
   // A single-choice screen moves on by itself when tapped, so it never shows
   // Continue, except after a keyboard pick (arrow keys choose without moving
@@ -874,19 +876,41 @@ export default function PatientIntakeForm() {
             filling through that section's screens, so the patient sees six
             parts rather than twenty-odd questions. Only screens this patient
             will see are counted. */}
-        <div className="mb-6">
-          <p className="text-sm font-medium text-ink-950/80">{sectionFor(current.id)}</p>
-          <div
-            role="progressbar"
-            aria-label="Form progress"
-            aria-valuemin={1}
-            aria-valuemax={visible.length}
-            aria-valuenow={position + 1}
-            aria-valuetext={`${sectionFor(current.id)}, question ${position + 1} of ${visible.length}`}
-            className="mt-2.5 flex gap-1.5"
+        {/* The section the patient is in widens (4 shares to everyone else's 1)
+            and carries its name in a blue tag pointing at it (Louie,
+            2026-11-18, option B with A's tag). Widened, the segment always fits
+            its name, so the tag never runs off the edge. There is one tag, not
+            one per segment, so on a new section it glides along with the
+            widening segment instead of jumping (same duration and easing). */}
+        <div
+          role="progressbar"
+          aria-label="Form progress"
+          aria-valuemin={1}
+          aria-valuemax={visible.length}
+          aria-valuenow={position + 1}
+          aria-valuetext={`${currentSection}, question ${position + 1} of ${visible.length}`}
+          className="relative mb-6 pt-7"
+        >
+          <p
+            className="absolute top-0 rounded-md bg-accent/15 px-2 py-0.5 text-xs leading-tight font-semibold whitespace-nowrap text-accent-dark transition-[left] duration-500 ease-out-smooth motion-reduce:transition-none"
+            // The current segment's left edge: the shares before it of the
+            // width left after the 6px gaps, plus those gaps.
+            style={{
+              left: `calc((100% - ${(sections.length - 1) * 6}px) * ${sectionIndex / (sections.length + 3)} + ${sectionIndex * 6}px)`,
+            }}
           >
+            {currentSection}
+            <span
+              aria-hidden="true"
+              className="absolute top-full left-2.5 border-x-4 border-t-4 border-x-transparent border-t-accent/15"
+            />
+          </p>
+          <div className="flex gap-1.5">
             {sections.map((section) => (
-              <div key={section.name} className="h-1 flex-1 overflow-hidden rounded-full bg-ink-950/10">
+              <div
+                key={section.name}
+                className={`h-1 min-w-0 basis-0 overflow-hidden rounded-full bg-ink-950/10 transition-[flex-grow] duration-500 ease-out-smooth motion-reduce:transition-none ${section.name === currentSection ? "grow-4" : "grow"}`}
+              >
                 <div
                   className="h-full rounded-full bg-accent-dark transition-[width] duration-500 ease-out-smooth motion-reduce:transition-none"
                   style={{ width: `${(section.done / section.total) * 100}%` }}

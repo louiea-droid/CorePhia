@@ -3,6 +3,7 @@ import { CalendarIcon, ChevronDownIcon } from "./icons"
 import { SET_VALUE_EVENT } from "./Select"
 import { announceChange } from "./announceChange"
 import { usePopupPlacement } from "./usePopupPlacement"
+import { editTyped, hintFor, parseTyped } from "./dateTyping"
 
 // Padding lives in the triggerClassName prop (default below), same as
 // Select, so a compact caller isn't fighting a baked-in px/py.
@@ -35,22 +36,6 @@ function formatDisplay(value) {
   return `${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")}/${date.getFullYear()}`
 }
 
-// Typing: digits only, slashes added as they go ("0215" -> "02/15").
-function maskTyped(text) {
-  const digits = text.replace(/\D/g, "").slice(0, 8)
-  return [digits.slice(0, 2), digits.slice(2, 4), digits.slice(4)].filter(Boolean).join("/")
-}
-
-// "02/15/1990" -> "1990-02-15"; "" for anything unfinished or not a real day
-// (02/30, 13/01), which leaves the hidden input empty so `required` catches it.
-function parseTyped(text) {
-  const digits = text.replace(/\D/g, "")
-  if (digits.length !== 8) return ""
-  const [month, day, year] = [digits.slice(0, 2), digits.slice(2, 4), digits.slice(4)].map(Number)
-  const date = new Date(year, month - 1, day)
-  const real = year >= 1000 && date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day
-  return real ? toIso(date) : ""
-}
 
 function sameDay(a, b) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
@@ -132,6 +117,14 @@ export default function DatePicker({
     setShownValue(value)
     if (parseTyped(text) !== value) setText(formatDisplay(value) ?? "")
   }
+  // Replacing the box's text puts the caret at the end; put it back where
+  // the patient was typing.
+  const pendingCaret = useRef(null)
+  useLayoutEffect(() => {
+    if (pendingCaret.current === null) return
+    triggerRef.current?.setSelectionRange(pendingCaret.current, pendingCaret.current)
+    pendingCaret.current = null
+  })
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState("days") // "days" | "months" | "years"
   const [viewDate, setViewDate] = useState(
@@ -234,10 +227,23 @@ export default function DatePicker({
         maxLength={10}
         value={text}
         onChange={(event) => {
-          const next = maskTyped(event.target.value)
-          setText(next)
-          const parsed = parseTyped(next)
+          const inputType = event.nativeEvent.inputType ?? ""
+          const deleting = inputType.startsWith("deleteContentBackward")
+            ? "backward"
+            : inputType.startsWith("delete")
+              ? "forward"
+              : false
+          const next = editTyped(text, event.target.value, event.target.selectionStart ?? event.target.value.length, deleting)
+          pendingCaret.current = next.caret
+          setText(next.text)
+          const parsed = parseTyped(next.text)
           if (parsed !== value) setValue(parsed)
+        }}
+        // A finished date reads the usual way once the patient moves on
+        // ("5/3/1990" -> "05/03/1990").
+        onBlur={() => {
+          const shown = formatDisplay(parseTyped(text))
+          if (shown && shown !== text) setText(shown)
         }}
         aria-label={ariaLabel ? `${ariaLabel}, mm/dd/yyyy` : undefined}
         className={`${triggerClass} ${triggerClassName} pr-12`}
@@ -250,7 +256,7 @@ export default function DatePicker({
         className={`pointer-events-none absolute inset-0 flex items-center border border-transparent whitespace-pre ${triggerClassName}`}
       >
         <span className="invisible">{text}</span>
-        <span className="text-ink-950/40">{"mm/dd/yyyy".slice(text.length)}</span>
+        <span className="text-ink-950/40">{hintFor(text)}</span>
       </span>
       <button
         type="button"
