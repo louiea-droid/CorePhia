@@ -3,8 +3,9 @@
 /* oxlint-disable react/only-export-components */
 import { PLANS_SHOWN, PRICES_ANNOUNCED, tiers } from "../data/pricingTiers"
 import DatePicker from "./DatePicker"
-import { CheckCircleIcon, LockIcon } from "./icons"
-import Select from "./Select"
+import { ArrowRightIcon, CheckCircleIcon, LockIcon } from "./icons"
+import Select, { SET_VALUE_EVENT } from "./Select"
+import { announceChange } from "./announceChange"
 
 // A `pattern` that needs at least one character that isn't a space.
 const NOT_BLANK = ".*\\S.*"
@@ -124,9 +125,21 @@ const YES_NO = [
 const NONE = "None of the above"
 
 const inputClass =
-  "w-full rounded-2xl border border-ink-950/15 bg-white px-4 py-3.5 text-ink-950 placeholder-ink-950/40 outline-none transition-colors duration-200 ease-out-smooth focus:border-ink-950/40"
+  "w-full rounded-2xl border border-ink-950/15 bg-white px-4 py-3.5 text-ink-950 placeholder-ink-950/40 outline-none transition-colors duration-200 ease-out-smooth focus:border-ink-950/40 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+// The last part hides number boxes' up/down arrows: no use for a weight.
 
 const labelClass = "mb-1.5 block text-sm font-medium text-ink-950/80"
+
+// A weight box with "lbs" inside it. The unit is inside the <label>, so it
+// is part of the field's spoken name too.
+function LbsInput(props) {
+  return (
+    <span className="relative block">
+      <input type="number" inputMode="decimal" step="any" min="50" max="1000" required className={`${inputClass} pr-12 tabular-nums`} {...props} />
+      <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-ink-950/50">lbs</span>
+    </span>
+  )
+}
 
 function Field({ label, required, children }) {
   return (
@@ -137,6 +150,33 @@ function Field({ label, required, children }) {
       {children}
     </label>
   )
+}
+
+// A Florida ZIP fills in City and State (Louie, 2026-11-18). The list is in
+// the site (loaded the first time a ZIP is typed), so the address never goes
+// to an outside service. Data: GeoNames postal codes (geonames.org), CC BY 4.0;
+// rebuild from download.geonames.org/export/zip/US.zip (rows with state FL).
+// Only fills a field that is empty or was filled from a ZIP before, so a city
+// the patient typed is kept. Other ZIPs leave both for the patient.
+let floridaZips
+async function fillFromZip(event) {
+  const zipInput = event.target
+  const zip = zipInput.value.slice(0, 5)
+  if (!/^\d{5}$/.test(zip)) return
+  floridaZips ??= (await import("../data/floridaZips.json")).default
+  const city = floridaZips[zip]
+  if (!city || zipInput.value.slice(0, 5) !== zip) return
+  const cityInput = zipInput.form.elements.namedItem("city")
+  const stateSelect = zipInput.form.elements.namedItem("state")
+  if (!cityInput.value.trim() || cityInput.value === cityInput.dataset.fromZip) {
+    announceChange(cityInput, city)
+    cityInput.dataset.fromZip = city
+  }
+  if (!stateSelect.value || stateSelect.value === stateSelect.dataset.fromZip) {
+    stateSelect.dispatchEvent(new CustomEvent(SET_VALUE_EVENT, { detail: "FL" }))
+    announceChange(stateSelect, "FL")
+    stateSelect.dataset.fromZip = "FL"
+  }
 }
 
 const toOption = (option) => (typeof option === "string" ? { value: option, label: option } : option)
@@ -155,7 +195,7 @@ function OptionCards({ type, name, options, required, columns = 1 }) {
       {options.map(toOption).map(({ value, label }) => (
         <label
           key={value}
-          className="group relative flex min-h-16 cursor-pointer items-center justify-between gap-3 rounded-xl border border-ink-950/10 bg-white px-5 py-4 text-[15px] font-medium text-ink-950 transition-colors duration-200 ease-out-smooth hover:border-ink-950/30 has-checked:border-accent-dark has-checked:ring-1 has-checked:ring-accent-dark has-checked:ring-inset has-focus-visible:ring-2 has-focus-visible:ring-accent/60 has-focus-visible:ring-offset-2 has-focus-visible:ring-offset-paper-50"
+          className="group relative flex min-h-16 cursor-pointer items-center justify-between gap-3 rounded-xl border border-ink-950/10 bg-white px-5 py-4 text-base font-medium text-ink-950 transition-colors duration-200 ease-out-smooth hover:border-ink-950/30 has-checked:border-accent-dark has-checked:ring-1 has-checked:ring-accent-dark has-checked:ring-inset has-focus-visible:ring-2 has-focus-visible:ring-accent/60 has-focus-visible:ring-offset-2 has-focus-visible:ring-offset-paper-50"
         >
           <input
             type={type}
@@ -246,6 +286,13 @@ function PlanCards({ defaultValue }) {
 const CheckCards = (props) => <OptionCards type="checkbox" required={false} {...props} />
 
 const lbs = (value) => (value ? `${value} lbs` : "")
+// The review shows dates and phones the way the patient typed them
+// (mm/dd/yyyy, (813) 555-0100); anything else is shown as is.
+const usDate = (iso) => (/^\d{4}-\d{2}-\d{2}$/.test(iso || "") ? `${iso.slice(5, 7)}/${iso.slice(8)}/${iso.slice(0, 4)}` : iso)
+const usPhone = (value) => {
+  const d = (value || "").replace(/\D/g, "").replace(/^1(?=\d{10}$)/, "")
+  return d.length === 10 ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}` : value
+}
 const joined = (values) => (values?.length ? values.join(", ") : "")
 const detail = (gate, text) => (gate === "no" ? "None" : text)
 
@@ -311,9 +358,9 @@ const REVIEW_SECTIONS = [
     title: "About you",
     rows: (a) => [
       ["Name", [a.firstName, a.lastName].filter(Boolean).join(" "), ["about-you"]],
-      ["Date of birth", a.dob, ["about-you"]],
+      ["Date of birth", usDate(a.dob), ["about-you"]],
       ["Sex assigned at birth", labelFor(SEX_OPTIONS, a.sexAssigned), ["about-you"]],
-      ["Phone", a.phone, ["contact"]],
+      ["Phone", usPhone(a.phone), ["contact"]],
       ["Email", a.email, ["contact"]],
       ["Address", [a.address, a.city, [a.state, a.zip].filter(Boolean).join(" ")].filter(Boolean).join(", "), ["contact"]],
     ],
@@ -323,12 +370,20 @@ const REVIEW_SECTIONS = [
     rows: (a) => [
       ...(PLANS_SHOWN ? [["Plan", a.plan, ["plan"]]] : []),
       ["Focus", a.appointmentType, ["visit"]],
-      ["Preferred date", a.preferredDate, ["visit"]],
+      ["Preferred date", usDate(a.preferredDate), ["visit"]],
       ["Preferred time", a.preferredTime, ["visit"]],
       ["Notes", a.notes, ["visit"]],
     ],
   },
 ]
+
+// The progress bar's section name for each screen, from the review's own
+// sections (so a new screen gets one by being added there). The review screen
+// itself is "Review".
+const SECTION_BY_SCREEN = Object.fromEntries(
+  REVIEW_SECTIONS.flatMap((section) => section.rows({}).flatMap(([, , screens]) => screens.map((id) => [id, section.title]))),
+)
+export const sectionFor = (screenId) => SECTION_BY_SCREEN[screenId] ?? "Review"
 
 // Edit buttons carry data-edit (the screen ids); PatientIntakeForm handles
 // the click at the form and opens the edit dialog, so no callback has to be
@@ -377,26 +432,24 @@ export const SCREENS = [
     render: ({ answers }) => (
       <>
         <ChoiceCards name="weightLossGoal" options={WEIGHT_LOSS_GOAL} />
-        {answers.weightLossGoal === EXACT && (
-          <Field label="Goal weight (lbs)" required>
-            <input name="goalWeight" type="number" inputMode="decimal" step="any" min="50" max="1000" required autoFocus className={inputClass} />
-          </Field>
-        )}
         {answers.weightLossGoal && (
           <>
-            <Field label="What do you weigh now? (lbs)" required>
-              <input
-                name="currentWeight"
-                type="number"
-                inputMode="decimal"
-                step="any"
-                min="50"
-                max="1000"
-                required
-                autoFocus={answers.weightLossGoal !== EXACT}
-                className={inputClass}
-              />
-            </Field>
+            {/* Current, then goal beside it (Louie, 2026-11-18). The goal box
+                takes focus only when it appears after the current weight is
+                in; appearing together, the current weight comes first. */}
+            <div className={answers.weightLossGoal === EXACT ? "grid grid-cols-[1fr_auto_1fr] gap-3" : ""}>
+              <Field label="Current weight" required>
+                <LbsInput name="currentWeight" autoFocus />
+              </Field>
+              {answers.weightLossGoal === EXACT && (
+                <>
+                  <ArrowRightIcon aria-hidden="true" className="mb-4.75 size-4 self-end text-ink-950/40" />
+                  <Field label="Goal weight" required>
+                    <LbsInput name="goalWeight" autoFocus={Boolean(answers.currentWeight)} />
+                  </Field>
+                </>
+              )}
+            </div>
             <GoalReadout answers={answers} />
           </>
         )}
@@ -424,8 +477,8 @@ export const SCREENS = [
     id: "highest-weight",
     question: "What's the most you've weighed as an adult?",
     render: () => (
-      <Field label="Highest adult weight (lbs)" required>
-        <input name="highestWeight" type="number" inputMode="decimal" step="any" min="50" max="1000" required autoFocus className={inputClass} />
+      <Field label="Highest adult weight" required>
+        <LbsInput name="highestWeight" autoFocus />
       </Field>
     ),
   },
@@ -586,7 +639,6 @@ export const SCREENS = [
   {
     id: "about-you",
     question: "A little about you.",
-    hint: "You must be 18 or older to join.",
     render: ({ today }) => (
       <div className="grid gap-5 sm:grid-cols-2">
         {/* NOT_BLANK: spaces alone pass `required` but are trimmed to nothing on
@@ -662,23 +714,27 @@ export const SCREENS = [
             <input name="address" type="text" required pattern={NOT_BLANK} maxLength={200} autoComplete="address-line1" className={inputClass} />
           </Field>
         </div>
-        <Field label="City" required>
-          <input name="city" type="text" required pattern={NOT_BLANK} maxLength={100} autoComplete="address-level2" className={inputClass} />
-        </Field>
-        <div className="grid grid-cols-2 gap-5">
+        {/* ZIP first: a Florida ZIP fills City and State (fillFromZip). */}
+        <div className="grid grid-cols-[1fr_6rem] gap-5 sm:col-span-2 sm:grid-cols-[8rem_1fr_7rem]">
+          <div className="col-span-2 sm:col-span-1">
+            <Field label="ZIP code" required>
+              <input
+                name="zip"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]{5}(-[0-9]{4})?"
+                required
+                autoComplete="postal-code"
+                onChange={fillFromZip}
+                className={inputClass}
+              />
+            </Field>
+          </div>
+          <Field label="City" required>
+            <input name="city" type="text" required pattern={NOT_BLANK} maxLength={100} autoComplete="address-level2" className={inputClass} />
+          </Field>
           <Field label="State" required>
             <Select name="state" required placeholder="State" options={US_STATES} ariaLabel="State" />
-          </Field>
-          <Field label="ZIP code" required>
-            <input
-              name="zip"
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]{5}(-[0-9]{4})?"
-              required
-              autoComplete="postal-code"
-              className={inputClass}
-            />
           </Field>
         </div>
       </div>
@@ -734,34 +790,38 @@ export const SCREENS = [
       <>
         <Review answers={answers} />
         <div className="space-y-3">
-          <label className="flex items-start gap-3 rounded-2xl bg-paper-100 px-4 py-3.5 text-sm text-ink-950">
+          <label className="flex items-start gap-3 rounded-2xl bg-paper-100 px-4 py-3.5 text-base text-ink-950">
             <input
               type="checkbox"
               name="consentTelehealth"
               required
-              className="mt-0.5 size-4 shrink-0 rounded border-ink-950/30 text-accent-dark focus:ring-accent-dark"
+              className="mt-0.5 size-5 shrink-0 rounded border-ink-950/30 text-accent-dark focus:ring-accent-dark"
             />
-            I consent to receive telehealth services from CorePhia and understand the associated risks and benefits.{" "}
-            <span className="text-brand-dark">*</span>
+            <span>
+              I consent to receive telehealth services from CorePhia and understand the associated risks and benefits.{" "}
+              <span className="text-brand-dark">*</span>
+            </span>
           </label>
-          <label className="flex items-start gap-3 rounded-2xl bg-paper-100 px-4 py-3.5 text-sm text-ink-950">
+          <label className="flex items-start gap-3 rounded-2xl bg-paper-100 px-4 py-3.5 text-base text-ink-950">
             <input
               type="checkbox"
               name="consentHipaa"
               required
-              className="mt-0.5 size-4 shrink-0 rounded border-ink-950/30 text-accent-dark focus:ring-accent-dark"
+              className="mt-0.5 size-5 shrink-0 rounded border-ink-950/30 text-accent-dark focus:ring-accent-dark"
             />
-            I acknowledge that I have received and reviewed the{" "}
-            <a
-              href="/privacy-practices"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-medium text-accent-dark underline underline-offset-4"
-            >
-              Notice of Privacy Practices
-            </a>{" "}
-            (HIPAA).{" "}
-            <span className="text-brand-dark">*</span>
+            <span>
+              I acknowledge that I have received and reviewed the{" "}
+              <a
+                href="/privacy-practices"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-accent-dark underline underline-offset-4"
+              >
+                Notice of Privacy Practices
+              </a>{" "}
+              (HIPAA).{" "}
+              <span className="text-brand-dark">*</span>
+            </span>
           </label>
         </div>
         <div className="grid gap-5 sm:grid-cols-2">

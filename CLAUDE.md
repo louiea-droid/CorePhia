@@ -70,7 +70,9 @@ Firebase project is `corephia-health`. **Last deploy 2026-11-13: hosting + `fire
 functions from branch `elation-emr` at 657f9ee** (lint, check, build and 47/47 rules tests
 first; checked live: care@ on Contact, PLLC in Terms and JSON-LD, the FAQ payment answer, the plan
 step and Elation links in the bundles, HSTS and X-Frame-Options). Only `notifyNewIntake` is
-live (the other 7 were already gone). `main` is behind the live site until `elation-emr` is
+live (the other 7 were already gone). **2026-11-18: hosting only from branch
+`hotfix/continue-button` (e795d55 = 657f9ee + the smaller phone Continue button); nothing
+else from `elation-emr` is live.** `main` is behind the live site until `elation-emr` is
 merged. Phase A cleanup (2026-11-16): the Stripe secrets are destroyed and the retired
 collections were already empty. Left for Louie: delete the Stripe webhook in the Stripe
 dashboard. The CLI checks every `defineSecret` in the codebase on any functions deploy.
@@ -364,13 +366,19 @@ Payment copy (FAQ "How do I pay?", Terms "Intake and enrollment" and "Cost and p
 activation by the practice", so the card is saved but charged only once staff activate the
 membership after acceptance; a declined patient is never charged. The page shows "COREPHIA
 HEALTH PLLC", now used as the legal entity name (see Legal pages).
+Patients who skip the card (2026-11-18, Louie): the confirmation screen says "One step left"
+with an "Add your card" button, and the default Welcome receipt links both plans' sign-ups
+(both, so the email doesn't reveal the plan; URLs copied from `enrollUrl`, change both). A
+card-on-file view in Applicants is not built: plan it first (needs Elation data, Phase B).
 To cancel, call or email us. Cancellation and refund terms
 are still "confirmed in writing at enrollment".
 
 ## Admin (what is left after Elation)
 
 Pages: Dashboard (applicant totals and charts), Applicants (admit / decline, each sending a patient
-email, or status only when none can be sent; `discharged` is an older status, still shown and filterable), Email templates
+email, or status only when none can be sent; `discharged` is an older status, still shown and filterable;
+since 2026-11-18 Pending rows also carry Admit / Decline buttons that open the same email dialog,
+hidden from dietitians; red text in the admin uses `danger-text`, like `accent-text`), Email templates
 (`/admin/emails`, admitters open it), Queries (contact form), Analytics, Staff, Activity
 (super admin), Profile (`/admin/security`), Help. Unknown `/admin/...` addresses go to the
 dashboard. Keep the Help topics in step when a screen changes.
@@ -406,7 +414,7 @@ sent by Cloud Functions in `functions/` (Node 22, `us-central1`) with `nodemaile
 Secret Manager, never in a file.
 
 - **`notifyNewIntake`**: on each new `intakeRecords` doc it sends an
-  alert to `INTAKE_ALERT_TO` (`providermd@corephia.com`; add `dr.dan@corephia.com` once that
+  alert to `INTAKE_ALERT_TO` (`providermd@corephia.com` and `care@corephia.com`, care@ added 2026-11-18; add `dr.dan@corephia.com` once that
   mailbox exists) and a receipt to the patient's intake email ("Welcome to CorePhia!"). Neither
   carries anything from the answers. Patient emails after admission come from Elation. The receipt uses the default published
   **Welcome** template (built-in wording if none).
@@ -418,6 +426,12 @@ Secret Manager, never in a file.
   `admin` and `superAdmin` edit, publish, delete, restore and "Send me a test"; admitters open
   the page and send. Rendering is `functions/emailRender.js`, default wording
   `emailDefaults.js`; every email gets the fixed phone/care@ and privacy lines.
+- **Two console settings it needs (fixed by hand 2026-11-18, first live send test passed):**
+  the Cloud Run service `sendpatientemail` must allow unauthenticated invocations
+  (`allUsers` → Cloud Run Invoker; without it the browser's preflight gets a 403 and the
+  admin shows `internal`; the code itself checks sign-in and role), and the runtime account
+  `437796283271-compute@developer.gserviceaccount.com` needs **Cloud Datastore User** in IAM
+  (without it every Firestore read throws `7 PERMISSION_DENIED`, shown as `INTERNAL [500]`).
 - **`sendPatientEmail`** (callable, `us-central1`, secret `SMTP_PASSWORD` only, in
   `functions/patientEmail.js` and `index.js`): sends decision, manual and test emails. Checks
   the role server-side, claims the send in a transaction (a double click or second staff gets
@@ -537,10 +551,30 @@ and intake branches, so every route change passes through). **Never paste Google
 - **The intake keeps every screen in the DOM** (inactive ones hidden), so tests that read the
   "current screen" must pick the visible one. Leaving a half-filled intake raises a
   `beforeunload` prompt, which blocks tool calls until it is dismissed.
+- **Intake for every kind of patient** (Louie, 2026-11-18): a progress bar under the logo,
+  one segment per section, each filling through its screens, with the section name
+  above it, no "Part x of 6" (removed, Louie) (`sectionFor` in `intakeScreens.jsx`, taken from the review's
+  `REVIEW_SECTIONS`, so a new screen must be listed there to get its section; sections must
+  stay contiguous in `SCREENS`), no "Need help? Call" line for now (removed, Louie), 16px answer cards, consent text and
+  errors, a 44px Back button, and "Send my form" as the last button. Hims has no progress
+  bar; this one is on purpose.
+- **A reload keeps the intake answers** (Louie, 2026-11-18): `readDraft`/`writeDraft` in
+  `PatientIntakeForm.jsx` keep them and the current screen in this tab's **sessionStorage**
+  (`corephia:intake-draft`), erased on send, on leaving the form (unmount) and when the tab
+  closes. Never localStorage (health answers). The privacy policy's "Browser storage" section
+  says so; change it if this changes. The `beforeunload` prompt stays, since closing the tab
+  still loses them.
 - **Intake fields** that the database validates carry matching limits: `maxLength` equal to the
   rules' caps (`isIntakeSections`: free text 2000, picked answers 100), and `pattern` (`NOT_BLANK` in `intakeScreens.jsx`) so spaces alone can't pass
   `required` and then be refused on send. `DatePicker` builds `YYYY-MM-DD` from local parts (never
-  `toISOString()`), and takes `min` and `max`. Pass `ariaLabel` to every `Select` and
+  `toISOString()`), and takes `min` and `max`. Since 2026-11-18 (Louie) it is a typeable
+  mm/dd/yyyy box (number pad on phones) with the calendar on its icon; with nothing picked and
+  today out of range (date of birth) the calendar opens on the year grid at the latest allowed date.
+  On the contact screen ZIP comes before City and State, and a Florida ZIP fills both
+  (`fillFromZip` in `intakeScreens.jsx`, list in `data/floridaZips.json` from GeoNames,
+  CC BY 4.0, lazy-loaded; nothing leaves the site). It never overwrites a city the patient typed.
+  An auto-advance tap only counts on a screen that has `autoAdvance` (an unnamed tap on a screen
+  without one used to match `undefined === undefined` and jump to the next screen). Pass `ariaLabel` to every `Select` and
   `DatePicker`; their visible button has no name otherwise.
 - **Screenshots need scrolling first.** `useIntro`/`useReveal` start elements at `opacity-0`. A
   `fullPage` screenshot captures below-fold sections *blank* because the IntersectionObserver never
@@ -561,6 +595,7 @@ and intake branches, so every route change passes through). **Never paste Google
   2026-09-30; it replaced "Start your intake" and "Start your journey"). The one exception would be
   "Choose {plan}" on pricing cards, which pass `?plan=` and preselect in the form, but those are off
   for now (below). The header has no CTA
-  button (removed per Louie, 2026-09-30); the menu's "Start here" card is the site-wide entry.
+  button (removed per Louie, 2026-09-30); the menu's "Start here" card (Weight Loss view) and a "Get started" button at the
+  bottom of the main menu view (2026-11-18) are the site-wide entries.
 
   

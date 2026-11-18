@@ -92,14 +92,14 @@ export default function Footer() {
           {columns.map((col) => (
             <nav key={col.title} aria-label={col.title}>
               <h3 className="text-sm font-semibold text-paper-100">{col.title}</h3>
-              <ul className="mt-4 space-y-2 text-sm">
+              <ul className="mt-1 text-sm sm:mt-4 sm:space-y-2">
                 {col.links.map(({ label, to, href, onClick }) => (
                   <li key={label}>
                     {onClick ? (
                       <button
                         type="button"
                         onClick={onClick}
-                        className="inline-block cursor-pointer transition-colors duration-200 ease-out-smooth hover:text-paper-100"
+                        className="inline-block py-3 sm:py-0 cursor-pointer transition-colors duration-200 ease-out-smooth hover:text-paper-100"
                       >
                         {label}
                       </button>
@@ -107,20 +107,20 @@ export default function Footer() {
                       to ? (
                         <Link
                           to={to}
-                          className="inline-block transition-colors duration-200 ease-out-smooth hover:text-paper-100"
+                          className="inline-block py-3 sm:py-0 transition-colors duration-200 ease-out-smooth hover:text-paper-100"
                         >
                           {label}
                         </Link>
                       ) : (
                         <a
                           href={href}
-                          className="inline-block transition-colors duration-200 ease-out-smooth hover:text-paper-100"
+                          className="inline-block py-3 sm:py-0 transition-colors duration-200 ease-out-smooth hover:text-paper-100"
                         >
                           {label}
                         </a>
                       )
                     ) : (
-                      <span className="inline-block text-paper-100/30">{label}</span>
+                      <span className="inline-block py-3 sm:py-0 text-paper-100/30">{label}</span>
                     )}
                   </li>
                 ))}

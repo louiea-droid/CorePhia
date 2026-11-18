@@ -12,7 +12,7 @@ const SITE = "https://corephia.com"
 // Append footer). The card shell and PHONE live in emailRender.js.
 // Who hears about each new intake (Louie, 2026-11-04). Add dr.dan@corephia.com
 // once that mailbox exists.
-export const INTAKE_ALERT_TO = ["providermd@corephia.com"]
+export const INTAKE_ALERT_TO = ["providermd@corephia.com", "care@corephia.com"]
 
 export function buildEmail(mail) {
   switch (mail.kind) {

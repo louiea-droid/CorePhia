@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Select from "../../components/Select"
 import ConfirmDialog from "../ui/ConfirmDialog"
 import { PAGE_SIZE_OPTIONS } from "../lib/constants"
@@ -7,6 +7,9 @@ import PageHeader from "../layout/PageHeader"
 import Pagination from "../ui/Pagination"
 import ApplicantModal from "./ApplicantModal"
 import ApplicantsTable from "./ApplicantsTable"
+import PatientEmailDialog from "./PatientEmailDialog"
+import { sentPatch } from "./patientEmailState"
+import { watchTemplates } from "../emails/templateStore"
 import { ApplicantsSkeleton } from "../ui/Skeleton"
 import { canAdmit } from "../staff/roles"
 import { useIntakeRecords } from "./useIntakeRecords"
@@ -40,6 +43,16 @@ export default function Applicants({ role }) {
   const [search, setSearch] = useState("")
   const [planFilter, setPlanFilter] = useState("")
   const [statusFilter, setStatusFilter] = useState("")
+  // Admit / Decline from a table row: { record, purpose }, the same email
+  // dialog the record opens. Templates load only while it is open.
+  const [rowDecision, setRowDecision] = useState(null)
+  const [templates, setTemplates] = useState(null)
+  const [templatesError, setTemplatesError] = useState(null)
+  const deciding = Boolean(rowDecision)
+  useEffect(() => {
+    if (!deciding) return
+    return watchTemplates(setTemplates, (cause) => setTemplatesError(cause.message))
+  }, [deciding])
 
   const canDelete = role === "superAdmin"
   // Admitting/declining isn't destructive, so every clinical role but the
@@ -218,6 +231,7 @@ export default function Applicants({ role }) {
               <ApplicantsTable
                 records={pageRecords}
                 onSelect={setSelectedRecord}
+                onDecide={canReview ? (record, purpose) => setRowDecision({ record, purpose }) : undefined}
                 minRows={pageSize === 10 ? 10 : 0}
                 rankOffset={(currentPage - 1) * pageSize}
               />
@@ -248,6 +262,24 @@ export default function Applicants({ role }) {
         onSaveNote={saveNote}
         audit
       />
+
+      {rowDecision && (
+        <PatientEmailDialog
+          record={rowDecision.record}
+          purpose={rowDecision.purpose}
+          templates={templates}
+          templatesError={templatesError}
+          onCancel={() => setRowDecision(null)}
+          onSent={(templateId, sentAt) => {
+            afterEmailSent(rowDecision.record, sentPatch(rowDecision.record, rowDecision.purpose, templateId, sentAt))
+            setRowDecision(null)
+          }}
+          onStatusOnly={async () => {
+            await updateStatus(rowDecision.record, rowDecision.purpose === "accepted" ? "admitted" : "declined")
+            setRowDecision(null)
+          }}
+        />
+      )}
 
       <ConfirmDialog
         open={Boolean(pendingDelete)}

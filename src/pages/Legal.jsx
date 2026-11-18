@@ -89,7 +89,7 @@ const privacy = [
     h: "Browser storage and tracking",
     id: "browser-storage", // the cookie banner links here
     body: [
-      "We set no advertising cookies. If you accept on the privacy banner, Google Analytics sets its cookies (named _ga) on our public pages. Otherwise the site stores a few small items in your browser so it can work, such as your answer on the privacy banner. The intake keeps a note that you have seen its intro screen for the length of your visit.",
+      "We set no advertising cookies. If you accept on the privacy banner, Google Analytics sets its cookies (named _ga) on our public pages. Otherwise the site stores a few small items in your browser so it can work, such as your answer on the privacy banner. While you fill in the intake, it keeps your answers in that browser tab so a reload doesn't lose them. They are erased when you send the form, leave it, or close the tab, and they are never sent to us before you press Send. It also keeps a note that you have seen its intro screen for the length of your visit.",
       "We do not track you across other websites, so we do not respond to \"Do Not Track\" signals. You can clear stored items in your browser settings at any time. Use \"Privacy choices\" in the footer to change your answer about visit counts.",
     ],
   },

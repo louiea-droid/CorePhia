@@ -6,7 +6,7 @@ import { SUPPORT_PHONE } from "../lib/siteContact"
 import { trackEvent } from "../lib/track"
 import { PLANS_SHOWN } from "../data/pricingTiers"
 import { ArrowRightIcon, CheckCircleIcon, ChevronRightIcon, CloseIcon } from "./icons"
-import { EXACT, PLANS, SCREENS, enrollUrlFor } from "./intakeScreens"
+import { EXACT, PLANS, SCREENS, enrollUrlFor, sectionFor } from "./intakeScreens"
 import { SET_VALUE_EVENT } from "./Select"
 
 const MULTI_FIELDS = new Set(["conditions", "familyHistory"])
@@ -74,11 +74,17 @@ function reportInvalid(invalid, showError) {
     invalid.reportValidity()
     return
   }
-  invalid.parentElement.querySelector("button")?.focus()
+  // DatePicker's text box, else Select's button.
+  const visible = invalid.parentElement.querySelector('input:not([aria-hidden="true"]), button')
+  visible?.focus()
   const label = invalid.closest("label")?.querySelector("span")?.textContent.replace("*", "").trim()
+  // Typed, but not a whole real date (02/30/1990, 02/15/19).
+  const halfTyped = visible?.tagName === "INPUT" && visible.value
   showError(
     invalid.validity.valueMissing
-      ? `${label || "This field"} is required.`
+      ? halfTyped
+        ? `Enter ${(label || "the date").toLowerCase()} as mm/dd/yyyy.`
+        : `${label || "This field"} is required.`
       : `Pick another date for ${(label || "this field").toLowerCase()}.`,
   )
 }
@@ -318,12 +324,12 @@ async function submitIntakeRecord(record) {
   return sendIntakeRecord(record)
 }
 
-// Just the logo, as on the Hims intake: no nav, no progress bar, nothing to
+// Just the logo, as on the Hims intake: no nav, nothing to
 // click. Deliberately not a link, since the intake has no way back into the site.
 function TopBar() {
   return (
-    <header className="mx-auto max-w-xl px-4 pt-8 sm:px-6 sm:pt-12">
-      <img src="/cp-health-header.webp" width="336" height="112" alt="CorePhia Health" className="h-10 w-auto" />
+    <header className="mx-auto max-w-xl px-4 pt-5 sm:px-6 sm:pt-8">
+      <img src="/cp-health-header.webp" width="336" height="112" alt="CorePhia Health" className="h-14 w-auto sm:h-16" />
     </header>
   )
 }
@@ -364,6 +370,44 @@ const markSplashSeen = (seen) => {
     // Storage unavailable: nothing to remember.
   }
 }
+// A reload keeps the answers (Louie, 2026-11-18). Same lifetime as the splash
+// flag: this tab's sessionStorage, erased when the form is sent or the patient
+// leaves it (unmount), and by the browser when the tab closes. Never
+// localStorage: these are health answers, and they must not outlive the visit.
+const DRAFT_KEY = "corephia:intake-draft"
+const readDraft = () => {
+  try {
+    const draft = JSON.parse(sessionStorage.getItem(DRAFT_KEY))
+    return draft?.answers && typeof draft.answers === "object" ? draft : null
+  } catch {
+    return null
+  }
+}
+const writeDraft = (draft) => {
+  try {
+    if (draft) sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+    else sessionStorage.removeItem(DRAFT_KEY)
+  } catch {
+    // Storage unavailable: a reload loses the answers, as before.
+  }
+}
+
+// Puts saved answers back into the form. Only names that were answered are
+// touched, so defaults (the ?plan= preselect, the signature date) stay.
+function restoreAnswers(form, answers) {
+  for (const element of form.elements) {
+    const saved = answers[element.name]
+    if (!element.name || saved === undefined || element.readOnly) continue
+    if (element.type === "radio" || element.type === "checkbox") {
+      element.checked = Array.isArray(saved) ? saved.includes(element.value) : saved === element.value
+    } else if (element.getAttribute("aria-hidden") === "true") {
+      element.dispatchEvent(new CustomEvent(SET_VALUE_EVENT, { detail: saved }))
+    } else {
+      element.value = saved
+    }
+  }
+}
+
 const GRAIN =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")"
 
@@ -420,7 +464,7 @@ function Splash({ onDone }) {
           width="336"
           height="112"
           alt=""
-          className="animate-splash-in h-10 w-auto self-start brightness-0 invert sm:h-12"
+          className="animate-splash-in h-14 w-auto self-start brightness-0 invert sm:h-16"
         />
         <div className="my-auto">
           <p
@@ -453,10 +497,17 @@ export default function PatientIntakeForm() {
   const hasNavigated = useRef(false)
   const settleTimer = useRef(null)
   const pressedInput = useRef(null)
-  const [answers, setAnswers] = useState({})
-  const [currentId, setCurrentId] = useState(SCREENS[0].id)
+  // Answers saved before a reload, read once.
+  const [draft] = useState(readDraft)
+  const [answers, setAnswers] = useState(() => draft?.answers ?? {})
+  // Back to the screen the patient was on, if it's still one they'd see.
+  const [currentId, setCurrentId] = useState(() =>
+    draft && visibleScreens(draft.answers).some((screen) => screen.id === draft.currentId)
+      ? draft.currentId
+      : SCREENS[0].id,
+  )
   const [direction, setDirection] = useState("forward")
-  const [dirty, setDirty] = useState(false)
+  const [dirty, setDirty] = useState(Boolean(draft))
   const [fieldError, setFieldError] = useState("")
   // The review answer being edited: { screenIds, opener }, or null.
   const [editing, setEditing] = useState(null)
@@ -495,7 +546,15 @@ export default function PatientIntakeForm() {
   const position = visible.findIndex((screen) => screen.id === currentId)
   const current = visible[position]
   const isLast = position === visible.length - 1
-  // Continue appears only once the screen has an answer (Louie's rule, on
+  // The progress bar's sections, in order: how many of each section's screens
+  // there are and how many are reached (the current one counts).
+  const sections = []
+  visible.forEach((screen, index) => {
+    const name = sectionFor(screen.id)
+    if (sections.at(-1)?.name !== name) sections.push({ name, total: 0, done: 0 })
+    sections.at(-1).total += 1
+    if (index <= position) sections.at(-1).done += 1
+  })  // Continue appears only once the screen has an answer (Louie's rule, on
   // every question). A screen can set a stricter ready rule instead.
   // A single-choice screen moves on by itself when tapped, so it never shows
   // Continue, except after a keyboard pick (arrow keys choose without moving
@@ -507,8 +566,30 @@ export default function PatientIntakeForm() {
       ? (pickedExact ? answered.typed : keyboardPick)
       : answered.any
 
-  // Answers live only in memory (never Web Storage: they're PHI), so a reload
-  // or closed tab loses them. Warn first.
+  // After a reload: the first render already used the saved answers, so every
+  // follow-up field they reveal exists; now fill the fields themselves. Select
+  // and DatePicker take theirs through an event and re-render, so the screen's
+  // Continue state is read a tick later.
+  useEffect(() => {
+    if (!draft) return
+    restoreAnswers(formRef.current, draft.answers)
+    const timer = setTimeout(() => {
+      setAnswered(screenState(formRef.current.querySelector(`[data-screen="${currentId}"]`)))
+    })
+    return () => clearTimeout(timer)
+    // Once, on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    if (status === "sent") writeDraft(null)
+    else if (dirty) writeDraft({ answers, currentId })
+  }, [answers, currentId, dirty, status])
+  // Leaving the form (in-app navigation) erases the saved answers. A reload
+  // never runs this, so they survive it.
+  useEffect(() => () => writeDraft(null), [])
+
+  // A reload keeps the answers (above), but closing the tab loses them. Warn first.
   useEffect(() => {
     if (!dirty || status === "sent") return
     const warn = (event) => {
@@ -558,7 +639,9 @@ export default function PatientIntakeForm() {
   // beforeunload, and iOS Safari never shows it at all. The /intake entry
   // itself is tagged as the first screen.
   useEffect(() => {
-    window.history.replaceState({ ...window.history.state, intakeScreen: SCREENS[0].id }, "")
+    // After a reload this is the restored screen, not the first.
+    window.history.replaceState({ ...window.history.state, intakeScreen: currentId }, "")
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -652,8 +735,16 @@ export default function PatientIntakeForm() {
     // already chosen (after coming back to it), which fires click but no
     // change. Arrow keys can also fire click, so only the input the pointer
     // actually pressed counts. "Enter exact" reveals a number box instead.
+    // current.autoAdvance is checked first: on a screen without one, any tap
+    // on an element with no name (an icon, the date field's text) matched
+    // undefined === undefined and moved on to the next screen.
     const input = event.target
-    if (input.name === current.autoAdvance && pressedInput.current === input && input.value !== EXACT) {
+    if (
+      current.autoAdvance &&
+      input.name === current.autoAdvance &&
+      pressedInput.current === input &&
+      input.value !== EXACT
+    ) {
       // A beat to show the selected state before moving on. Resetting the
       // timer means a quick second tap still advances only once.
       clearTimeout(advanceTimer.current)
@@ -733,14 +824,14 @@ export default function PatientIntakeForm() {
             {enrollUrl ? (
               <>
                 <p role="status" className="mt-3 max-w-md text-ink-950/70">
-                  Your form is saved, and our care team will reach out within one business day. Now we're taking you
-                  to our secure sign-up page to set up your membership.
+                  Your form is saved. One step left: add your card on our secure sign-up page. You're only charged
+                  once our provider accepts you. Taking you there now.
                 </p>
                 <a
                   href={enrollUrl}
                   className="mt-6 rounded-full bg-ink-950 px-6 py-3 text-sm font-semibold text-paper-50 transition-colors duration-200 ease-out-smooth hover:bg-ink-900"
                 >
-                  Set up your membership
+                  Add your card
                 </a>
               </>
             ) : (
@@ -776,8 +867,34 @@ export default function PatientIntakeForm() {
       {!splashDone && <Splash onDone={setSplashDone} />}
       <TopBar />
       {/* inert while the splash is up, so Tab can't reach the question behind it. */}
-      <main inert={!splashDone} className="mx-auto max-w-xl px-4 pt-8 pb-16 sm:px-6 sm:pt-10">
+      <main inert={!splashDone} className="mx-auto max-w-xl px-4 pt-6 pb-16 sm:px-6">
         <h1 className="sr-only">Patient intake form</h1>
+        {/* How far along, so nobody quits thinking the form never ends
+            (2026-11-18; Hims has none). One segment per section, each
+            filling through that section's screens, so the patient sees six
+            parts rather than twenty-odd questions. Only screens this patient
+            will see are counted. */}
+        <div className="mb-6">
+          <p className="text-sm font-medium text-ink-950/80">{sectionFor(current.id)}</p>
+          <div
+            role="progressbar"
+            aria-label="Form progress"
+            aria-valuemin={1}
+            aria-valuemax={visible.length}
+            aria-valuenow={position + 1}
+            aria-valuetext={`${sectionFor(current.id)}, question ${position + 1} of ${visible.length}`}
+            className="mt-2.5 flex gap-1.5"
+          >
+            {sections.map((section) => (
+              <div key={section.name} className="h-1 flex-1 overflow-hidden rounded-full bg-ink-950/10">
+                <div
+                  className="h-full rounded-full bg-accent-dark transition-[width] duration-500 ease-out-smooth motion-reduce:transition-none"
+                  style={{ width: `${(section.done / section.total) * 100}%` }}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
         {/* noValidate: validation runs per screen in goNext/handleSubmit, since
             the browser's whole-form check would trip on hidden screens. */}
         <form
@@ -821,7 +938,7 @@ export default function PatientIntakeForm() {
           {status === "sending" && slowSend && isLast && (
             <div role="status" className="mt-8 rounded-2xl border border-ink-950/15 bg-paper-100 p-5">
               <p className="font-medium text-ink-950">Still sending your intake form.</p>
-              <p className="mt-1 text-sm text-ink-950/70">
+              <p className="mt-1 text-base text-ink-950/70">
                 This is taking longer than usual, which usually means the internet connection dropped. Keep this page
                 open and it will send once you are back online. If nothing changes, call us at {SUPPORT_PHONE}.
               </p>
@@ -830,7 +947,7 @@ export default function PatientIntakeForm() {
           {status === "error" && isLast && (
             <div role="alert" className="mt-8 rounded-2xl border border-brand-dark/30 bg-paper-100 p-5">
               <p className="font-medium text-ink-950">We could not send your intake form.</p>
-              <p className="mt-1 text-sm text-ink-950/70">
+              <p className="mt-1 text-base text-ink-950/70">
                 Nothing was submitted, so your answers are still here. Try again in a moment. If it keeps failing,
                 call us at {SUPPORT_PHONE} and we will take your intake over the phone.
               </p>
@@ -838,7 +955,7 @@ export default function PatientIntakeForm() {
           )}
 
           {fieldError && (
-            <p role="alert" className="mt-6 text-sm font-medium text-brand-dark">
+            <p role="alert" className="mt-6 text-base font-medium text-brand-dark">
               {fieldError}
             </p>
           )}
@@ -854,9 +971,9 @@ export default function PatientIntakeForm() {
               <button
                 type="button"
                 onClick={() => window.history.back()}
-                className="-ml-2 inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-full py-2 pr-3 pl-2 text-sm font-medium text-ink-950/60 transition-colors duration-200 ease-out-smooth hover:text-ink-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-dark"
+                className="-ml-2 inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1 rounded-full py-2.5 pr-3 pl-2 text-base font-medium text-ink-950/60 transition-colors duration-200 ease-out-smooth hover:text-ink-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-dark"
               >
-                <ChevronRightIcon className="size-4 rotate-180" />
+                <ChevronRightIcon className="size-5 rotate-180" />
                 Back
               </button>
             )}
@@ -873,9 +990,11 @@ export default function PatientIntakeForm() {
               <button
                 type="submit"
                 disabled={status === "sending"}
-                className="inline-flex h-14 flex-1 cursor-pointer items-center justify-center gap-2 rounded-full bg-ink-950 px-8 text-base font-semibold text-paper-50 shadow-lg shadow-ink-950/20 transition-colors duration-200 ease-out-smooth hover:bg-brand-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-dark focus-visible:ring-offset-2 focus-visible:ring-offset-paper-50 disabled:cursor-not-allowed disabled:opacity-60 sm:ml-auto sm:min-w-44 sm:flex-none"
+                // Phones: a 48px button on the right, not the whole row
+                // (Louie, 2026-11-18); Submit still spans it on the last screen.
+                className={`inline-flex h-12 cursor-pointer items-center justify-center gap-2 rounded-full bg-ink-950 px-7 text-base font-semibold text-paper-50 shadow-lg shadow-ink-950/20 transition-colors duration-200 ease-out-smooth hover:bg-brand-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-dark focus-visible:ring-offset-2 focus-visible:ring-offset-paper-50 disabled:cursor-not-allowed disabled:opacity-60 sm:ml-auto sm:h-14 sm:min-w-44 sm:flex-none sm:px-8 ${isLast ? "flex-1" : "ml-auto"}`}
               >
-                {isLast ? (status === "sending" ? "Sending…" : "Submit intake form") : "Continue"}
+                {isLast ? (status === "sending" ? "Sending…" : "Send my form") : "Continue"}
                 {!isLast && <ArrowRightIcon className="size-5" />}
               </button>
             )}

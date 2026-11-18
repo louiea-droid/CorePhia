@@ -30,7 +30,7 @@ const TOPICS = [
     steps: [
       "Open Applicants. New form submissions show as Pending. Search by name, or filter by status.",
       "Click a row to read the whole form.",
-      "Press Admit or Decline. A box asks which email to send the patient (the default is chosen for you, and Preview shows it). Pending and Discharge change the status with no email. Then add an admitted patient in Elation, where their chart, visits, messages and billing live.",
+      "Press Admit or Decline, in the form or right on a Pending row in the list. A box asks which email to send the patient (the default is chosen for you, and Preview shows it). Pending and Discharge change the status with no email. Then add an admitted patient in Elation, where their chart, visits, messages and billing live.",
       "Press Send email on a form to send a New email template to that person.",
       "Use Note to save a private team note.",
     ],

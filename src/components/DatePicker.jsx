@@ -35,8 +35,34 @@ function formatDisplay(value) {
   return `${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")}/${date.getFullYear()}`
 }
 
+// Typing: digits only, slashes added as they go ("0215" -> "02/15").
+function maskTyped(text) {
+  const digits = text.replace(/\D/g, "").slice(0, 8)
+  return [digits.slice(0, 2), digits.slice(2, 4), digits.slice(4)].filter(Boolean).join("/")
+}
+
+// "02/15/1990" -> "1990-02-15"; "" for anything unfinished or not a real day
+// (02/30, 13/01), which leaves the hidden input empty so `required` catches it.
+function parseTyped(text) {
+  const digits = text.replace(/\D/g, "")
+  if (digits.length !== 8) return ""
+  const [month, day, year] = [digits.slice(0, 2), digits.slice(2, 4), digits.slice(4)].map(Number)
+  const date = new Date(year, month - 1, day)
+  const real = year >= 1000 && date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day
+  return real ? toIso(date) : ""
+}
+
 function sameDay(a, b) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+}
+
+// Where the calendar opens with nothing picked: today, or the nearest allowed
+// day. Date of birth has max = 18 years ago, so opening on today showed a
+// month of greyed-out days with nothing to tap.
+function clampToRange(date, minDate, maxDate) {
+  if (maxDate && date > maxDate) return maxDate
+  if (minDate && date < minDate) return minDate
+  return date
 }
 
 function yearBlockStartFor(year) {
@@ -96,9 +122,21 @@ export default function DatePicker({
     if (!isControlled) setInternalValue(next)
     onChange?.(next)
   }
+  // What's in the text box. A typed date outside min..max is still saved, so
+  // the hidden input's own min/max check reports it on Continue.
+  const [text, setText] = useState(() => formatDisplay(value) ?? "")
+  // A pick, Clear or outside set changed the value: show it (set during
+  // render, React's pattern for state that follows a prop).
+  const [shownValue, setShownValue] = useState(value)
+  if (value !== shownValue) {
+    setShownValue(value)
+    if (parseTyped(text) !== value) setText(formatDisplay(value) ?? "")
+  }
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState("days") // "days" | "months" | "years"
-  const [viewDate, setViewDate] = useState(() => fromIso(defaultValue) ?? new Date())
+  const [viewDate, setViewDate] = useState(
+    () => fromIso(defaultValue) ?? clampToRange(new Date(), fromIso(min), fromIso(max)),
+  )
   const [yearBlockStart, setYearBlockStart] = useState(() => yearBlockStartFor(viewDate.getFullYear()))
   const rootRef = useRef(null)
   const inputRef = useRef(null)
@@ -188,21 +226,48 @@ export default function DatePicker({
         className="sr-only"
       />
 
-      <button
+      {/* Type the date, or open the calendar with the icon (Louie, 2026-11-18). */}
+      <input
         ref={triggerRef}
+        type="text"
+        inputMode="numeric"
+        maxLength={10}
+        value={text}
+        onChange={(event) => {
+          const next = maskTyped(event.target.value)
+          setText(next)
+          const parsed = parseTyped(next)
+          if (parsed !== value) setValue(parsed)
+        }}
+        aria-label={ariaLabel ? `${ariaLabel}, mm/dd/yyyy` : undefined}
+        className={`${triggerClass} ${triggerClassName} pr-12`}
+      />
+      {/* The rest of mm/dd/yyyy stays visible while typing ("23" shows as
+          23/dd/yyyy, Louie 2026-11-18): the typed part is invisible here, so
+          the box's own text and caret show through. */}
+      <span
+        aria-hidden="true"
+        className={`pointer-events-none absolute inset-0 flex items-center border border-transparent whitespace-pre ${triggerClassName}`}
+      >
+        <span className="invisible">{text}</span>
+        <span className="text-ink-950/40">{"mm/dd/yyyy".slice(text.length)}</span>
+      </span>
+      <button
         type="button"
         onClick={() => {
-          setViewDate(selected ?? new Date())
-          setMode("days")
+          const start = selected ?? clampToRange(today, minDate, maxDate)
+          setViewDate(start)
+          setYearBlockStart(yearBlockStartFor(start.getFullYear()))
+          // Today out of range (date of birth): pick the year first.
+          setMode(!selected && outOfRange(today) ? "years" : "days")
           setOpen((previous) => !previous)
         }}
         aria-haspopup="dialog"
         aria-expanded={open}
-        aria-label={ariaLabel ? `${ariaLabel}: ${formatDisplay(value) ?? "not set"}` : undefined}
-        className={`${triggerClass} ${triggerClassName}`}
+        aria-label="Open calendar"
+        className="absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-r-2xl text-ink-950/40 transition-colors duration-150 hover:text-ink-950"
       >
-        <span className={value ? "" : "text-ink-950/40"}>{formatDisplay(value) ?? "mm/dd/yyyy"}</span>
-        <CalendarIcon className="size-4 shrink-0 text-ink-950/40" />
+        <CalendarIcon className="size-4" />
       </button>
 
       <div
@@ -353,7 +418,10 @@ export default function DatePicker({
           <div className="mt-2 flex items-center justify-between border-t border-ink-950/10 px-1 pt-2 text-xs font-medium">
             <button
               type="button"
-              onClick={() => setValue("")}
+              onClick={() => {
+                setText("")
+                setValue("")
+              }}
               className="text-ink-950/50 transition-colors duration-150 hover:text-ink-950"
             >
               Clear

@@ -5,6 +5,7 @@
 const p = (...content) => ({ type: "paragraph", content })
 const t = (text) => ({ type: "text", text })
 const b = (text) => ({ type: "text", text, marks: [{ type: "bold" }] })
+const link = (text, href) => ({ type: "text", text, marks: [{ type: "link", attrs: { href } }] })
 const doc = (...content) => ({ type: "doc", content })
 
 export const DEFAULT_TEMPLATES = [
@@ -17,7 +18,7 @@ export const DEFAULT_TEMPLATES = [
     headline: "Welcome aboard, {firstName}",
     body: doc(
       p(t("We're happy to let you know that our provider has reviewed your form, and you've been accepted into the CorePhia program.")),
-      p(b("What happens next:"), t(" you'll get an email from Elation, the secure patient portal we use, inviting you to create your account. Once you're set up, you can book your first visit and message your care team directly. If it hasn't arrived in a few days, check your spam folder or give us a call.")),
+      p(b("What happens next:"), t(" our team will contact you to schedule your first visit. You'll also get an email from Elation, our secure patient portal, to set up your account. Don't see it in a few days? Check your spam folder or give us a call.")),
       p(t("Your membership begins when our team activates it, and that's when the card you added is first charged.")),
       p(t("We're looking forward to working with you.")),
     ),
@@ -47,6 +48,16 @@ export const DEFAULT_TEMPLATES = [
     body: doc(
       p(t("We're glad you're here! We've received your form, and taking that first step matters.")),
       p(t("Our care team is reviewing your answers. If the program looks like a good fit, we'll reach out to set up your first visit and send you an invite to your patient portal.")),
+      // Both plans, so the email doesn't say which one was picked. Same URLs as
+      // enrollUrl in src/data/pricingTiers.js; change both together.
+      p(
+        b("Haven't added your card yet?"),
+        t(" Finish setting up your membership: "),
+        link("Core", "https://app.elationemr.com/membership/1449583043739652/1451540339032515"),
+        t(" or "),
+        link("Core Complete", "https://app.elationemr.com/membership/1449583043739652/1451543320199619"),
+        t(". You're only charged once our provider accepts you."),
+      ),
     ),
   },
 ]

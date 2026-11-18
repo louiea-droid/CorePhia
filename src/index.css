@@ -55,6 +55,9 @@
      and no one blue passes AA as both text on the dark admin and a fill
      under light text. The admin redefines this one below. */
   --color-accent-text: #2563eb;
+  /* Red used as text (Decline on Applicants), the same split: red-600 is
+     4.8:1 on white but ~3.5:1 on the dark admin, so .dark redefines it. */
+  --color-danger-text: #dc2626;
 
   /* Modal/drawer backdrops. Same value as ink-950, but as its own token so
      it is NOT flipped under .dark — a scrim built from ink-950 turns into a
@@ -86,6 +89,7 @@
   --color-white: #131c38;
   /* #2563eb measured ~3:1 on these surfaces; this is 6:1+. */
   --color-accent-text: #60a5fa;
+  --color-danger-text: #f87171;
   --color-ink-950: #eef2f9;
   --color-ink-900: #c9d3e8;
   --color-paper-50: #0a0f22;

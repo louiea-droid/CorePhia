@@ -260,6 +260,15 @@ export default function MobileMenu({ open, onClose }) {
                   </li>
                 ))}
               </ul>
+              {/* The intake one tap from the menu, not only inside Weight Loss. */}
+              <Link
+                to="/intake"
+                onClick={onClose}
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-ink-950 px-6 py-3.5 text-base font-semibold text-paper-50 transition-colors duration-200 ease-out-smooth hover:bg-brand-dark"
+              >
+                Get started
+                <ArrowRightIcon className="size-5" />
+              </Link>
             </div>
           </div>
         )}

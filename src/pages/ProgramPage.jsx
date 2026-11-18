@@ -64,7 +64,7 @@ export default function ProgramPage() {
       <section
         aria-labelledby="program-heading"
         data-header-theme="dark"
-        className="relative mx-3 mt-4 overflow-hidden rounded-3xl bg-ink-950 sm:mx-4"
+        className="relative mx-4 mt-4 overflow-hidden rounded-3xl bg-ink-950"
       >
         <div className="absolute inset-0 bg-linear-to-tr from-ink-950 via-ink-800 to-brand" />
         {/* Darkens the text side only: the accent headline measured 3.2:1 where

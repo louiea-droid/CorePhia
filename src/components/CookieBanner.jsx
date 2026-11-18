@@ -27,13 +27,12 @@ export default function CookieBanner() {
     <section
       aria-label="Privacy choices"
       data-no-track
-      className="fixed inset-x-3 bottom-3 z-40 rounded-2xl bg-ink-950 p-5 text-paper-100 shadow-[0_20px_50px_-12px_rgb(5_10_35/0.6)] ring-1 ring-paper-50/10 sm:inset-x-auto sm:left-4 sm:bottom-4 sm:max-w-md sm:p-6"
+      className="fixed inset-x-3 bottom-3 z-40 rounded-2xl bg-ink-950 p-4 text-paper-100 shadow-[0_20px_50px_-12px_rgb(5_10_35/0.6)] ring-1 ring-paper-50/10 sm:inset-x-auto sm:left-4 sm:bottom-4 sm:max-w-md sm:p-6"
     >
       <p className="font-serif text-lg text-paper-50">Your privacy</p>
-      <p className="mt-2 text-sm leading-relaxed text-paper-100/80">
-        We use essential storage to run the site. With your OK, we also count visits and use Google Analytics
-        cookies on our public pages to improve them. On the intake we only count that it was opened, never your
-        answers, and nothing in the patient portal is counted.{" "}
+      <p className="mt-1.5 text-sm leading-relaxed text-paper-100/80">
+        With your OK, we count visits and use Google Analytics cookies on our public pages. Your form answers are
+        never counted.{" "}
         <Link
           to="/privacy#browser-storage"
           className="rounded-sm underline underline-offset-2 transition-colors duration-200 ease-out-smooth hover:text-paper-50 focus-visible:ring-2 focus-visible:ring-paper-50 focus-visible:outline-none"
@@ -41,18 +40,18 @@ export default function CookieBanner() {
           Read our privacy policy
         </Link>
       </p>
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-3 flex gap-2 sm:mt-4">
         <button
           type="button"
           onClick={() => choose("accepted")}
-          className="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-ink-950 transition-colors duration-200 ease-out-smooth hover:bg-paper-50 focus-visible:ring-2 focus-visible:ring-paper-50 focus-visible:outline-none"
+          className="flex-1 rounded-full bg-accent px-5 py-2.5 sm:flex-none text-sm font-semibold text-ink-950 transition-colors duration-200 ease-out-smooth hover:bg-paper-50 focus-visible:ring-2 focus-visible:ring-paper-50 focus-visible:outline-none"
         >
           Accept
         </button>
         <button
           type="button"
           onClick={() => choose("declined")}
-          className="rounded-full border border-paper-100/30 px-5 py-2.5 text-sm font-semibold text-paper-100 transition-colors duration-200 ease-out-smooth hover:bg-paper-100/10 focus-visible:ring-2 focus-visible:ring-paper-50 focus-visible:outline-none"
+          className="flex-1 rounded-full border border-paper-100/30 px-5 py-2.5 sm:flex-none text-sm font-semibold text-paper-100 transition-colors duration-200 ease-out-smooth hover:bg-paper-100/10 focus-visible:ring-2 focus-visible:ring-paper-50 focus-visible:outline-none"
         >
           Decline
         </button>
