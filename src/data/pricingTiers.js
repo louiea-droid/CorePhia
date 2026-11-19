@@ -66,7 +66,7 @@ export const tiers = [
     features: [
       "Everything in Core",
       "Custom meal plan recommendation from your provider",
-      "1:1 exercise plan with specialist check-ins",
+      "1:1 exercise plans with specialist check-ins",
       "Advanced lab testing (twice a year)",
       "Extra provider visits between your monthly reviews",
     ],
