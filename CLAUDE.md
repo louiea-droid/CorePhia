@@ -221,7 +221,7 @@ staff, activity, help; charts, calendar, to-do and the patient portal were retir
   (Louie, 2026-10-13). It comes back by itself once one is a real URL.
 - **Lighthouse (2026-10-13, mobile, local hosting emulator):** SEO 100, Best Practices 100,
   Accessibility 100, Performance 77 to 85 (it varies between runs). Fixed: the header and intake
-  logo is `public/cp-health-header.webp`, a 336x112 copy (11 KB) of `cp-health.webp` (2172x724,
+  logo is `public/cp-health-header.webp`, a 504x168 copy (16 KB, enlarged 2026-11-19 so the bigger logos stay sharp: header 56/64px, intake and splash 64/80px tall) of `cp-health.webp` (2172x724,
   kept); low-contrast small text; cache headers in `firebase.json` (`/assets/**` a year, images
   a day; the emulator doesn't apply them, so check with `curl -I` after deploying). Since then
   the fonts are self-hosted and the hero no longer waits for JavaScript (2026-10-19, see
@@ -284,7 +284,7 @@ delete, vitals ranges, copy vs Terms) is planned for 2026-10-22. Strike items th
   page heroes), all to be replaced with the client's own.
 - A logo without orange in it. `cp-health.webp` (the logo, ~98 KB) still has the two orange arcs
   around the infinity mark (looked at 2026-10-02). Louie said to set this aside (2026-10-13). When
-  it arrives, also regenerate `cp-health-header.webp` (336x112) and update `cp-logo.webp`.
+  it arrives, also regenerate `cp-health-header.webp` (504x168) and update `cp-logo.webp`.
 - Real social profile URLs, success stories with signed patient consent, the how-it-works video.
 
 ### Known remaining gaps

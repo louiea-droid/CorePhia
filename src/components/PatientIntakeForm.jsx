@@ -329,7 +329,7 @@ async function submitIntakeRecord(record) {
 function TopBar() {
   return (
     <header className="mx-auto max-w-xl px-4 pt-5 sm:px-6 sm:pt-8">
-      <img src="/cp-health-header.webp" width="336" height="112" alt="CorePhia Health" className="h-14 w-auto sm:h-16" />
+      <img src="/cp-health-header.webp" width="336" height="112" alt="CorePhia Health" className="h-16 w-auto sm:h-20" />
     </header>
   )
 }
@@ -464,7 +464,7 @@ function Splash({ onDone }) {
           width="336"
           height="112"
           alt=""
-          className="animate-splash-in h-14 w-auto self-center brightness-0 invert sm:h-16 sm:self-start"
+          className="animate-splash-in h-16 w-auto self-center brightness-0 invert sm:h-20 sm:self-start"
         />
         <div className="my-auto">
           <p

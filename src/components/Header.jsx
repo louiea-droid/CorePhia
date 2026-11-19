@@ -84,7 +84,7 @@ export default function Header() {
               width="336"
               height="112"
               alt="CorePhia Health"
-              className={`h-12 w-auto transition-[filter] duration-500 ease-out-smooth sm:h-14 ${
+              className={`h-14 w-auto transition-[filter] duration-500 ease-out-smooth sm:h-16 ${
                 dark ? "brightness-0 invert" : ""
               }`}
             />
