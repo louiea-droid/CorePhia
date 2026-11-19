@@ -20,7 +20,9 @@ export default function PlanCard({ tier, className, tag, children }) {
 
       <div className="border-y border-ink-950/10 py-5">
         {PRICES_ANNOUNCED ? (
-          <>
+          // The saving sits at the right of the price line; it wraps under the
+          // price when the card is too narrow (phones).
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-3">
             <p className="font-serif text-4xl text-ink-950">
               {tier.wasPrice && (
                 <>
@@ -35,11 +37,11 @@ export default function PlanCard({ tier, className, tag, children }) {
               <span className="ml-1 font-sans text-sm font-medium text-ink-950/60">per month</span>
             </p>
             {tier.wasPrice && (
-              <p className="mt-3 inline-flex rounded-full bg-accent/12 px-2.5 py-1 text-xs font-semibold text-accent-dark">
+              <p className="rounded-full bg-accent/12 px-2.5 py-1 text-xs font-semibold whitespace-nowrap text-accent-dark">
                 Save ${tier.wasPrice - tier.price} a month
               </p>
             )}
-          </>
+          </div>
         ) : (
           <p className="inline-flex items-center gap-2 rounded-full bg-accent/12 px-3.5 py-1.5 text-sm font-semibold text-accent-dark">
             <span aria-hidden="true" className="size-1.5 rounded-full bg-accent-dark" />
