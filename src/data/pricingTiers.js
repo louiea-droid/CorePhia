@@ -18,6 +18,9 @@ export const tiers = [
     icon: LeafIcon,
     description: "Essential support to kickstart your journey, with nutrition and workout guidance.",
     price: "299",
+    // Crossed-out price on /membership only (Dr. Antonious, 2026-11-19).
+    // Remove to drop the discount display.
+    wasPrice: "349",
     // Elation membership sign-up; the intake sends the patient here after the
     // form is saved (Louie, 2026-11-13).
     enrollUrl: "https://app.elationemr.com/membership/1449583043739652/1451540339032515",
@@ -36,9 +39,9 @@ export const tiers = [
       "Personalized weight loss plan",
       "Prescription medication",
       "Personalized nutrition guidance",
-      "Dietitian discussion and macro/calorie tracking (every quarter)",
+      "In-depth diet discussion",
       "Workout & lifestyle recommendations",
-      "Monthly progress review with provider",
+      "Regular meetings with provider",
       "Patient support through your portal",
     ],
   },
@@ -48,10 +51,11 @@ export const tiers = [
     icon: CrownIcon,
     description: "Our most hands-on plan, with more time from your provider, dietitian and trainer.",
     price: "349",
+    wasPrice: "399",
     enrollUrl: "https://app.elationemr.com/membership/1449583043739652/1451543320199619",
     highlightsLead: "Everything in Core, plus",
     highlights: [
-      "Custom meal plans from your dietitian",
+      "Custom meal plans recommendation from",
       "1:1 exercise plan with certified trainer check-ins",
       "Advanced lab testing (twice a year)",
       "Extra provider visits between your monthly reviews",
@@ -61,8 +65,8 @@ export const tiers = [
     // (2026-11-02); "Unlimited provider access" and "VIP experience" removed.
     features: [
       "Everything in Core",
-      "Custom meal plans from your dietitian",
-      "1:1 exercise plan with certified trainer check-ins",
+      "Custom meal plan recommendation from your provider",
+      "1:1 exercise plan with specialist check-ins",
       "Advanced lab testing (twice a year)",
       "Extra provider visits between your monthly reviews",
     ],

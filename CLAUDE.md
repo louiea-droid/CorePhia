@@ -350,7 +350,11 @@ plan: `docs/superpowers/plans/2026-11-13-elation-phase-a-retire.md`.
 ## Membership (2026-09-30)
 
 `/membership` shows two plans, Core ($299) and Core Complete ($349) a month. Core+ was merged
-into Core on 2026-11-02 (Louie). `/pricing` redirects there. Two switches in
+into Core on 2026-11-02 (Louie). `/pricing` redirects there. **Promo display (Dr. Antonious via
+Louie, 2026-11-19):** the /membership cards show the old price crossed out ($349 for Core, $399
+for Core Complete) beside the current one, with a "Save $50 a month" tag (`wasPrice` in
+`pricingTiers.js`, rendered by `PlanCard`; remove `wasPrice` to drop it). The intake plan step,
+the FAQ and the JSON-LD show only the current price. Two switches in
 `data/pricingTiers.js`: `PLANS_SHOWN` (plans on the page, the intake plan question, `?plan=`
 preselect) and `PRICES_ANNOUNCED` (false = "Coming soon"). Plans and features are still
 placeholders awaiting the client, and must match what is set up in Elation billing. The Core

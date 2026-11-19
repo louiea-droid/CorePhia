@@ -20,11 +20,26 @@ export default function PlanCard({ tier, className, tag, children }) {
 
       <div className="border-y border-ink-950/10 py-5">
         {PRICES_ANNOUNCED ? (
-          <p className="font-serif text-4xl text-ink-950">
-            <span className="align-top text-xl">$</span>
-            {tier.price}
-            <span className="ml-1 font-sans text-sm font-medium text-ink-950/60">per month</span>
-          </p>
+          <>
+            <p className="font-serif text-4xl text-ink-950">
+              {tier.wasPrice && (
+                <>
+                  <span className="sr-only">Was ${tier.wasPrice}, now </span>
+                  <s aria-hidden="true" className="mr-2.5 text-2xl text-ink-950/50 decoration-[1.5px]">
+                    ${tier.wasPrice}
+                  </s>
+                </>
+              )}
+              <span className="align-top text-xl">$</span>
+              {tier.price}
+              <span className="ml-1 font-sans text-sm font-medium text-ink-950/60">per month</span>
+            </p>
+            {tier.wasPrice && (
+              <p className="mt-3 inline-flex rounded-full bg-accent/12 px-2.5 py-1 text-xs font-semibold text-accent-dark">
+                Save ${tier.wasPrice - tier.price} a month
+              </p>
+            )}
+          </>
         ) : (
           <p className="inline-flex items-center gap-2 rounded-full bg-accent/12 px-3.5 py-1.5 text-sm font-semibold text-accent-dark">
             <span aria-hidden="true" className="size-1.5 rounded-full bg-accent-dark" />
