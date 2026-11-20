@@ -149,6 +149,7 @@ function buildSeedRecords(count) {
         preferredDate: "",
         preferredTime: "",
         notes: "",
+        source: pick(["", "", "ig", "fb", "google"]),
       },
       consent: {
         telehealth: true,

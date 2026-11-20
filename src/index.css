@@ -768,6 +768,23 @@ body {
    analytics range): a short fade and scale from the top edge. It runs each
    time the element appears, so it works for both `hidden` and conditional
    rendering. The Select, date and time pickers do the same with transitions. */
+/* The intake goal card's line draws in once when the checkpoint shows
+   (paths carry pathLength="1"). */
+@keyframes draw-line {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+.animate-draw-line {
+  stroke-dasharray: 1;
+  animation: draw-line 900ms var(--ease-out-smooth) 150ms both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-draw-line {
+    animation: none;
+  }
+}
+
 @keyframes pop-in {
   from {
     opacity: 0;

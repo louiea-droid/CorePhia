@@ -34,7 +34,7 @@ const privacy = [
     body: [
       "Information you give us:",
       [
-        "On the intake: your name, date of birth, sex assigned at birth, phone, email, and home address; your height, current and goal weight, and highest adult weight; your medical conditions, medications, allergies, surgeries, past weight loss treatment, and interest in medication; your family medical history; your tobacco and alcohol use and how often you exercise; what and how much you eat and drink; the plan you are interested in and when you would like a visit; any notes you add; and your agreement to the telehealth consent and privacy acknowledgement with your typed signature and the date.",
+        "On the intake: your name, date of birth, sex assigned at birth, phone, email, and home address; your height, current and goal weight, and highest adult weight; your medical conditions, medications, allergies, surgeries, past weight loss treatment, and interest in medication; your family medical history; your tobacco and alcohol use and how often you exercise; what and how much you eat and drink; the plan you are interested in and when you would like a visit; any notes you add; if you opened the intake from one of our links or ads, a short tag naming which one; and your agreement to the telehealth consent and privacy acknowledgement with your typed signature and the date.",
         "On the contact form: your name, phone, email, what you are interested in, and your message.",
         "In the patient portal: your login email and the messages you send. Elation Health runs the portal and handles your password. Our staff cannot see it.",
         "When you call or email us: what you tell us and your contact details.",

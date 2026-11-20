@@ -445,6 +445,7 @@ export default function ApplicantModal({
               <Field label="Reason" value={visit?.reason} />
               <Field label="Preferred date" value={formatDate(visit?.preferredDate)} />
               <Field label="Preferred time" value={visit?.preferredTime} />
+              {visit?.source && <Field label="Came from" value={visit.source} />}
               <Field label="Notes" value={visit?.notes} span />
             </Section>
 

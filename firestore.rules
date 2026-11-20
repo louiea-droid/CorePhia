@@ -102,9 +102,12 @@ service cloud.firestore {
         && n.keys().hasOnly(['waterIntake', 'estimatedDailyCalories', 'estimatedDailyCaloriesRange', 'mealsPerDay', 'dietNotes'])
         && str(n.waterIntake, 100) && str(n.estimatedDailyCalories, 100)
         && str(n.estimatedDailyCaloriesRange, 100) && str(n.mealsPerDay, 100) && str(n.dietNotes, 2000)
-        && visit.keys().hasOnly(['membershipPlan', 'reason', 'preferredDate', 'preferredTime', 'notes'])
+        && visit.keys().hasOnly(['membershipPlan', 'reason', 'preferredDate', 'preferredTime', 'notes', 'source'])
         && str(visit.membershipPlan, 100) && str(visit.reason, 100) && str(visit.preferredDate, 100)
         && str(visit.preferredTime, 100) && str(visit.notes, 2000)
+        // The ?src= ad tag (2026-11-20), as cleanSource() in lib/intakeSource.js
+        // keeps it. Optional, so a form opened before this deploy still sends.
+        && visit.get('source', '') is string && visit.get('source', '').matches('[a-z0-9_-]{0,40}')
         && c.keys().hasOnly(['telehealth', 'hipaaAcknowledged', 'signature', 'signedOn'])
         && str(c.signature, 200) && str(c.signedOn, 20);
     }

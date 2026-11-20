@@ -87,7 +87,7 @@ calendarMath, staffMath, `googleAnalytics.check.js` (only public pages are track
 `patientEmailState.check.js` (the admin's template and send-state rules), and
 `auditActions.check.js`, which fails if `AUDIT_ACTIONS` in `admin/lib/firebase.js` and the action
 list in `firestore.rules` drift apart) and `npm run test:rules` (Firestore rules against the
-emulator: all 53 pass as of 2026-11-16). Java 21 and a global `firebase` CLI are installed on
+emulator: all 54 pass as of 2026-11-20). Java 21 and a global `firebase` CLI are installed on
 this machine (2026-11-04). If port 8080 is taken (another project's emulator), run the tests
 with a config that moves the Firestore emulator to another port (`--config` file at the
 project root with `emulators.firestore.port`).
@@ -562,6 +562,20 @@ and intake branches, so every route change passes through). **Never paste Google
   stay contiguous in `SCREENS`), no "Need help? Call" line for now (removed, Louie), 16px answer cards, consent text and
   errors, a 44px Back button, and "Send my form" as the last button. Hims has no progress
   bar; this one is on purpose.
+- **Checkpoints and ad source tags** (meeting 2026-11-20, Louie; spec
+  `docs/superpowers/specs/2026-11-20-intake-checkpoints-and-source-design.md`): two screens
+  with no inputs, `checkpoint-goal` (after the medication question: "Great goal." or, for
+  "Not sure", "You're in the right place."; `GoalCard`, a brand-gradient card with the goal
+  in pounds or the range and a line that draws in once, hidden for "Not sure"; `CareTeam`
+  chips; one "Next" line) and `checkpoint-health` (before About you: `SectionChecklist`, done
+  sections ticked, "About you and your first visit" marked Next; one dietitian line). Louie
+  chose mockup B with the checklist and asked for as few words as possible (2026-11-20). `question` may be a function of the answers. They aren't on the review, so
+  their sections are added by hand in `SECTION_BY_SCREEN`. Draft copy: **Dr. Antonious
+  approves it before real patients**; never praise a health answer. Ad links use
+  `/intake?src=ig` (any tag); `cleanSource` (`lib/intakeSource.js`, checked by
+  `intakeSource.check.js`) keeps 1 to 40 of `a-z0-9_-`, saved as `visit.source`, allowed
+  by `firestore.rules` (optional), shown as "Came from" in Applicants, and named in the
+  privacy policy. Only a link straight to `/intake` carries it. Not deployed yet.
 - **A reload keeps the intake answers** (Louie, 2026-11-18): `readDraft`/`writeDraft` in
   `PatientIntakeForm.jsx` keep them and the current screen in this tab's **sessionStorage**
   (`corephia:intake-draft`), erased on send, on leaving the form (unmount) and when the tab

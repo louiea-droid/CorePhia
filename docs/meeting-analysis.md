@@ -253,3 +253,41 @@ This half of the meeting went back and forth. Final position:
 5. Cookie banner + click analytics in the admin.
 6. Submission notifications (notification only, no PHI).
 7. Blocked on client: success stories, how-it-works video, Elation integration, client portal.
+
+---
+
+## 9. Meeting 2026-11-20: links to the form, a livelier form, a discount code
+
+Speakers: Dr. Antonious, Joshua J. (transcript 25:19 to 26:06). Analysed the same day.
+
+| # | Request | Who | Decision (Louie, 2026-11-20) |
+|---|---|---|---|
+| 1 | Ads and links go straight to the form ("I made the mistake of not directing it directly to the form") | Dr. Antonious | **Do.** `/intake` already works as a direct link, and `?plan=` preselects a plan. Open: tag links by source (e.g. `?src=ig`) to see which ad brought someone. GA never runs on the intake, so a source would have to be saved with the intake record (and allowed by `firestore.rules`). |
+| 2 | "More information as they fill out the form, but still quick" | Dr. Antonious | **Do.** Short educational lines or screens between questions (Hims/Noom style). Keep it to 2 or 3 so the form stays about ten minutes. Copy follows the guides' rules (no unsourced claims, no medication names) and needs his sign-off. |
+| 3 | Encouraging replies to answers ("great job, that's a great goal") | Dr. Antonious | **Do.** Only on goal and motivation answers, never after a health answer (conditions, medications, family history). |
+| 4 | A discount code shown in the form with a five-minute countdown ("fill this out in the next five minutes or this code goes away") | Joshua, Dr. Antonious asked Louie to take it | **Later, not as described.** See below. |
+| 5 | A referral program | Joshua (26:06, cut off) | **Later.** Hear the full idea first. |
+
+### Why the countdown code is parked
+
+- It reads as pressure to buy a medical program that includes medication, close to the
+  "pay → get medication" framing Dr. Antonious says is now illegal (see CLAUDE.md). The provider
+  decides fit; rushing the patient also rushes the health history the provider relies on.
+- The FTC treats fake urgency as a dark pattern. A timer that resets on reload, or a code that
+  doesn't really expire, is fake urgency. Weight loss telehealth is already a watched space.
+- The form takes about ten minutes, longer than the timer, and patients pause to look up
+  medications and dates (the form keeps answers through a reload for that reason).
+- Payment happens in Elation, after the form. A code would have to exist in Elation billing and
+  be honoured when staff activate the membership; the site can't apply it.
+- The cards already show "Save $50 a month". A second, timed discount muddies it.
+
+**Safer version to offer:** show the current offer on the intake's plan step ("was $349"), no
+timer. If urgency is wanted, a real end date that holds for everyone ("Introductory pricing
+through December 31"). Ask whether Elation billing can take a promo code at all.
+
+### Open questions from this meeting
+
+- [ ] Source tags on ad links: wanted? Which sources (Instagram, Facebook, Google, flyers)?
+- [ ] Dr. Antonious to approve the wording of the in-form information and encouraging replies.
+- [ ] Discount: real end date instead of a countdown? Codes would be created in Elation billing (by whoever runs it), not on the site; the site only shows the offer. Ask Dr. Antonious whether Elation billing supports promo codes. If not: a separate discounted plan in Elation with its own sign-up link (`enrollUrl` in `pricingTiers.js`), no code needed.
+- [ ] Referral program: what did Joshua have in mind (reward, for whom, tracked how)?

@@ -3,7 +3,7 @@
 /* oxlint-disable react/only-export-components */
 import { PLANS_SHOWN, PRICES_ANNOUNCED, tiers } from "../data/pricingTiers"
 import DatePicker from "./DatePicker"
-import { ArrowRightIcon, CheckCircleIcon, LockIcon } from "./icons"
+import { ArrowRightIcon, CheckCircleIcon, LeafIcon, LockIcon, StethoscopeIcon, TrendingUpIcon } from "./icons"
 import Select, { SET_VALUE_EVENT } from "./Select"
 import { announceChange } from "./announceChange"
 
@@ -296,8 +296,12 @@ const usPhone = (value) => {
 const joined = (values) => (values?.length ? values.join(", ") : "")
 const detail = (gate, text) => (gate === "no" ? "None" : text)
 
+// Pounds from the current weight to an exact goal weight (NaN or <= 0 when
+// there is no exact goal below it). Used by the goal readout and checkpoint.
+const lbsToGo = (answers) => Math.round((Number(answers.currentWeight) - Number(answers.goalWeight)) * 10) / 10
+
 function GoalReadout({ answers }) {
-  const toGo = Math.round((Number(answers.currentWeight) - Number(answers.goalWeight)) * 10) / 10
+  const toGo = lbsToGo(answers)
   return (
     <p aria-live="polite" className="min-h-6 text-ink-950/70">
       {answers.goalWeight && toGo > 0 ? `That's ${toGo} lbs to your goal.` : ""}
@@ -313,6 +317,94 @@ function BmiReadout({ answers }) {
     <p aria-live="polite" className="min-h-6 text-ink-950/70">
       {answers.heightFeet && bmi ? `BMI ${bmi}. Your provider reviews this with you.` : ""}
     </p>
+  )
+}
+
+// Checkpoint 1's card: the goal the patient gave, big. An exact goal shows
+// the pounds to go, a range shows the range, "Not sure" shows no card. The
+// line is decoration (aria-hidden), not a forecast. Paper text on the brand
+// gradient (dark text fails contrast there).
+function GoalCard({ answers }) {
+  const goal = answers.weightLossGoal
+  const value =
+    goal === EXACT
+      ? lbsToGo(answers) > 0 && `${lbsToGo(answers)} lbs`
+      : WEIGHT_LOSS_GOAL.slice(0, 3).includes(goal) && goal.replace(/^Losing /, "")
+  if (!value) return null
+  return (
+    <div className="overflow-hidden rounded-2xl bg-linear-to-br from-brand to-brand-dark px-5 pt-4 pb-2 text-paper-50">
+      <p className="font-serif text-5xl leading-tight">
+        <span className="sr-only">Your goal: </span>
+        {value}
+      </p>
+      <svg viewBox="0 0 300 50" preserveAspectRatio="none" aria-hidden="true" className="mt-1 h-10 w-full">
+        <path
+          d="M0 10 C60 12 90 26 150 30 S250 42 296 42"
+          pathLength="1"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          className="animate-draw-line text-accent"
+        />
+        <circle cx="296" cy="42" r="4" className="fill-accent" />
+      </svg>
+    </div>
+  )
+}
+
+const CARE_TEAM = [
+  ["Provider", StethoscopeIcon],
+  ["Dietitian", LeafIcon],
+  ["Exercise plan", TrendingUpIcon],
+]
+
+function CareTeam() {
+  return (
+    <ul aria-label="Your care team" className="flex flex-wrap gap-2">
+      {CARE_TEAM.map(([label, Icon]) => (
+        <li key={label} className="flex items-center gap-2 rounded-full border border-ink-950/10 bg-white py-1.5 pr-4 pl-1.5 font-medium text-ink-950">
+          <span className="grid size-8 place-items-center rounded-full bg-paper-100 text-accent-dark">
+            <Icon className="size-4.5" />
+          </span>
+          {label}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+// Checkpoint 2: how far along the patient is. Fixed, since this screen only
+// ever follows the Lifestyle section.
+const CHECKLIST = [
+  ["Your goal", true],
+  ["Health", true],
+  ["Lifestyle", true],
+  ["About you and your first visit", false],
+]
+
+function SectionChecklist() {
+  return (
+    <ul className="divide-y divide-ink-950/[0.07] rounded-2xl border border-ink-950/10 bg-white px-4">
+      {CHECKLIST.map(([label, done]) => (
+        <li key={label} className={`flex items-center gap-3 py-3.5 ${done ? "text-ink-950" : "font-medium text-ink-950/70"}`}>
+          {done ? (
+            <CheckCircleIcon className="size-6 shrink-0 text-accent-dark" />
+          ) : (
+            <span aria-hidden="true" className="mx-1 size-4 shrink-0 rounded-full border-2 border-ink-950/30" />
+          )}
+          <span>
+            {label}
+            <span className="sr-only">{done ? ", done" : ", next"}</span>
+          </span>
+          {!done && (
+            <span aria-hidden="true" className="ml-auto rounded-md bg-paper-100 px-2 py-0.5 text-xs font-semibold text-accent-dark">
+              Next
+            </span>
+          )}
+        </li>
+      ))}
+    </ul>
   )
 }
 
@@ -380,9 +472,15 @@ const REVIEW_SECTIONS = [
 // The progress bar's section name for each screen, from the review's own
 // sections (so a new screen gets one by being added there). The review screen
 // itself is "Review".
-const SECTION_BY_SCREEN = Object.fromEntries(
-  REVIEW_SECTIONS.flatMap((section) => section.rows({}).flatMap(([, , screens]) => screens.map((id) => [id, section.title]))),
-)
+// Checkpoints aren't on the review, so they're listed by hand, each in the
+// section it closes (sections must stay contiguous in SCREENS).
+const SECTION_BY_SCREEN = {
+  ...Object.fromEntries(
+    REVIEW_SECTIONS.flatMap((section) => section.rows({}).flatMap(([, , screens]) => screens.map((id) => [id, section.title]))),
+  ),
+  "checkpoint-goal": "Your goal",
+  "checkpoint-health": "Lifestyle",
+}
 export const sectionFor = (screenId) => SECTION_BY_SCREEN[screenId] ?? "Review"
 
 // Edit buttons carry data-edit (the screen ids); PatientIntakeForm handles
@@ -488,6 +586,21 @@ export const SCREENS = [
     hint: "A provider decides whether it's appropriate for you.",
     autoAdvance: "medicationInterest",
     render: () => <ChoiceCards name="medicationInterest" options={MEDICATION_INTEREST} />,
+  },
+  // Checkpoints (meeting 2026-11-20): a short, encouraging pause between
+  // sections, no inputs. Draft copy; Dr. Antonious approves it before real
+  // patients. Never praise a health answer here.
+  {
+    id: "checkpoint-goal",
+    question: (a) => (a.weightLossGoal === WEIGHT_LOSS_GOAL[3] ? "You're in the right place." : "Great goal."),
+    ready: () => true,
+    render: ({ answers }) => (
+      <>
+        <GoalCard answers={answers} />
+        <CareTeam />
+        <p className="text-ink-950/70">Next: a few health questions.</p>
+      </>
+    ),
   },
   {
     id: "conditions",
@@ -634,6 +747,17 @@ export const SCREENS = [
           className={inputClass}
         />
       </Field>
+    ),
+  },
+  {
+    id: "checkpoint-health",
+    question: "Nice work. The health questions are done.",
+    ready: () => true,
+    render: () => (
+      <>
+        <SectionChecklist />
+        <p className="text-ink-950/70">Your dietitian uses these answers to shape your plan.</p>
+      </>
     ),
   },
   {

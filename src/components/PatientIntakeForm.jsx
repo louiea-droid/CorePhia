@@ -8,6 +8,7 @@ import { PLANS_SHOWN } from "../data/pricingTiers"
 import { ArrowRightIcon, CheckCircleIcon, ChevronRightIcon, CloseIcon } from "./icons"
 import { EXACT, PLANS, SCREENS, enrollUrlFor, sectionFor } from "./intakeScreens"
 import { SET_VALUE_EVENT } from "./Select"
+import { cleanSource } from "../lib/intakeSource"
 
 const MULTI_FIELDS = new Set(["conditions", "familyHistory"])
 const NONE = "None of the above"
@@ -243,7 +244,8 @@ function EditDialog({ screenIds, intakeForm, intakeAnswers, selectedPlan, today,
 // firestore.rules accepts only these top-level keys, so new fields go inside
 // an existing group. The has* gate answers are deliberately not read: an
 // empty detail string means "none".
-function buildIntakeRecord(form) {
+// source is the cleaned ?src= ad tag (lib/intakeSource.js), "" when none.
+function buildIntakeRecord(form, source) {
   const data = new FormData(form)
   const text = (name) => (data.get(name) ?? "").toString().trim()
   const many = (name) => data.getAll(name).map((entry) => entry.toString())
@@ -305,6 +307,7 @@ function buildIntakeRecord(form) {
       preferredDate: text("preferredDate"),
       preferredTime: text("preferredTime"),
       notes: text("notes"),
+      source,
     },
     consent: {
       telehealth: checked("consentTelehealth"),
@@ -790,7 +793,7 @@ export default function PatientIntakeForm() {
     // Read the form before awaiting: currentTarget is only valid for the
     // lifetime of the event dispatch.
     if (status === "sending") return
-    const record = buildIntakeRecord(form)
+    const record = buildIntakeRecord(form, cleanSource(searchParams.get("src")))
     setStatus("sending")
     // Not a retry: the queued write still goes through once back online, and
     // a second send would make a duplicate record.
@@ -952,7 +955,8 @@ export default function PatientIntakeForm() {
                 tabIndex={-1}
                 className="font-serif text-3xl leading-tight text-balance text-ink-950 outline-none sm:text-4xl"
               >
-                {screen.question}
+                {/* A checkpoint's headline can depend on the answers. */}
+                {typeof screen.question === "function" ? screen.question(answers) : screen.question}
               </h2>
               {screen.hint && <p className="mt-3 text-ink-950/70">{screen.hint}</p>}
               <div className="mt-8 space-y-5">{screen.render({ answers, selectedPlan, today })}</div>

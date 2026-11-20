@@ -343,6 +343,14 @@ describe("public intake and contact forms", () => {
       setDoc(doc(visitor(), "intakeRecords", "i13"), intake({ medicalHistory: { ...intake().medicalHistory, medications: "x".repeat(2000) } })),
     )
   })
+  test("an intake may carry the ?src= ad tag, in cleanSource's shape only", async () => {
+    const withSource = (source) => intake({ visit: { ...intake().visit, source } })
+    await assertSucceeds(setDoc(doc(visitor(), "intakeRecords", "s1"), withSource("ig")))
+    await assertSucceeds(setDoc(doc(visitor(), "intakeRecords", "s2"), withSource("")))
+    await assertFails(setDoc(doc(visitor(), "intakeRecords", "s3"), withSource("IG")))
+    await assertFails(setDoc(doc(visitor(), "intakeRecords", "s4"), withSource("x".repeat(41))))
+    await assertFails(setDoc(doc(visitor(), "intakeRecords", "s5"), withSource(5)))
+  })
   test("a contact message needs the form's time format", async () => {
     await assertSucceeds(setDoc(doc(visitor(), "contactMessages", "c1"), contact()))
     await assertFails(setDoc(doc(visitor(), "contactMessages", "c2"), contact({ submittedAt: "2099-01-01" })))
